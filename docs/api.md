@@ -71,9 +71,11 @@ POST /v1/admin/retention
 Authorization: Bearer <INGEST_TOKEN>
 ```
 
-요청 본문은 없다. Worker가 계산한 KST 오늘과 내일의 `schedule_events`만 남기고 날짜 범위
-밖의 과거 및 먼 미래 편성을 삭제한다. 오늘 이미 끝난 이벤트와 프로그램, 채널, 별칭,
-이미지 asset/variant 메타데이터는 삭제하지 않는다. 같은 날짜에 반복 호출해도 안전하다.
+요청 본문은 없다. 기본적으로 Worker가 계산한 KST 오늘과 내일의 `schedule_events`만 남기고
+날짜 범위 밖의 과거 및 먼 미래 편성을 삭제한다. 수집 workflow는 자정 교차에도 같은 날짜를
+사용하도록 `?start_date=YYYY-MM-DD`를 전달한다. 안전을 위해 이 값은 Worker 기준 KST 오늘
+또는 어제만 허용한다. 오늘 이미 끝난 이벤트와 프로그램, 채널, 별칭, 이미지 asset/variant
+메타데이터는 삭제하지 않는다. 같은 날짜에 반복 호출해도 안전하다.
 
 ```json
 {

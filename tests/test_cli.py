@@ -10,6 +10,8 @@ def test_cli_exposes_collection_commands() -> None:
 
     assert parser.parse_args(["collect", "--all"]).command == "collect"
     assert parser.parse_args(["collect", "--source", "kbs"]).source == "kbs"
+    anchored = parser.parse_args(["collect", "--all", "--start-date", "2026-07-14"])
+    assert anchored.start_date.isoformat() == "2026-07-14"
     assert parser.parse_args(["validate-fixtures"]).command == "validate-fixtures"
     assert parser.parse_args(["coverage"]).command == "coverage"
     coverage = parser.parse_args(["coverage", "--require-accounted", "--write", "report.md"])

@@ -74,12 +74,13 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
     collect = _job(workflow, "collect")
     runs = _runs(collect)
     joined = "\n".join(runs)
-    assert joined.count("uv run radio-epg collect --all") == 1
+    assert joined.count('uv run radio-epg collect --all --start-date "$EPG_COLLECTION_DATE"') == 1
+    assert "EPG_COLLECTION_DATE=$(TZ=Asia/Seoul date +%F)" in joined
     assert "tesseract-ocr-kor" in joined
     assert "libcairo2" in joined
 
     steps = _steps(collect)
-    ingestion = next(step for step in steps if step.get("run") == "uv run radio-epg collect --all")
+    ingestion = next(step for step in steps if step.get("name") == "Collect and import schedules")
     assert ingestion["env"] == {
         "EPG_API_BASE_URL": "${{ vars.EPG_API_BASE_URL }}",
         "EPG_INGEST_TOKEN": "${{ secrets.EPG_INGEST_TOKEN }}",
@@ -87,7 +88,7 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
     retention = next(step for step in steps if step.get("name") == "Apply schedule retention")
     assert retention["if"] == "always()"
     assert retention["env"] == ingestion["env"]
-    assert "/v1/admin/retention" in retention["run"]
+    assert "/v1/admin/retention?start_date=${EPG_COLLECTION_DATE}" in retention["run"]
     assert steps.index(ingestion) < steps.index(retention)
     diagnostics = next(step for step in steps if step.get("name") == "Upload sanitized diagnostics")
     assert diagnostics["if"] == "failure()"

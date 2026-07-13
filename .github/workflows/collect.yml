@@ -26,8 +26,10 @@ jobs:
         run: |
           uv python install 3.12
           uv sync --locked
+      - name: Set collection date
+        run: echo "EPG_COLLECTION_DATE=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_ENV"
       - name: Collect and import schedules
-        run: uv run radio-epg collect --all
+        run: uv run radio-epg collect --all --start-date "$EPG_COLLECTION_DATE"
         env:
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
           EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
@@ -35,7 +37,7 @@ jobs:
         if: always()
         run: >-
           curl --fail-with-body --silent --show-error --request POST
-          "${EPG_API_BASE_URL%/}/v1/admin/retention"
+          "${EPG_API_BASE_URL%/}/v1/admin/retention?start_date=${EPG_COLLECTION_DATE}"
           --header "Authorization: Bearer ${EPG_INGEST_TOKEN}"
         env:
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}

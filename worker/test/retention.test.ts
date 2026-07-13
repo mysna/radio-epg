@@ -191,4 +191,69 @@ describe("KST today-and-tomorrow schedule retention", () => {
       deleted: 0,
     });
   });
+
+  it("can retain the collection run's date across a KST midnight boundary", async () => {
+    const invalid = await app.request(
+      "https://api.example.test/v1/admin/retention?start_date=2026-02-30",
+      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
+      bindings,
+    );
+    expect(invalid.status).toBe(400);
+    const stale = await app.request(
+      "https://api.example.test/v1/admin/retention?start_date=2025-01-01",
+      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
+      bindings,
+    );
+    expect(stale.status).toBe(400);
+
+    await testEnv.DB.prepare("DELETE FROM schedule_events").run();
+    await testEnv.DB.batch(
+      retentionEvents.map((event) =>
+        testEnv.DB
+          .prepare(
+            `INSERT INTO schedule_events (
+               id, event_key, channel_id, program_id, source_id, source_event_id,
+               broadcast_date, starts_at, ends_at, title, source_url, source_kind,
+               fetched_at, confidence
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(
+            event.id,
+            event.id,
+            "retention.fm.main",
+            "retention.program",
+            "retention",
+            event.id,
+            event.broadcastDate,
+            event.startsAt,
+            event.endsAt,
+            event.id,
+            "https://source.example.test/",
+            "official",
+            "2026-07-13T00:00:00Z",
+            1,
+          ),
+      ),
+    );
+
+    const response = await app.request(
+      "https://api.example.test/v1/admin/retention?start_date=2026-07-13",
+      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
+      bindings,
+    );
+    const events = await testEnv.DB.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
+      id: string;
+    }>();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      start_date: "2026-07-13",
+      end_date: "2026-07-14",
+      deleted: 2,
+    });
+    expect(events.results.map(({ id }) => id)).toEqual([
+      "retention-today",
+      "retention-yesterday",
+    ]);
+  });
 });

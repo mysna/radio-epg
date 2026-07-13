@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 from dataclasses import asdict
+from datetime import date
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import quote
@@ -41,6 +42,11 @@ def build_parser() -> argparse.ArgumentParser:
     selection = collect.add_mutually_exclusive_group(required=True)
     selection.add_argument("--all", action="store_true", help="모든 활성 source")
     selection.add_argument("--source", help="하나의 source ID")
+    collect.add_argument(
+        "--start-date",
+        type=date.fromisoformat,
+        help="수집 실행 전체가 공유할 KST 기준일 (YYYY-MM-DD)",
+    )
 
     commands.add_parser("validate-fixtures", help="등록된 fixture 계약을 검증한다")
     coverage = commands.add_parser("coverage", help="설정된 source 커버리지를 출력한다")
@@ -127,7 +133,7 @@ async def smoke_api(
     }
 
 
-async def _run_collection(source_id: str | None) -> int:
+async def _run_collection(source_id: str | None, start_date: date | None = None) -> int:
     settings = CollectorSettings.from_env()
     sources = load_sources(_SOURCES_PATH)
     selected = None if source_id is None else {source_id}
@@ -140,7 +146,7 @@ async def _run_collection(source_id: str | None) -> int:
             token=settings.ingest_token,
         )
 
-    report = await Collector(adapters, publisher=publisher).collect()
+    report = await Collector(adapters, publisher=publisher, start_date=start_date).collect()
     print(report.model_dump_json(indent=2))
     return 1 if any(run.status == "failed" for run in report.runs) else 0
 
@@ -171,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     """선택한 CLI 명령을 실행하고 process status를 반환한다."""
     arguments = build_parser().parse_args(argv)
     if arguments.command == "collect":
-        return asyncio.run(_run_collection(arguments.source))
+        return asyncio.run(_run_collection(arguments.source, arguments.start_date))
     if arguments.command == "validate-fixtures":
         return _validate_fixtures()
     if arguments.command == "coverage":

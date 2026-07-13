@@ -113,17 +113,19 @@ class Collector:
         adapters: Sequence[ScheduleAdapter],
         *,
         publisher: BatchPublisher,
+        start_date: date | None = None,
         today: Callable[[], date] = _korean_today,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._adapters = tuple(adapters)
         self._publisher = publisher
+        self._start_date = start_date
         self._today = today
         self._now = now
 
     async def collect(self) -> CollectionReport:
         """KST 오늘과 내일의 각 adapter를 독립 실행한다."""
-        first_day = self._today()
+        first_day = self._start_date or self._today()
         window = CollectionWindow(first_day, first_day + timedelta(days=1))
         runs: list[ScrapeRunSummary] = []
 
