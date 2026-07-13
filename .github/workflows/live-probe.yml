@@ -1,0 +1,29 @@
+name: Live source probes
+
+"on":
+  schedule:
+    - cron: "43 20 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radio-epg-live-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - name: Install Python and locked dependencies
+        run: |
+          uv python install 3.12
+          uv sync --locked --dev
+      - name: Probe live source contracts
+        run: uv run pytest tests/live -q

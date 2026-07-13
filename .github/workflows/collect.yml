@@ -1,0 +1,44 @@
+name: Collect schedules
+
+"on":
+  schedule:
+    - cron: "17 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radio-epg-collection
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install --yes libcairo2 tesseract-ocr tesseract-ocr-kor
+      - name: Install Python and locked dependencies
+        run: |
+          uv python install 3.12
+          uv sync --locked
+      - name: Collect and import schedules
+        run: uv run radio-epg collect --all
+        env:
+          EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
+          EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
+      - name: Write sanitized diagnostics
+        if: failure()
+        run: uv run radio-epg coverage --write collection-diagnostics.md
+      - name: Upload sanitized diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: collection-diagnostics-${{ github.run_id }}
+          path: collection-diagnostics.md
+          if-no-files-found: ignore
+          retention-days: 14

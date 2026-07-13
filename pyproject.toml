@@ -23,6 +23,7 @@ radio-epg = "radio_epg.cli:main"
 [dependency-groups]
 dev = [
     "pytest",
+    "pyyaml>=6.0.3",
     "respx",
     "ruff",
     "ty",

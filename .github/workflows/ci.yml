@@ -1,0 +1,45 @@
+name: CI
+
+"on":
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - name: Install Python
+        run: uv python install 3.12
+      - name: Install locked dependencies
+        run: uv sync --locked --dev
+      - name: Lint
+        run: uv run ruff check .
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Type check
+        run: uvx ty check
+      - name: Test
+        run: uv run pytest -q
+
+  worker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.8.0
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --prefix worker
+      - name: Test
+        run: npm --prefix worker test -- --run
+      - name: Type check
+        run: npm --prefix worker run typecheck
