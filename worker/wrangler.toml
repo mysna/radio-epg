@@ -8,7 +8,7 @@ CORS_ORIGINS = "https://radio.bsod.kr,http://localhost:8000"
 [[d1_databases]]
 binding = "DB"
 database_name = "radio-epg"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "851a1f51-1757-4684-be24-5610c3e5fa4e"
 
 [[r2_buckets]]
 binding = "IMAGES"
