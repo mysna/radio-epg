@@ -104,7 +104,8 @@ def test_collector_reports_sanitized_publish_error_details() -> None:
     start = datetime(2026, 7, 13, 3, tzinfo=UTC)
     schedule = _event("healthy", starts_at=start, ends_at=start + timedelta(hours=1))
 
-    async def failing_publisher(_batch: ImportBatch) -> dict[str, str]:
+    async def failing_publisher(batch: ImportBatch) -> dict[str, str]:
+        del batch
         raise PublishError("ingestion request failed with HTTP 500 (import_failed)")
 
     collector = Collector(
