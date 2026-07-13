@@ -103,13 +103,14 @@ def test_deployment_migrates_before_protected_worker_deploy() -> None:
         "CLOUDFLARE_API_TOKEN": "${{ secrets.CLOUDFLARE_API_TOKEN }}",
         "CLOUDFLARE_ACCOUNT_ID": "${{ vars.CLOUDFLARE_ACCOUNT_ID }}",
     }
-    runs = _runs(deploy)
-    migration = "npm exec --prefix worker -- wrangler d1 migrations apply DB --remote"
-    deployment = "npm exec --prefix worker -- wrangler deploy"
-    assert "npm ci --prefix worker" in runs
-    assert migration in runs
-    assert deployment in runs
-    assert runs.index(migration) < runs.index(deployment)
+    steps = _steps(deploy)
+    migration = next(step for step in steps if step.get("name") == "Apply remote D1 migrations")
+    deployment = next(step for step in steps if step.get("name") == "Deploy Worker")
+    assert migration["working-directory"] == "worker"
+    assert migration["run"] == "npm exec -- wrangler d1 migrations apply DB --remote"
+    assert deployment["working-directory"] == "worker"
+    assert deployment["run"] == "npm exec -- wrangler deploy"
+    assert steps.index(migration) < steps.index(deployment)
 
 
 def test_live_probe_is_separate_and_non_blocking() -> None:

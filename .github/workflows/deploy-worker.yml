@@ -33,6 +33,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --prefix worker
       - name: Apply remote D1 migrations
-        run: npm exec --prefix worker -- wrangler d1 migrations apply DB --remote
+        working-directory: worker
+        run: npm exec -- wrangler d1 migrations apply DB --remote
       - name: Deploy Worker
-        run: npm exec --prefix worker -- wrangler deploy
+        working-directory: worker
+        run: npm exec -- wrangler deploy
