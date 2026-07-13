@@ -1,0 +1,10 @@
+{
+  "channels": [
+    {"channel_id":"mbc.sfm.main","upstream_code":"sfm","url":"https://control.imbc.com/Schedule/Radio?sDate={date_compact}&sType=FM&callback=scheduleCallback","parser":"jsonp","evidence_date":"2026-07-13"},
+    {"channel_id":"mbc.fm4u.main","upstream_code":"fm4u","url":"https://control.imbc.com/Schedule/Radio?sDate={date_compact}&sType=FM4U&callback=scheduleCallback","parser":"jsonp","evidence_date":"2026-07-13"},
+    {"channel_id":"mbc.chm.main","upstream_code":"chm","url":"https://control.imbc.com/Schedule/Radio?sDate={date_compact}&sType=ALLTHAT&callback=scheduleCallback","parser":"jsonp","evidence_date":"2026-07-13"}
+  ],
+  "unsupported": [
+    {"channel_id":"mbc.bora.main","reason":"보이는 라디오는 독립 편성 채널로 확인되지 않음","last_investigated":"2026-07-13"}
+  ]
+}

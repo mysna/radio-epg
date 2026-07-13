@@ -1,0 +1,1 @@
+scheduleCallback({"date":"2026-07-13","channels":{"sfm":[{"id":"mbc-s-1","start":"05:00","end":"07:00","title":"뉴스와 음악","live":true,"image":"https://img.imbc.com/program/sfm.png"}],"fm4u":[{"id":"mbc-f-1","start":"05:00","end":"07:00","title":"세상을 여는 아침"}],"chm":[{"id":"mbc-c-1","start":"05:00","end":"06:00","title":"올댓뮤직"}]}});

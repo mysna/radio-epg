@@ -1,0 +1,17 @@
+{
+  "channels": [
+    {"channel_id":"tbn.main.main","upstream_code":"main","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=6&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.busan","upstream_code":"busan","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=2&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.gwangju","upstream_code":"gwangju","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=3&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.daegu","upstream_code":"daegu","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=4&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.daejeon","upstream_code":"daejeon","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=5&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.gangwon","upstream_code":"gangwon","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=7&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.jeonbuk","upstream_code":"jeonbuk","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=8&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.ulsan","upstream_code":"ulsan","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=9&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.gyeongnam","upstream_code":"gyeongnam","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=10&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.gyeongbuk","upstream_code":"gyeongbuk","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=11&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.jeju","upstream_code":"jeju","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=12&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.chungbuk","upstream_code":"chungbuk","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=13&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.chungnam","upstream_code":"chungnam","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=14&today={date}","parser":"html","evidence_date":"2026-07-13"}
+  ]
+}

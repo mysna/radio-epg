@@ -1,0 +1,7 @@
+{
+  "channels": [
+    {"channel_id":"sbs.powerfm.main","upstream_code":"power","url":"https://static.apis.sbs.co.kr/radio-api/gorealra/1.0/main/section/common","parser":"json-current-day","evidence_date":"2026-07-13"},
+    {"channel_id":"sbs.lovefm.main","upstream_code":"love","url":"https://static.apis.sbs.co.kr/radio-api/gorealra/1.0/main/section/common","parser":"json-current-day","evidence_date":"2026-07-13"},
+    {"channel_id":"sbs.dmb.main","upstream_code":"dmb","url":"https://static.apis.sbs.co.kr/radio-api/gorealra/1.0/main/section/common","parser":"json-current-day","evidence_date":"2026-07-13"}
+  ]
+}

@@ -41,7 +41,12 @@ class AdapterRegistry:
 
 def default_registry() -> AdapterRegistry:
     """프로젝트에 포함된 adapter registry를 만든다."""
+    from radio_epg.adapters.cbs import CbsAdapter
+    from radio_epg.adapters.ebs import EbsAdapter
     from radio_epg.adapters.kbs import KbsAdapter
+    from radio_epg.adapters.mbc import MbcAdapter
+    from radio_epg.adapters.sbs import SbsAdapter
+    from radio_epg.adapters.tbn import TbnAdapter
 
     registry = AdapterRegistry()
 
@@ -49,4 +54,9 @@ def default_registry() -> AdapterRegistry:
         return KbsAdapter(source)
 
     registry.register("kbs", build_kbs)
+    registry.register("mbc", MbcAdapter)
+    registry.register("sbs", SbsAdapter)
+    registry.register("ebs", EbsAdapter)
+    registry.register("cbs", CbsAdapter)
+    registry.register("tbn", TbnAdapter)
     return registry

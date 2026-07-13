@@ -1,0 +1,7 @@
+{
+  "channels": [
+    {"channel_id":"cbs.sfm.main","upstream_code":"sfm","url":"https://www.cbs.co.kr/schedule?type=fm&date={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"cbs.mfm.main","upstream_code":"mfm","url":"https://www.cbs.co.kr/schedule?type=musicFm&date={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"cbs.joy4u.main","upstream_code":"joy4u","url":"https://www.cbs.co.kr/schedule?type=joy4u&date={date}","parser":"html","evidence_date":"2026-07-13"}
+  ]
+}

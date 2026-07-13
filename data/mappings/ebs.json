@@ -1,0 +1,6 @@
+{
+  "channels": [
+    {"channel_id":"ebs.fm.main","upstream_code":"fm","url":"https://www.ebs.co.kr/schedule?channelCd=RADIO&date={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"ebs.bandi.main","upstream_code":"bandi","url":"https://www.ebs.co.kr/schedule?channelCd=IRADIO&date={date}","parser":"html","evidence_date":"2026-07-13"}
+  ]
+}

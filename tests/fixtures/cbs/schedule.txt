@@ -1,0 +1,5 @@
+CHANNEL sfm
+05:00-06:00 새아침입니다
+06:00-07:00 CBS 뉴스
+CHANNEL mfm
+06:00-07:00 Amazing Grace

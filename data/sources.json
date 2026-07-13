@@ -7,5 +7,59 @@
     "priority": 100,
     "adapter": "kbs",
     "enabled": true
+  },
+  {
+    "source_id": "mbc",
+    "name": "MBC 중앙 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://schedule.imbc.com/",
+    "priority": 100,
+    "adapter": "mbc",
+    "enabled": true
+  },
+  {
+    "source_id": "sbs",
+    "name": "SBS 라디오 오늘 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.sbs.co.kr/radio/schedules.html",
+    "priority": 100,
+    "adapter": "sbs",
+    "enabled": true
+  },
+  {
+    "source_id": "ebs",
+    "name": "EBS 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.ebs.co.kr/schedule?channelCd=RADIO",
+    "priority": 100,
+    "adapter": "ebs",
+    "enabled": true
+  },
+  {
+    "source_id": "cbs",
+    "name": "CBS 중앙 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.cbs.co.kr/schedule?type=fm",
+    "priority": 100,
+    "adapter": "cbs",
+    "enabled": true
+  },
+  {
+    "source_id": "tbn",
+    "name": "TBN 지역 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.tbn.or.kr/broadcast/program.tbn",
+    "priority": 100,
+    "adapter": "tbn",
+    "enabled": true
+  },
+  {
+    "source_id": "tbn-public-data",
+    "name": "TBN 공공데이터 주중 편성 fallback",
+    "source_kind": "official-fallback",
+    "source_url": "https://www.data.go.kr/data/15067799/fileData.do",
+    "priority": 40,
+    "adapter": "tbn",
+    "enabled": false
   }
 ]

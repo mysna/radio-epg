@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
 from radio_epg.config import CollectorSettings, SourceConfig, load_sources
 from radio_epg.models import AdapterResult
-from radio_epg.registry import AdapterRegistry
+from radio_epg.registry import AdapterRegistry, default_registry
 
 
 class FakeAdapter:
@@ -74,3 +74,19 @@ def test_source_file_is_strict_and_credentials_come_only_from_environment(
 
     assert settings.api_base_url == "https://epg.example.test"
     assert settings.ingest_token == "environment-secret"
+
+
+def test_default_registry_builds_all_enabled_national_sources() -> None:
+    root = Path(__file__).parents[1]
+    sources = load_sources(root / "data" / "sources.json")
+
+    adapters = default_registry().build(sources)
+
+    assert [adapter.source.source_id for adapter in adapters] == [
+        "kbs",
+        "mbc",
+        "sbs",
+        "ebs",
+        "cbs",
+        "tbn",
+    ]

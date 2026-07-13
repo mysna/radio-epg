@@ -3,10 +3,12 @@
 import argparse
 import asyncio
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from radio_epg.collector import Collector
 from radio_epg.config import CollectorSettings, load_sources
+from radio_epg.fixture_validation import validate_fixtures
 from radio_epg.models import ImportBatch
 from radio_epg.publisher import publish_batch
 from radio_epg.registry import default_registry
@@ -58,9 +60,17 @@ def _configured_sources() -> int:
     return 0
 
 
+def _validate_fixtures() -> int:
+    result = validate_fixtures()
+    print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """선택한 CLI 명령을 실행하고 process status를 반환한다."""
     arguments = build_parser().parse_args(argv)
     if arguments.command == "collect":
         return asyncio.run(_run_collection(arguments.source))
+    if arguments.command == "validate-fixtures":
+        return _validate_fixtures()
     return _configured_sources()
