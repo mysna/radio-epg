@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2026-07-13"
 
 [vars]
-CORS_ORIGINS = "https://radio.bsod.kr,http://localhost:8000"
+CORS_ORIGINS = "https://radio.bsod.kr,https://mysna.github.io,http://localhost:8000"
 
 [[d1_databases]]
 binding = "DB"
