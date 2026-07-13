@@ -31,6 +31,15 @@ jobs:
         env:
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
           EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
+      - name: Apply schedule retention
+        if: always()
+        run: >-
+          curl --fail-with-body --silent --show-error --request POST
+          "${EPG_API_BASE_URL%/}/v1/admin/retention"
+          --header "Authorization: Bearer ${EPG_INGEST_TOKEN}"
+        env:
+          EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
+          EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
       - name: Write sanitized diagnostics
         if: failure()
         run: uv run radio-epg coverage --write collection-diagnostics.md

@@ -1,0 +1,81 @@
+{
+  "idempotency_key": "kbs:2026-07-12T20:15:00+00:00",
+  "source": {
+    "source_id": "kbs",
+    "name": "KBS 편성표",
+    "source_kind": "official",
+    "source_url": "https://schedule.kbs.co.kr/",
+    "priority": 100,
+    "fetched_at": "2026-07-12T20:15:00Z"
+  },
+  "channels": [
+    {
+      "channel_id": "kbs.1radio.busan",
+      "broadcaster_id": "kbs",
+      "name": "KBS부산 1라디오",
+      "stn": "kbs",
+      "ch": "1radio",
+      "city": "busan",
+      "region_ids": ["busan"],
+      "radio_ids": ["busan-039-kbs-1radio-busan"]
+    }
+  ],
+  "programs": [
+    {
+      "source_id": "kbs",
+      "program_id": "kbs:R-E2E-CURRENT",
+      "title": "부산 아침",
+      "description": "E2E 현재 프로그램",
+      "hosts": ["진행자 하나"],
+      "genre": "news",
+      "homepage_url": "https://program.kbs.co.kr/radio/e2e-current"
+    },
+    {
+      "source_id": "kbs",
+      "program_id": "kbs:R-E2E-NEXT",
+      "title": "부산 다음",
+      "description": "E2E 다음 프로그램",
+      "hosts": ["진행자 둘"],
+      "genre": "culture",
+      "homepage_url": "https://program.kbs.co.kr/radio/e2e-next"
+    }
+  ],
+  "schedules": [
+    {
+      "source_id": "kbs",
+      "source_url": "https://static.api.kbs.co.kr/mediafactory/v1/schedule/weekly",
+      "source_kind": "official",
+      "fetched_at": "2026-07-12T20:15:00Z",
+      "confidence": 1.0,
+      "channel_id": "kbs.1radio.busan",
+      "program_id": "kbs:R-E2E-CURRENT",
+      "source_event_id": "e2e-current",
+      "broadcast_date": "2026-07-13",
+      "starts_at": "2026-07-12T20:00:00Z",
+      "ends_at": "2026-07-12T21:00:00Z",
+      "title": "부산 아침",
+      "subtitle": "현재 프로그램",
+      "is_live": true,
+      "is_rerun": false
+    },
+    {
+      "source_id": "kbs",
+      "source_url": "https://static.api.kbs.co.kr/mediafactory/v1/schedule/weekly",
+      "source_kind": "official",
+      "fetched_at": "2026-07-12T20:15:00Z",
+      "confidence": 1.0,
+      "channel_id": "kbs.1radio.busan",
+      "program_id": "kbs:R-E2E-NEXT",
+      "source_event_id": "e2e-next",
+      "broadcast_date": "2026-07-13",
+      "starts_at": "2026-07-12T21:00:00Z",
+      "ends_at": "2026-07-12T22:00:00Z",
+      "title": "부산 다음",
+      "subtitle": "다음 프로그램",
+      "is_live": false,
+      "is_rerun": false
+    }
+  ],
+  "images": [],
+  "collected_at": "2026-07-12T20:15:00Z"
+}

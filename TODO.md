@@ -22,4 +22,4 @@
 - [x] Task 12: Community, AFN, wiki fallback, OCR
 - [x] Task 13: 일일 수집, Worker 배포, live probe workflow
 - [x] Task 14: 배포 및 운영 README
-- [ ] Task 15: end-to-end 호환성, retention, 전체 검증
+- [x] Task 15: end-to-end 호환성, retention, 전체 검증

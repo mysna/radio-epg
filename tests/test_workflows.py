@@ -84,6 +84,11 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
         "EPG_API_BASE_URL": "${{ vars.EPG_API_BASE_URL }}",
         "EPG_INGEST_TOKEN": "${{ secrets.EPG_INGEST_TOKEN }}",
     }
+    retention = next(step for step in steps if step.get("name") == "Apply schedule retention")
+    assert retention["if"] == "always()"
+    assert retention["env"] == ingestion["env"]
+    assert "/v1/admin/retention" in retention["run"]
+    assert steps.index(ingestion) < steps.index(retention)
     diagnostics = next(step for step in steps if step.get("name") == "Upload sanitized diagnostics")
     assert diagnostics["if"] == "failure()"
     assert _mapping(diagnostics["with"])["if-no-files-found"] == "ignore"

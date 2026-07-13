@@ -19,6 +19,8 @@ def test_readme_covers_configuration_and_command_contracts() -> None:
         "wrangler d1 migrations apply",
         "wrangler secret put",
         "wrangler deploy",
+        "radio-epg smoke",
+        "/v1/admin/retention",
         "workflow_dispatch",
         "17 19 * * *",
         "04:17 KST",

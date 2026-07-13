@@ -1,0 +1,47 @@
+[
+  {
+    "program_planned_date": "20260713",
+    "channel_code": "21",
+    "local_station_code": "10",
+    "schedules": [
+      {
+        "schedule_unique_id": "e2e-current",
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "21",
+        "program_planned_start_time": "05000000",
+        "program_planned_end_time": "06000000",
+        "program_code": "R-E2E-CURRENT",
+        "program_title": "부산 아침",
+        "program_subtitle": "현재 프로그램",
+        "programming_table_title": "부산 아침",
+        "rerun_classification": "본방",
+        "production_type": "생방",
+        "program_actor": "진행자 하나",
+        "program_intention": "E2E 현재 프로그램",
+        "program_genre": "news",
+        "image_w": null,
+        "homepage_url": "https://program.kbs.co.kr/radio/e2e-current"
+      },
+      {
+        "schedule_unique_id": "e2e-next",
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "21",
+        "program_planned_start_time": "06000000",
+        "program_planned_end_time": "07000000",
+        "program_code": "R-E2E-NEXT",
+        "program_title": "부산 다음",
+        "program_subtitle": "다음 프로그램",
+        "programming_table_title": "부산 다음",
+        "rerun_classification": "본방",
+        "production_type": "녹음",
+        "program_actor": "진행자 둘",
+        "program_intention": "E2E 다음 프로그램",
+        "program_genre": "culture",
+        "image_w": null,
+        "homepage_url": "https://program.kbs.co.kr/radio/e2e-next"
+      }
+    ]
+  }
+]

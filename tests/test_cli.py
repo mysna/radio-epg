@@ -15,3 +15,5 @@ def test_cli_exposes_collection_commands() -> None:
     coverage = parser.parse_args(["coverage", "--require-accounted", "--write", "report.md"])
     assert coverage.require_accounted is True
     assert str(coverage.write) == "report.md"
+    smoke = parser.parse_args(["smoke", "--base-url", "https://epg.example.test"])
+    assert smoke.radio_id == "busan-039-kbs-1radio-busan"

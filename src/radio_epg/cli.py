@@ -5,6 +5,10 @@ import asyncio
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any, cast
+from urllib.parse import quote
+
+import httpx
 
 from radio_epg.collector import Collector
 from radio_epg.config import CollectorSettings, load_sources
@@ -15,6 +19,12 @@ from radio_epg.publisher import publish_batch
 from radio_epg.registry import default_registry
 
 _SOURCES_PATH = Path(__file__).parents[2] / "data" / "sources.json"
+_DEFAULT_SMOKE_RADIO_ID = "busan-039-kbs-1radio-busan"
+_SMOKE_TIMEOUT = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+
+
+class SmokeCheckError(RuntimeError):
+    """배포 API가 smoke 계약을 충족하지 않을 때 발생한다."""
 
 
 def app_name() -> str:
@@ -40,7 +50,81 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="현재 단계가 소유한 catalog identity 누락을 실패 처리한다",
     )
+    smoke = commands.add_parser("smoke", help="배포된 공개 API의 핵심 경로를 확인한다")
+    smoke.add_argument("--base-url", required=True, help="배포된 Worker base URL")
+    smoke.add_argument(
+        "--radio-id",
+        default=_DEFAULT_SMOKE_RADIO_ID,
+        help="별칭 호환성을 확인할 현재 라디오 플레이어 ID",
+    )
     return parser
+
+
+def _mapping(value: object, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise SmokeCheckError(f"{label} response must be a JSON object")
+    return cast(dict[str, Any], value)
+
+
+def _list(value: object, label: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise SmokeCheckError(f"{label} response must contain a list")
+    return cast(list[Any], value)
+
+
+async def _smoke_get(client: httpx.AsyncClient, path: str) -> dict[str, Any]:
+    try:
+        response = await client.get(path)
+        response.raise_for_status()
+    except (httpx.HTTPStatusError, httpx.NetworkError, httpx.TimeoutException) as error:
+        raise SmokeCheckError(f"{path} smoke request failed") from error
+    try:
+        payload: object = response.json()
+    except ValueError as error:
+        raise SmokeCheckError(f"{path} response must be JSON") from error
+    return _mapping(payload, path)
+
+
+async def smoke_api(
+    base_url: str,
+    radio_id: str,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> dict[str, object]:
+    """health, 채널 목록·별칭, coverage 응답의 최소 배포 계약을 검사한다."""
+    if not base_url.strip() or not radio_id.strip():
+        raise ValueError("base_url and radio_id must not be empty")
+
+    async with httpx.AsyncClient(
+        base_url=base_url.rstrip("/"),
+        timeout=_SMOKE_TIMEOUT,
+        transport=transport,
+    ) as client:
+        health = await _smoke_get(client, "/health")
+        channels = _list((await _smoke_get(client, "/v1/channels")).get("channels"), "channels")
+        channel = await _smoke_get(client, f"/v1/channels/{quote(radio_id, safe='')}")
+        aliases = _list(channel.get("aliases"), "channel aliases")
+        coverage = _list((await _smoke_get(client, "/v1/coverage")).get("sources"), "coverage")
+
+    if health.get("service") != app_name():
+        raise SmokeCheckError("health response identifies an unexpected service")
+    if not channels:
+        raise SmokeCheckError("channels response must contain at least one channel")
+    if not coverage:
+        raise SmokeCheckError("coverage response must contain at least one source")
+    channel_id = channel.get("channel_id")
+    if not isinstance(channel_id, str) or not channel_id:
+        raise SmokeCheckError("radio ID did not resolve to a channel")
+    if not any(isinstance(alias, dict) and alias.get("value") == radio_id for alias in aliases):
+        raise SmokeCheckError("resolved channel does not preserve the requested radio ID")
+
+    return {
+        "service": app_name(),
+        "channel_count": len(channels),
+        "radio_id": radio_id,
+        "channel_id": channel_id,
+        "coverage_source_count": len(coverage),
+    }
 
 
 async def _run_collection(source_id: str | None) -> int:
@@ -92,4 +176,8 @@ def main(argv: list[str] | None = None) -> int:
         return _validate_fixtures()
     if arguments.command == "coverage":
         return _coverage(arguments.write, require_accounted=arguments.require_accounted)
+    if arguments.command == "smoke":
+        result = asyncio.run(smoke_api(arguments.base_url, arguments.radio_id))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     return _configured_sources()

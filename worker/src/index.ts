@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { errorResponse } from "./errors";
+import retention from "./retention";
 import adminImport from "./routes/admin-import";
 import adminImages from "./routes/admin-images";
 import adminTakedown from "./routes/admin-takedown";
@@ -56,6 +57,7 @@ app.route("/v1/coverage", coverage);
 app.route("/v1/admin/import", adminImport);
 app.route("/v1/admin/images", adminImages);
 app.route("/v1/admin/takedown", adminTakedown);
+app.route("/v1/admin/retention", retention);
 app.route("/v1/images", images);
 
 export default app;
