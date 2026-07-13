@@ -14,6 +14,7 @@ _TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
 _TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=20.0, pool=5.0)
 _ERROR_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _MAX_IMPORT_BYTES = 900_000
+_MAX_PROGRAMS = 1_000
 _MAX_SCHEDULES = 2_000
 _MAX_IDEMPOTENCY_KEY_LENGTH = 200
 
@@ -78,7 +79,11 @@ def _subset_batch(
 
 
 def _partition_batch(batch: ImportBatch) -> tuple[ImportBatch, ...]:
-    if len(batch.schedules) <= _MAX_SCHEDULES and _payload_size(batch) <= _MAX_IMPORT_BYTES:
+    if (
+        len(batch.programs) <= _MAX_PROGRAMS
+        and len(batch.schedules) <= _MAX_SCHEDULES
+        and _payload_size(batch) <= _MAX_IMPORT_BYTES
+    ):
         return (batch,)
 
     grouped: dict[tuple[str, str, object], list[ScheduleCandidate]] = {}
@@ -93,14 +98,18 @@ def _partition_batch(batch: ImportBatch) -> tuple[ImportBatch, ...]:
         candidate = (*current, *scope_schedules)
         candidate_batch = _subset_batch(batch, candidate, idempotency_key=placeholder)
         exceeds_limit = (
-            len(candidate) > _MAX_SCHEDULES or _payload_size(candidate_batch) > _MAX_IMPORT_BYTES
+            len(candidate_batch.programs) > _MAX_PROGRAMS
+            or len(candidate) > _MAX_SCHEDULES
+            or _payload_size(candidate_batch) > _MAX_IMPORT_BYTES
         )
         if exceeds_limit and current:
             partitions.append(current)
             current = tuple(scope_schedules)
             candidate_batch = _subset_batch(batch, current, idempotency_key=placeholder)
             exceeds_limit = (
-                len(current) > _MAX_SCHEDULES or _payload_size(candidate_batch) > _MAX_IMPORT_BYTES
+                len(candidate_batch.programs) > _MAX_PROGRAMS
+                or len(current) > _MAX_SCHEDULES
+                or _payload_size(candidate_batch) > _MAX_IMPORT_BYTES
             )
         else:
             current = candidate

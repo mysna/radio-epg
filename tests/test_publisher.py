@@ -6,7 +6,13 @@ from typing import Any, cast
 import httpx
 import pytest
 
-from radio_epg.models import ImageCandidate, ImportBatch, ScheduleCandidate, SourceMetadata
+from radio_epg.models import (
+    ImageCandidate,
+    ImportBatch,
+    ProgramCandidate,
+    ScheduleCandidate,
+    SourceMetadata,
+)
 from radio_epg.publisher import PublishError, publish_batch
 
 TOKEN = "super-secret-ingest-token"
@@ -124,6 +130,50 @@ def test_publisher_partitions_large_batches_without_splitting_schedule_scopes() 
     assert len(payloads) > 1
     assert all(size < 1_000_000 for size in body_sizes)
     assert all(scopes[index].isdisjoint(scopes[index + 1]) for index in range(len(scopes) - 1))
+
+
+def test_publisher_partitions_batches_over_the_program_limit() -> None:
+    base = _batch()
+    template = base.schedules[0]
+    programs = tuple(
+        ProgramCandidate(
+            source_id="kbs",
+            program_id=f"kbs:program-{index}",
+            title=f"KBS 프로그램 {index}",
+        )
+        for index in range(1_001)
+    )
+    schedules = tuple(
+        template.model_copy(
+            update={
+                "program_id": program.program_id,
+                "source_event_id": f"program-event-{index}",
+                "broadcast_date": template.broadcast_date + timedelta(days=index // 500),
+                "starts_at": template.starts_at + timedelta(days=index // 500),
+                "ends_at": template.ends_at + timedelta(days=index // 500),
+                "title": program.title,
+            }
+        )
+        for index, program in enumerate(programs)
+    )
+    batch = base.model_copy(update={"programs": programs, "schedules": schedules})
+    payloads: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.read()))
+        return httpx.Response(201, json={"status": "applied"})
+
+    asyncio.run(
+        publish_batch(
+            batch,
+            base_url="https://epg.example.test",
+            token=TOKEN,
+            transport=httpx.MockTransport(handler),
+        )
+    )
+
+    assert len(payloads) > 1
+    assert all(len(cast(list[object], payload["programs"])) <= 1_000 for payload in payloads)
 
 
 def test_publisher_retries_only_bounded_transient_responses() -> None:
