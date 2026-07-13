@@ -1,7 +1,9 @@
 import asyncio
 from datetime import UTC, date, datetime, timedelta
 
+import radio_epg.collector as collector_module
 from radio_epg.adapters.base import CollectionWindow
+from radio_epg.broadcast_time import KST
 from radio_epg.collector import Collector
 from radio_epg.config import SourceConfig
 from radio_epg.models import AdapterResult, ImportBatch, ScheduleCandidate, SourceMetadata
@@ -73,6 +75,28 @@ class FakePublisher:
     async def __call__(self, batch: ImportBatch) -> dict[str, str]:
         self.batches.append(batch)
         return {"status": "applied"}
+
+
+def test_default_collection_window_uses_korean_broadcast_date(monkeypatch) -> None:
+    class FrozenDateTime:
+        @classmethod
+        def now(cls, timezone):
+            assert timezone is KST
+            return datetime(2030, 1, 1, 0, 15, tzinfo=KST)
+
+    monkeypatch.setattr(collector_module, "datetime", FrozenDateTime)
+    start = datetime(2030, 1, 1, 1, tzinfo=UTC)
+    schedule = _event("healthy", starts_at=start, ends_at=start + timedelta(hours=1))
+    adapter = FakeAdapter("healthy", _result("healthy", schedules=(schedule,)))
+    collector = Collector(
+        (adapter,),
+        publisher=FakePublisher(),
+        now=lambda: datetime(2030, 1, 1, 0, tzinfo=UTC),
+    )
+
+    asyncio.run(collector.collect())
+
+    assert adapter.windows == [CollectionWindow(date(2030, 1, 1), date(2030, 1, 8))]
 
 
 def test_collector_isolates_failures_and_requests_today_plus_seven_days() -> None:

@@ -7,6 +7,7 @@ from typing import Any, Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
+from radio_epg.broadcast_time import KST
 from radio_epg.models import AdapterResult, ImportBatch
 from radio_epg.validation import SchedulePolicy, validate_schedule
 
@@ -93,6 +94,10 @@ def _counts(result: AdapterResult | None) -> tuple[int, int, int, int]:
     )
 
 
+def _korean_today() -> date:
+    return datetime.now(KST).date()
+
+
 class Collector:
     """한 source 실패가 다른 source 실행을 중단하지 않게 수집한다."""
 
@@ -101,7 +106,7 @@ class Collector:
         adapters: Sequence[ScheduleAdapter],
         *,
         publisher: BatchPublisher,
-        today: Callable[[], date] = date.today,
+        today: Callable[[], date] = _korean_today,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._adapters = tuple(adapters)
