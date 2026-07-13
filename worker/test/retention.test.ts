@@ -6,8 +6,9 @@ import app from "../src/index";
 import { deleteExpiredScheduleEvents } from "../src/retention";
 
 const TOKEN = "test-ingest-token";
-const NOW = new Date("2026-07-13T12:00:00Z");
-const CUTOFF = "2026-06-13T12:00:00.000Z";
+const NOW = new Date("2026-07-13T15:30:00Z");
+const START_DATE = "2026-07-14";
+const END_DATE = "2026-07-15";
 const testEnv = env as typeof env & {
   DB: D1Database;
   IMAGES: R2Bucket;
@@ -18,6 +19,33 @@ const bindings = {
   IMAGES: testEnv.IMAGES,
   INGEST_TOKEN: TOKEN,
 };
+
+const retentionEvents = [
+  {
+    id: "retention-yesterday",
+    broadcastDate: "2026-07-13",
+    startsAt: "2026-07-13T10:00:00Z",
+    endsAt: "2026-07-13T11:00:00Z",
+  },
+  {
+    id: "retention-today",
+    broadcastDate: START_DATE,
+    startsAt: "2026-07-13T15:00:00Z",
+    endsAt: "2026-07-13T15:15:00Z",
+  },
+  {
+    id: "retention-tomorrow",
+    broadcastDate: END_DATE,
+    startsAt: "2026-07-14T15:00:00Z",
+    endsAt: "2026-07-14T16:00:00Z",
+  },
+  {
+    id: "retention-day-after-tomorrow",
+    broadcastDate: "2026-07-16",
+    startsAt: "2026-07-15T15:00:00Z",
+    endsAt: "2026-07-15T16:00:00Z",
+  },
+];
 
 async function seedRetentionData(): Promise<void> {
   await testEnv.DB.batch([
@@ -60,59 +88,35 @@ async function seedRetentionData(): Promise<void> {
       "Retention program",
       "c".repeat(64),
     ),
-    testEnv.DB.prepare(
-      `INSERT INTO schedule_events (
-        id, event_key, channel_id, program_id, source_id, source_event_id,
-        broadcast_date, starts_at, ends_at, title, source_url, source_kind,
-        fetched_at, confidence
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
-               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
-               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(
-      "retention-old",
-      "retention-old",
-      "retention.fm.main",
-      "retention.program",
-      "retention",
-      "old",
-      "2026-06-12",
-      "2026-06-12T10:00:00Z",
-      "2026-06-12T11:00:00Z",
-      "Old event",
-      "https://source.example.test/",
-      "official",
-      "2026-06-12T00:00:00Z",
-      1,
-      "retention-boundary",
-      "retention-boundary",
-      "retention.fm.main",
-      "retention.program",
-      "retention",
-      "boundary",
-      "2026-06-13",
-      "2026-06-13T11:00:00Z",
-      CUTOFF,
-      "Boundary event",
-      "https://source.example.test/",
-      "official",
-      "2026-06-13T00:00:00Z",
-      1,
-      "retention-active",
-      "retention-active",
-      "retention.fm.main",
-      "retention.program",
-      "retention",
-      "active",
-      "2026-07-13",
-      "2026-07-13T11:00:00Z",
-      "2026-07-13T13:00:00Z",
-      "Active event",
-      "https://source.example.test/",
-      "official",
-      "2026-07-13T10:00:00Z",
-      1,
-    ),
   ]);
+  await testEnv.DB.batch(
+    retentionEvents.map((event) =>
+      testEnv.DB
+        .prepare(
+          `INSERT INTO schedule_events (
+             id, event_key, channel_id, program_id, source_id, source_event_id,
+             broadcast_date, starts_at, ends_at, title, source_url, source_kind,
+             fetched_at, confidence
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          event.id,
+          event.id,
+          "retention.fm.main",
+          "retention.program",
+          "retention",
+          event.id,
+          event.broadcastDate,
+          event.startsAt,
+          event.endsAt,
+          event.id,
+          "https://source.example.test/",
+          "official",
+          "2026-07-13T00:00:00Z",
+          1,
+        ),
+    ),
+  );
 }
 
 beforeAll(async () => {
@@ -126,20 +130,20 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("30-day schedule retention", () => {
-  it("uses an end-time index for bounded cleanup", async () => {
+describe("KST today-and-tomorrow schedule retention", () => {
+  it("uses a broadcast-date index for bounded cleanup", async () => {
     const plan = await testEnv.DB.prepare(
-      "EXPLAIN QUERY PLAN DELETE FROM schedule_events WHERE ends_at < ?",
+      "EXPLAIN QUERY PLAN DELETE FROM schedule_events WHERE broadcast_date < ? OR broadcast_date > ?",
     )
-      .bind(CUTOFF)
+      .bind(START_DATE, END_DATE)
       .all<{ detail: string }>();
 
     expect(plan.results.map(({ detail }) => detail).join(" ")).toContain(
-      "idx_schedule_events_ends_at",
+      "idx_schedule_events_broadcast_date",
     );
   });
 
-  it("deletes only expired events and is idempotent", async () => {
+  it("keeps only today and tomorrow and is idempotent", async () => {
     const first = await deleteExpiredScheduleEvents(testEnv.DB, NOW);
     const second = await deleteExpiredScheduleEvents(testEnv.DB, NOW);
     const events = await testEnv.DB.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
@@ -155,11 +159,11 @@ describe("30-day schedule retention", () => {
       count: number;
     }>();
 
-    expect(first).toEqual({ cutoff: CUTOFF, deleted: 1 });
-    expect(second).toEqual({ cutoff: CUTOFF, deleted: 0 });
+    expect(first).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 2 });
+    expect(second).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 0 });
     expect(events.results.map(({ id }) => id)).toEqual([
-      "retention-active",
-      "retention-boundary",
+      "retention-today",
+      "retention-tomorrow",
     ]);
     expect(programs?.count).toBe(1);
     expect(assets?.count).toBe(1);
@@ -180,6 +184,11 @@ describe("30-day schedule retention", () => {
 
     expect(unauthorized.status).toBe(401);
     expect(authorized.status).toBe(200);
-    await expect(authorized.json()).resolves.toMatchObject({ status: "completed", deleted: 0 });
+    await expect(authorized.json()).resolves.toMatchObject({
+      status: "completed",
+      start_date: START_DATE,
+      end_date: END_DATE,
+      deleted: 0,
+    });
   });
 });

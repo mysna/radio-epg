@@ -71,14 +71,15 @@ POST /v1/admin/retention
 Authorization: Bearer <INGEST_TOKEN>
 ```
 
-요청 본문은 없다. Worker 시각을 기준으로 종료 후 30일이 지난 `schedule_events`만 삭제한다.
-현재 진행 중이거나 더 새로운 이벤트와 프로그램, 채널, 별칭, 이미지 asset/variant
-메타데이터는 삭제하지 않는다. 같은 cutoff에 반복 호출해도 안전하다.
+요청 본문은 없다. Worker가 계산한 KST 오늘과 내일의 `schedule_events`만 남기고 날짜 범위
+밖의 과거 및 먼 미래 편성을 삭제한다. 오늘 이미 끝난 이벤트와 프로그램, 채널, 별칭,
+이미지 asset/variant 메타데이터는 삭제하지 않는다. 같은 날짜에 반복 호출해도 안전하다.
 
 ```json
 {
   "status": "completed",
-  "cutoff": "2026-06-13T12:00:00.000Z",
+  "start_date": "2026-07-14",
+  "end_date": "2026-07-15",
   "deleted": 42
 }
 ```

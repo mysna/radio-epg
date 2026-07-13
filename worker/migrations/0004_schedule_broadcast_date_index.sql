@@ -1,0 +1,2 @@
+CREATE INDEX idx_schedule_events_broadcast_date
+ON schedule_events(broadcast_date);

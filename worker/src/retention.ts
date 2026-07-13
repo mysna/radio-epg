@@ -5,25 +5,44 @@ import type { Database } from "./db";
 import { errorResponse } from "./errors";
 import type { AppEnv } from "./types";
 
-const RETENTION_DAYS = 30;
-const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 export interface RetentionResult {
-  cutoff: string;
+  start_date: string;
+  end_date: string;
   deleted: number;
 }
 
-/** 종료 후 30일이 지난 편성만 지우고 참조된 프로그램·이미지 메타데이터는 보존한다. */
+function koreanCalendarDate(now: Date): string {
+  const parts = new Map(
+    KST_DATE_FORMATTER.formatToParts(now).map((part) => [part.type, part.value]),
+  );
+  return `${parts.get("year")}-${parts.get("month")}-${parts.get("day")}`;
+}
+
+function nextCalendarDate(value: string): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+/** KST 오늘·내일 편성만 남기고 프로그램·이미지 메타데이터는 보존한다. */
 export async function deleteExpiredScheduleEvents(
   database: Database,
   now: Date = new Date(),
 ): Promise<RetentionResult> {
-  const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MILLISECONDS).toISOString();
+  const startDate = koreanCalendarDate(now);
+  const endDate = nextCalendarDate(startDate);
   const result = await database
-    .prepare("DELETE FROM schedule_events WHERE ends_at < ?")
-    .bind(cutoff)
+    .prepare("DELETE FROM schedule_events WHERE broadcast_date < ? OR broadcast_date > ?")
+    .bind(startDate, endDate)
     .run();
-  return { cutoff, deleted: result.meta.changes };
+  return { start_date: startDate, end_date: endDate, deleted: result.meta.changes };
 }
 
 const retention = new Hono<AppEnv>();
