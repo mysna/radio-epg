@@ -20,4 +20,6 @@
 - [x] Task 10: 전국 방송사 편성 adapter
 - [x] Task 11: 지역 및 독립 방송사 adapter
 - [x] Task 12: Community, AFN, wiki fallback, OCR
-- [ ] Task 13~15 구현 및 검증
+- [x] Task 13: 일일 수집, Worker 배포, live probe workflow
+- [x] Task 14: 배포 및 운영 README
+- [ ] Task 15: end-to-end 호환성, retention, 전체 검증
