@@ -1,0 +1,125 @@
+[
+  {
+    "program_planned_date": "20260713",
+    "channel_code": "24",
+    "local_station_code": "00",
+    "schedules": [
+      {
+        "schedule_unique_id": 9001,
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "24",
+        "program_planned_start_time": "22000000",
+        "program_planned_end_time": "24000000",
+        "program_code": "R-SYNTH-001",
+        "program_title": "밤의 음악",
+        "program_subtitle": "첫 번째 synthetic 편성",
+        "programming_table_title": "밤의 음악",
+        "rerun_classification": "본방",
+        "production_type": "생방",
+        "program_actor": "진행자 하나",
+        "program_intention": "fixture용 축약 설명",
+        "program_genre": "music",
+        "image_w": "https://program.kbs.co.kr/images/synthetic-night.png",
+        "homepage_url": "https://program.kbs.co.kr/1fm/radio/synthetic-night"
+      },
+      {
+        "schedule_unique_id": 9002,
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "24",
+        "program_planned_start_time": "24000000",
+        "program_planned_end_time": "25300000",
+        "program_code": "R-SYNTH-002",
+        "program_title": "",
+        "program_subtitle": "두 번째 synthetic 편성",
+        "programming_table_title": "심야 음악",
+        "rerun_classification": "재방",
+        "production_type": "녹음",
+        "program_actor": "진행자 둘, 진행자 셋",
+        "program_intention": null,
+        "program_genre": "music",
+        "image_w": null,
+        "homepage_url": null
+      }
+    ]
+  },
+  {
+    "program_planned_date": "20260713",
+    "channel_code": "21",
+    "local_station_code": "10",
+    "schedules": [
+      {
+        "schedule_unique_id": "regional-1001",
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "21",
+        "program_planned_start_time": "05000000",
+        "program_planned_end_time": "06000000",
+        "program_code": "R-SYNTH-BUSAN",
+        "program_title": "부산 아침",
+        "program_subtitle": null,
+        "programming_table_title": "부산 아침",
+        "rerun_classification": "본방",
+        "production_type": "생방",
+        "program_actor": null,
+        "program_intention": null,
+        "program_genre": "news",
+        "image_w": null,
+        "homepage_url": null
+      }
+    ]
+  },
+  {
+    "program_planned_date": "20260713",
+    "channel_code": "26",
+    "local_station_code": "00",
+    "schedules": [
+      {
+        "schedule_unique_id": 9100,
+        "program_planned_date": "20260713",
+        "local_station_code": "00",
+        "channel_code": "27",
+        "program_planned_start_time": "09000000",
+        "program_planned_end_time": "10000000",
+        "program_code": "R-SYNTH-HANMINJOK",
+        "program_title": "한민족 아침",
+        "program_subtitle": null,
+        "programming_table_title": "한민족 아침",
+        "rerun_classification": "본방",
+        "production_type": "생방",
+        "program_actor": null,
+        "program_intention": null,
+        "program_genre": "culture",
+        "image_w": null,
+        "homepage_url": null
+      }
+    ]
+  },
+  {
+    "program_planned_date": "20260713",
+    "channel_code": "24",
+    "local_station_code": "82",
+    "schedules": [
+      {
+        "schedule_unique_id": 9200,
+        "program_planned_date": "20260713",
+        "local_station_code": "80",
+        "channel_code": "24",
+        "program_planned_start_time": "12000000",
+        "program_planned_end_time": "13000000",
+        "program_code": "R-SYNTH-WONJU",
+        "program_title": "강원 음악",
+        "program_subtitle": null,
+        "programming_table_title": "강원 음악",
+        "rerun_classification": "본방",
+        "production_type": "생방",
+        "program_actor": null,
+        "program_intention": null,
+        "program_genre": "music",
+        "image_w": null,
+        "homepage_url": null
+      }
+    ]
+  }
+]

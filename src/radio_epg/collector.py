@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
 from radio_epg.models import AdapterResult, ImportBatch
-from radio_epg.validation import validate_schedule
+from radio_epg.validation import SchedulePolicy, validate_schedule
 
 
 class EmptyScheduleError(ValueError):
@@ -62,7 +62,10 @@ def _validate_result(adapter: ScheduleAdapter, result: AdapterResult) -> None:
         raise ResultValidationError("program source does not match result source")
     if any(schedule.source_id != result.source.source_id for schedule in result.schedules):
         raise ResultValidationError("schedule source does not match result source")
-    validate_schedule(result.schedules)
+    policy = getattr(adapter, "schedule_policy", None)
+    if policy is not None and not isinstance(policy, SchedulePolicy):
+        raise ResultValidationError("adapter schedule policy is invalid")
+    validate_schedule(result.schedules, policy=policy)
 
 
 def _batch(result: AdapterResult, collected_at: datetime) -> ImportBatch:

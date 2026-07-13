@@ -6,6 +6,6 @@
     "source_url": "https://schedule.kbs.co.kr/",
     "priority": 100,
     "adapter": "kbs",
-    "enabled": false
+    "enabled": true
   }
 ]

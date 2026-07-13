@@ -41,4 +41,12 @@ class AdapterRegistry:
 
 def default_registry() -> AdapterRegistry:
     """프로젝트에 포함된 adapter registry를 만든다."""
-    return AdapterRegistry()
+    from radio_epg.adapters.kbs import KbsAdapter
+
+    registry = AdapterRegistry()
+
+    def build_kbs(source: SourceConfig) -> ScheduleAdapter:
+        return KbsAdapter(source)
+
+    registry.register("kbs", build_kbs)
+    return registry
