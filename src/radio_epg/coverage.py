@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from radio_epg.adapters.community import load_community_mapping
 from radio_epg.adapters.html_schedule import load_channel_mapping
 from radio_epg.catalog import load_catalog
 from radio_epg.regional_mapping import load_regional_mapping, validate_regional_catalog
@@ -67,10 +68,10 @@ def _community_entries(root: Path) -> list[CoverageEntry]:
     path = root / "data" / "mappings" / "community.json"
     if not path.exists():
         return []
-    raw = json.loads(path.read_text(encoding="utf-8"))
+    mapping = load_community_mapping(path)
     return [
-        CoverageEntry(item["channel_id"], item["status"], item["family"], item.get("reason"))
-        for item in raw["channels"]
+        CoverageEntry(item.channel_id, item.status, item.family, item.reason)
+        for item in mapping.channels
     ]
 
 

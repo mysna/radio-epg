@@ -106,5 +106,23 @@
     "priority": 100,
     "adapter": "independent",
     "enabled": false
+  },
+  {
+    "source_id": "community",
+    "name": "공동체 라디오 편성표",
+    "source_kind": "official-with-fallback",
+    "source_url": "https://communityradio.kr/",
+    "priority": 70,
+    "adapter": "community",
+    "enabled": false
+  },
+  {
+    "source_id": "afn",
+    "name": "AFN Eagle 편성표",
+    "source_kind": "official-with-local-inserts",
+    "source_url": "https://www.afnpacific.net/afn-360/",
+    "priority": 70,
+    "adapter": "afn",
+    "enabled": false
   }
 ]

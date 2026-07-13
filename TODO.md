@@ -19,5 +19,5 @@
 
 - [x] Task 10: 전국 방송사 편성 adapter
 - [x] Task 11: 지역 및 독립 방송사 adapter
-- [ ] Task 12: Community, AFN, wiki fallback, OCR
+- [x] Task 12: Community, AFN, wiki fallback, OCR
 - [ ] Task 13~15 구현 및 검증
