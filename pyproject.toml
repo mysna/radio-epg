@@ -17,6 +17,9 @@ dependencies = [
     "pypdf",
 ]
 
+[project.scripts]
+radio-epg = "radio_epg.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest",

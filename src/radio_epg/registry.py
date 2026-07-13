@@ -1,0 +1,44 @@
+"""설정에 선언된 adapter factory를 안전하게 연결한다."""
+
+from collections.abc import Callable, Iterable
+
+from radio_epg.adapters.base import ScheduleAdapter
+from radio_epg.config import SourceConfig
+
+AdapterFactory = Callable[[SourceConfig], ScheduleAdapter]
+
+
+class AdapterRegistry:
+    """adapter 이름을 생성 함수에 매핑한다."""
+
+    def __init__(self) -> None:
+        self._factories: dict[str, AdapterFactory] = {}
+
+    def register(self, name: str, factory: AdapterFactory) -> None:
+        """중복 이름을 허용하지 않고 factory를 등록한다."""
+        if name in self._factories:
+            raise ValueError(f"adapter {name!r} is already registered")
+        self._factories[name] = factory
+
+    def build(
+        self,
+        sources: Iterable[SourceConfig],
+        *,
+        source_ids: set[str] | None = None,
+    ) -> tuple[ScheduleAdapter, ...]:
+        """활성화되고 선택된 source의 adapter만 설정 순서대로 만든다."""
+        adapters: list[ScheduleAdapter] = []
+        for source in sources:
+            selected = source_ids is None or source.source_id in source_ids
+            if not source.enabled or not selected:
+                continue
+            factory = self._factories.get(source.adapter)
+            if factory is None:
+                raise LookupError(f"adapter {source.adapter!r} is not registered")
+            adapters.append(factory(source))
+        return tuple(adapters)
+
+
+def default_registry() -> AdapterRegistry:
+    """프로젝트에 포함된 adapter registry를 만든다."""
+    return AdapterRegistry()

@@ -1,0 +1,11 @@
+[
+  {
+    "source_id": "kbs",
+    "name": "KBS 편성표",
+    "source_kind": "official",
+    "source_url": "https://schedule.kbs.co.kr/",
+    "priority": 100,
+    "adapter": "kbs",
+    "enabled": false
+  }
+]
