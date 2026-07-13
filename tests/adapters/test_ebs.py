@@ -18,6 +18,16 @@ def test_ebs_fm_supports_extended_hours_subtitles_and_images() -> None:
     assert rows[0].image_url == "https://static.ebs.co.kr/images/english.jpg"
 
 
+def test_ebs_official_html_resolves_protocol_relative_homepage_urls() -> None:
+    rows = parse_ebs_schedule(
+        (FIXTURES / "official-fm.html").read_text(),
+        expected_date=date(2026, 7, 14),
+        channel_code="fm",
+    )
+
+    assert rows[0].homepage_url == "https://home.ebs.co.kr/startenglish"
+
+
 def test_ebs_bandi_is_a_separately_verified_channel() -> None:
     rows = parse_ebs_schedule(
         (FIXTURES / "bandi.html").read_text(), expected_date=date(2026, 7, 13)

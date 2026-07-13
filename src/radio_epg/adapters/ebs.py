@@ -5,6 +5,7 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -59,7 +60,11 @@ def _parse_official_html(
         if preview is not None:
             image_node = preview.select_one("img[src]")
         title = title_node.get_text(" ", strip=True)
-        homepage = str(homepage_node["href"]) if homepage_node is not None else None
+        homepage = (
+            urljoin("https://www.ebs.co.kr/", str(homepage_node["href"]))
+            if homepage_node is not None
+            else None
+        )
         rows.append(
             ScheduleRow(
                 upstream_id=f"{channel_code}:{compact_date}:{start}:{title}",

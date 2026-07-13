@@ -60,6 +60,7 @@ def test_cbs_official_html_selects_the_schedule_slide_and_keeps_the_last_program
     )["sfm"]
 
     assert [(row.start, row.end) for row in rows] == [("22:00", "23:05"), ("23:05", "24:00")]
+    assert rows[0].homepage_url == "https://www.cbs.co.kr/radio/late"
     assert rows[-1].title == "CBS 뉴스"
     assert rows[-1].is_rerun is True
 

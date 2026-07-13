@@ -5,6 +5,7 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -71,7 +72,11 @@ def _parse_official_html(
         )
         if not title:
             raise CbsSchemaError("CBS schedule row title is empty")
-        homepage = str(title_node["href"]) if title_node is not None else None
+        homepage = (
+            urljoin("https://www.cbs.co.kr/", str(title_node["href"]))
+            if title_node is not None and title_node.has_attr("href")
+            else None
+        )
         parsed.append((time_node.get_text(strip=True), title, homepage))
     rows: list[ScheduleRow] = []
     for index, (start, raw_title, homepage) in enumerate(parsed):
