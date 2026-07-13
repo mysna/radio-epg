@@ -8,6 +8,7 @@ from pathlib import Path
 
 from radio_epg.collector import Collector
 from radio_epg.config import CollectorSettings, load_sources
+from radio_epg.coverage import build_coverage, render_coverage_markdown
 from radio_epg.fixture_validation import validate_fixtures
 from radio_epg.models import ImportBatch
 from radio_epg.publisher import publish_batch
@@ -32,7 +33,13 @@ def build_parser() -> argparse.ArgumentParser:
     selection.add_argument("--source", help="하나의 source ID")
 
     commands.add_parser("validate-fixtures", help="등록된 fixture 계약을 검증한다")
-    commands.add_parser("coverage", help="설정된 source 커버리지를 출력한다")
+    coverage = commands.add_parser("coverage", help="설정된 source 커버리지를 출력한다")
+    coverage.add_argument("--write", type=Path, help="Markdown 보고서를 저장할 경로")
+    coverage.add_argument(
+        "--require-accounted",
+        action="store_true",
+        help="현재 단계가 소유한 catalog identity 누락을 실패 처리한다",
+    )
     return parser
 
 
@@ -66,6 +73,16 @@ def _validate_fixtures() -> int:
     return 0
 
 
+def _coverage(write_path: Path | None, *, require_accounted: bool) -> int:
+    report = build_coverage(_SOURCES_PATH.parents[1], require_accounted=require_accounted)
+    markdown = render_coverage_markdown(report)
+    if write_path is not None:
+        write_path.write_text(markdown, encoding="utf-8")
+    else:
+        print(markdown, end="")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """선택한 CLI 명령을 실행하고 process status를 반환한다."""
     arguments = build_parser().parse_args(argv)
@@ -73,4 +90,6 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_run_collection(arguments.source))
     if arguments.command == "validate-fixtures":
         return _validate_fixtures()
+    if arguments.command == "coverage":
+        return _coverage(arguments.write, require_accounted=arguments.require_accounted)
     return _configured_sources()

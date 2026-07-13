@@ -61,5 +61,50 @@
     "priority": 40,
     "adapter": "tbn",
     "enabled": false
+  },
+  {
+    "source_id": "regional-mbc",
+    "name": "지역 MBC 편성표",
+    "source_kind": "official",
+    "source_url": "https://schedule.imbc.com/",
+    "priority": 100,
+    "adapter": "regional_mbc",
+    "enabled": false
+  },
+  {
+    "source_id": "sbs-affiliates",
+    "name": "SBS 지역 제휴사 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.sbs.co.kr/radio",
+    "priority": 100,
+    "adapter": "sbs_affiliates",
+    "enabled": false
+  },
+  {
+    "source_id": "febc-regions",
+    "name": "FEBC 지역 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.febc.net/",
+    "priority": 100,
+    "adapter": "febc",
+    "enabled": false
+  },
+  {
+    "source_id": "religious-regions",
+    "name": "CBS BBS CPBC WBS 지역 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.cbs.co.kr/",
+    "priority": 100,
+    "adapter": "religious",
+    "enabled": false
+  },
+  {
+    "source_id": "independent",
+    "name": "독립 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://tbs.seoul.kr/fm/schedule.do",
+    "priority": 100,
+    "adapter": "independent",
+    "enabled": false
   }
 ]
