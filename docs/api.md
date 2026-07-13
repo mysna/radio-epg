@@ -47,6 +47,23 @@ GET /v1/coverage
 
 활성 소스별 이벤트 수, 마지막 조회 시각, stale 상태를 반환한다.
 
+## 수집 결과 ingestion
+
+```text
+POST /v1/admin/import
+Authorization: Bearer <INGEST_TOKEN>
+Content-Type: application/json
+```
+
+Collector 전용 서버 간 API다. 요청은 1MB 이하의 검증된 batch여야 하며, 채널·프로그램과
+`source_id`/`channel_id`/`broadcast_date` 범위의 편성을 하나의 D1 batch로 반영한다.
+동일한 `idempotency_key`와 동일한 payload를 다시 보내면 `200 already_applied`, 같은 키에
+다른 payload를 보내면 `409 idempotency_conflict`를 반환한다. 최초 적용은
+`201 applied`를 반환한다.
+
+인증 실패는 `401 unauthorized`, schema 실패는 `400 invalid_import`, 크기 초과는
+`413 request_too_large`다. 인증 토큰은 Wrangler secret `INGEST_TOKEN`으로만 설정한다.
+
 ## 오류
 
 오류는 항상 다음 envelope를 사용한다.

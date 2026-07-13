@@ -7,10 +7,10 @@
 - [x] Task 1: Python Collector와 Worker 스캐폴딩
 - [x] Task 2: 라디오 채널 카탈로그 가져오기 및 정규화
 - [x] Task 3: 정규화 모델과 방송 시간 처리
+- [x] Task 4: D1 스키마와 마이그레이션 테스트
+- [x] Task 5: 공개 채널 및 편성 API
+- [x] Task 6: 인증된 멱등 ingestion
 
 ## 이후 작업
 
-- [x] Task 4: D1 스키마와 마이그레이션 테스트
-- [x] Task 5: 공개 채널 및 편성 API
-- [ ] Task 6: 인증된 멱등 ingestion
 - [ ] Task 7~15 구현 및 검증

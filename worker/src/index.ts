@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { errorResponse } from "./errors";
+import adminImport from "./routes/admin-import";
 import channels from "./routes/channels";
 import coverage from "./routes/coverage";
 import nowRoute from "./routes/now";
@@ -49,5 +50,6 @@ app.route("/v1/channels", channels);
 app.route("/v1/schedules", schedules);
 app.route("/v1/now", nowRoute);
 app.route("/v1/coverage", coverage);
+app.route("/v1/admin/import", adminImport);
 
 export default app;
