@@ -1,0 +1,72 @@
+# Radio EPG 공개 API
+
+기본 URL 예시는 `https://radio-epg.<ACCOUNT_SUBDOMAIN>.workers.dev`이다. 모든 공개 응답은
+JSON이며, 존재하는 채널에 편성이 없으면 프로그램을 추측하지 않고 `unavailable`을 반환한다.
+
+## 채널
+
+```text
+GET /v1/channels
+GET /v1/channels/{channel_id-or-alias}
+```
+
+두 번째 경로는 정규 ID, 현재 라디오 플레이어 ID, URL 인코딩한 `stn/ch/city` tuple 별칭을
+받는다.
+
+```bash
+curl 'https://<API_HOST>/v1/channels/kbs.1radio.busan'
+curl 'https://<API_HOST>/v1/channels/busan-039-kbs-1radio-busan'
+curl 'https://<API_HOST>/v1/channels/kbs%2F1radio%2Fbusan'
+```
+
+## 날짜별 편성
+
+```text
+GET /v1/schedules?channel_id=kbs.1radio.busan&date=2026-07-13
+GET /v1/schedules?radio_id=busan-039-kbs-1radio-busan&date=2026-07-13
+```
+
+`date`는 실제 달력에 존재하는 `YYYY-MM-DD` 방송일이어야 한다. 응답 이벤트의
+`starts_at`/`ends_at`은 UTC RFC 3339 시각이고, `source`에는 원본 URL, 종류, 조회 시각,
+신뢰도와 `stale` 상태가 포함된다.
+
+## 현재 및 다음 프로그램
+
+```text
+GET /v1/now?radio_ids=id1,id2
+```
+
+한 번에 최대 100개 radio ID를 쉼표로 전달할 수 있다. 각 결과는 `current`, `next`와
+`available` 또는 `unavailable` 상태를 포함한다. 응답은 최대 30초 캐시한다.
+
+## 소스 커버리지
+
+```text
+GET /v1/coverage
+```
+
+활성 소스별 이벤트 수, 마지막 조회 시각, stale 상태를 반환한다.
+
+## 오류
+
+오류는 항상 다음 envelope를 사용한다.
+
+```json
+{
+  "error": {
+    "code": "channel_not_found",
+    "message": "The requested channel alias is not registered."
+  }
+}
+```
+
+주요 코드는 `invalid_date`, `missing_channel`, `missing_radio_ids`,
+`too_many_radio_ids`, `channel_not_found`, `origin_not_allowed`이다.
+
+## 캐시와 CORS
+
+성공한 공개 응답은 `ETag`를 제공하며 같은 `If-None-Match` 요청에는 `304`를 반환한다.
+채널은 1시간, 날짜별 편성과 커버리지는 5분, 현재/다음 응답은 30초 캐시한다.
+
+브라우저 요청은 `CORS_ORIGINS`의 쉼표 구분 allowlist에 있는 정확한 origin만 허용한다.
+서버 간 요청처럼 `Origin` 헤더가 없는 요청은 CORS 검사 대상이 아니다.
