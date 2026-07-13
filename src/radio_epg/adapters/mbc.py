@@ -41,6 +41,12 @@ def _clock(value: str) -> str:
     return f"{value[:2]}:{value[2:]}"
 
 
+def _official_clock(value: str, *, day_offset: int) -> str:
+    clock = _clock(value)
+    hour, minute = (int(part) for part in clock.split(":"))
+    return f"{hour + day_offset * 24:02d}:{minute:02d}"
+
+
 def _parse_official_rows(
     payload: object, *, expected_date: date, channel_code: str
 ) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -51,9 +57,8 @@ def _parse_official_rows(
         if not isinstance(raw, dict):
             raise ValueError("MBC schedule row must be an object")
         item = cast(dict[str, Any], raw)
-        if item.get("BroadDate") != expected_date.isoformat():
-            raise ValueError("MBC schedule date does not match the requested date")
         required = (
+            item.get("BroadDate"),
             item.get("BroadcastID"),
             item.get("StartTime"),
             item.get("EndTime"),
@@ -61,7 +66,21 @@ def _parse_official_rows(
         )
         if not all(isinstance(value, str) for value in required):
             raise ValueError("MBC schedule row schema changed")
-        schedule_id, start, end, title = cast(tuple[str, str, str, str], required)
+        row_date_text, schedule_id, start_text, end_text, title = cast(
+            tuple[str, str, str, str, str], required
+        )
+        if row_date_text == expected_date.isoformat():
+            day_offset = 0
+        elif row_date_text == (expected_date + timedelta(days=1)).isoformat():
+            start_minutes = int(start_text[:2]) * 60 + int(start_text[2:])
+            end_minutes = int(end_text[:2]) * 60 + int(end_text[2:])
+            if start_minutes >= 5 * 60 or end_minutes > 5 * 60:
+                raise ValueError("MBC schedule date does not match the requested date")
+            day_offset = 1
+        else:
+            raise ValueError("MBC schedule date does not match the requested date")
+        start = _official_clock(start_text, day_offset=day_offset)
+        end = _official_clock(end_text, day_offset=day_offset)
         image = item.get("OnAirImage") or item.get("Photo") or None
         homepage = item.get("HomepageURL") or None
         subtitle = item.get("SubTitle") or None
@@ -70,10 +89,10 @@ def _parse_official_rows(
             raise ValueError("MBC optional schedule fields changed")
         rows.append(
             ScheduleRow(
-                upstream_id=schedule_id,
+                upstream_id=f"{channel_code}:{expected_date.isoformat()}:{start}:{schedule_id}",
                 broadcast_date=expected_date,
-                start=_clock(start),
-                end=_clock(end),
+                start=start,
+                end=end,
                 title=title,
                 subtitle=subtitle,
                 image_url=image,

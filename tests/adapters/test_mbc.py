@@ -56,6 +56,32 @@ def test_mbc_parses_reduced_official_jsonp_shape() -> None:
     assert rows["sfm"][0].homepage_url == "https://miniwebapp.imbc.com/index"
 
 
+def test_mbc_preserves_the_overnight_broadcast_day_and_scopes_event_ids() -> None:
+    rows = parse_mbc_schedule(
+        (FIXTURES / "official-fm-overnight.jsonp").read_text(),
+        expected_date=date(2026, 7, 13),
+        channel_code="sfm",
+    )["sfm"]
+
+    assert [(row.start, row.end) for row in rows] == [("23:00", "24:00"), ("24:00", "26:00")]
+    assert rows[0].upstream_id == "sfm:2026-07-13:23:00:shared-program"
+    assert rows[1].upstream_id == "sfm:2026-07-13:24:00:shared-program"
+
+
+def test_mbc_rejects_rows_beyond_the_next_day_broadcast_boundary() -> None:
+    payload = (
+        'scheduleCallback([{"BroadDate":"2026-07-14","BroadcastID":"late",'
+        '"Title":"잘못된 낮 편성","StartTime":"0500","EndTime":"0600"}]);'
+    )
+
+    with pytest.raises(MbcSchemaError, match="date"):
+        parse_mbc_schedule(
+            payload,
+            expected_date=date(2026, 7, 13),
+            channel_code="sfm",
+        )
+
+
 def test_mbc_mapping_owns_three_central_channels_and_accounts_for_bora() -> None:
     import json
 
