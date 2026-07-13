@@ -302,7 +302,14 @@ class KbsAdapter:
                         confidence=1,
                         channel_id=mapping.channel_id,
                         program_id=program_id,
-                        source_event_id=str(item.schedule_unique_id),
+                        source_event_id=":".join(
+                            (
+                                mapping.channel_id,
+                                item.program_planned_date,
+                                item.program_planned_start_time,
+                                str(item.schedule_unique_id),
+                            )
+                        ),
                         broadcast_date=broadcast_date,
                         starts_at=starts_at,
                         ends_at=ends_at,

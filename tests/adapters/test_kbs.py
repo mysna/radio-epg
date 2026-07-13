@@ -121,8 +121,12 @@ def test_adapter_preserves_stable_ids_images_extended_hours_and_flags() -> None:
 
     first = asyncio.run(adapter.collect(CollectionWindow(date(2026, 7, 13), date(2026, 7, 20))))
     second = asyncio.run(adapter.collect(CollectionWindow(date(2026, 7, 13), date(2026, 7, 20))))
-    live = next(event for event in first.schedules if event.source_event_id == "9001")
-    extended = next(event for event in first.schedules if event.source_event_id == "9002")
+    live = next(
+        event for event in first.schedules if (event.source_event_id or "").endswith(":9001")
+    )
+    extended = next(
+        event for event in first.schedules if (event.source_event_id or "").endswith(":9002")
+    )
 
     assert [event.source_event_id for event in first.schedules] == [
         event.source_event_id for event in second.schedules
@@ -137,6 +141,19 @@ def test_adapter_preserves_stable_ids_images_extended_hours_and_flags() -> None:
     assert first.images[0].source_url.endswith("synthetic-night.png")
     assert first.images[0].rights_status == "unknown"
     validate_schedule(first.schedules, policy=adapter.schedule_policy)
+
+
+def test_adapter_scopes_reused_upstream_event_ids_to_canonical_channels() -> None:
+    client = FixtureClient(FIXTURES / "weekly.json")
+    client.payload[1]["schedules"][0]["schedule_unique_id"] = 9001
+    adapter = _adapter(client)
+
+    result = asyncio.run(adapter.collect(CollectionWindow(date(2026, 7, 13), date(2026, 7, 14))))
+
+    source_event_ids = [event.source_event_id for event in result.schedules]
+    reused = [event_id for event_id in source_event_ids if event_id and event_id.endswith(":9001")]
+    assert len(source_event_ids) == len(set(source_event_ids))
+    assert len(reused) == 2
 
 
 def test_adapter_rejects_empty_responses_without_fabricating_schedules() -> None:
