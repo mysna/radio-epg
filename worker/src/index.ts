@@ -2,8 +2,11 @@ import { Hono } from "hono";
 
 import { errorResponse } from "./errors";
 import adminImport from "./routes/admin-import";
+import adminImages from "./routes/admin-images";
+import adminTakedown from "./routes/admin-takedown";
 import channels from "./routes/channels";
 import coverage from "./routes/coverage";
+import images from "./routes/images";
 import nowRoute from "./routes/now";
 import schedules from "./routes/schedules";
 import type { AppEnv } from "./types";
@@ -51,5 +54,8 @@ app.route("/v1/schedules", schedules);
 app.route("/v1/now", nowRoute);
 app.route("/v1/coverage", coverage);
 app.route("/v1/admin/import", adminImport);
+app.route("/v1/admin/images", adminImages);
+app.route("/v1/admin/takedown", adminTakedown);
+app.route("/v1/images", images);
 
 export default app;

@@ -11,6 +11,10 @@
 - [x] Task 5: 공개 채널 및 편성 API
 - [x] Task 6: 인증된 멱등 ingestion
 
+- [x] Task 7: Collector runtime과 adapter protocol
+- [x] Task 8: KBS reference adapter
+- [x] Task 9: 이미지 수집, 변환, R2 제공 및 takedown
+
 ## 이후 작업
 
-- [ ] Task 7~15 구현 및 검증
+- [ ] Task 10~15 구현 및 검증
