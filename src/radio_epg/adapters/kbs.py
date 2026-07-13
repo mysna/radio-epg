@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Protocol, Self
 
@@ -197,6 +197,17 @@ def _request_url(station: str, channel_codes: list[str], window: CollectionWindo
     return f"{KBS_WEEKLY_ENDPOINT}?{params}"
 
 
+def _request_windows(window: CollectionWindow) -> tuple[CollectionWindow, ...]:
+    """KBS의 최대 7개 날짜 검색 제한에 맞춰 수집 창을 분할한다."""
+    chunks: list[CollectionWindow] = []
+    current = window.start
+    while current <= window.end:
+        chunk_end = min(current + timedelta(days=6), window.end)
+        chunks.append(CollectionWindow(current, chunk_end))
+        current = chunk_end + timedelta(days=1)
+    return tuple(chunks)
+
+
 class KbsAdapter:
     """KBS 본사와 지역 라디오를 공식 weekly endpoint에서 수집한다."""
 
@@ -232,13 +243,16 @@ class KbsAdapter:
 
         payloads: list[_ChannelPayload] = []
         for station, channel_codes in sorted(grouped.items()):
-            response = await client.get(_request_url(station, sorted(channel_codes), window))
-            try:
-                payloads.extend(_parse_payload(response.json()))
-            except ValueError as error:
-                if isinstance(error, KbsSchemaError):
-                    raise
-                raise KbsSchemaError("KBS weekly response schema changed") from error
+            for request_window in _request_windows(window):
+                response = await client.get(
+                    _request_url(station, sorted(channel_codes), request_window)
+                )
+                try:
+                    payloads.extend(_parse_payload(response.json()))
+                except ValueError as error:
+                    if isinstance(error, KbsSchemaError):
+                        raise
+                    raise KbsSchemaError("KBS weekly response schema changed") from error
 
         return self._normalize(tuple(payloads))
 

@@ -42,11 +42,22 @@ class FixtureClient:
 
         station = parsed.params["local_station_code"]
         channels = set(parsed.params["channel_code"].split(","))
-        selected = [
-            group
-            for group in self.payload
-            if group["local_station_code"] == station and group["channel_code"] in channels
-        ]
+        start = parsed.params["program_planned_date_from"]
+        end = parsed.params["program_planned_date_to"]
+        selected = []
+        for group in self.payload:
+            if group["local_station_code"] != station or group["channel_code"] not in channels:
+                continue
+            selected.append(
+                {
+                    **group,
+                    "schedules": [
+                        schedule
+                        for schedule in group["schedules"]
+                        if start <= schedule["program_planned_date"] <= end
+                    ],
+                }
+            )
         return httpx.Response(200, json=selected)
 
 
@@ -83,13 +94,26 @@ def test_adapter_maps_national_and_regional_schedules_and_request_parameters() -
         "kbs.1radio.busan",
         "kbs.hanminjok.main",
     }
-    requests = {request.params["local_station_code"]: request for request in client.requests}
-    national = requests["00"]
-    regional = requests["10"]
-    assert set(national.params["channel_code"].split(",")) == {"21", "22", "23", "24", "25", "26"}
-    assert set(regional.params["channel_code"].split(",")) == {"21", "22", "24"}
-    assert national.params["program_planned_date_from"] == "20260713"
-    assert national.params["program_planned_date_to"] == "20260720"
+    national = [
+        request for request in client.requests if request.params["local_station_code"] == "00"
+    ]
+    regional = [
+        request for request in client.requests if request.params["local_station_code"] == "10"
+    ]
+    assert all(
+        set(request.params["channel_code"].split(",")) == {"21", "22", "23", "24", "25", "26"}
+        for request in national
+    )
+    assert all(
+        set(request.params["channel_code"].split(",")) == {"21", "22", "24"} for request in regional
+    )
+    assert [
+        (
+            request.params["program_planned_date_from"],
+            request.params["program_planned_date_to"],
+        )
+        for request in national
+    ] == [("20260713", "20260719"), ("20260720", "20260720")]
 
 
 def test_adapter_preserves_stable_ids_images_extended_hours_and_flags() -> None:
