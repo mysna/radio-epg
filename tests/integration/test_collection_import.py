@@ -34,11 +34,22 @@ class FixtureClient:
         parsed = httpx.URL(url)
         station = parsed.params["local_station_code"]
         channels = set(parsed.params["channel_code"].split(","))
-        selected = [
-            group
-            for group in self.payload
-            if group["local_station_code"] == station and group["channel_code"] in channels
-        ]
+        start = parsed.params["program_planned_date_from"]
+        end = parsed.params["program_planned_date_to"]
+        selected = []
+        for group in self.payload:
+            if group["local_station_code"] != station or group["channel_code"] not in channels:
+                continue
+            selected.append(
+                {
+                    **group,
+                    "schedules": [
+                        schedule
+                        for schedule in group["schedules"]
+                        if start <= schedule["program_planned_date"] <= end
+                    ],
+                }
+            )
         return httpx.Response(200, json=selected)
 
 
