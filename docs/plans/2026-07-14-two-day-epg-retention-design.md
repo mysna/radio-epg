@@ -16,6 +16,7 @@ and retain 30 days of historical schedule events.
 - Collect exactly two calendar dates: KST today and KST tomorrow.
 - Keep today's entire timetable, including programs that already ended.
 - Delete every schedule event whose `broadcast_date` is before KST today.
+- Delete every schedule event whose `broadcast_date` is after KST tomorrow.
 - Run retention after every collection attempt, including partially successful
   runs, so old data does not accumulate.
 - Do not delete today's rows based on the current clock time.
@@ -50,7 +51,7 @@ GitHub Actions
   -> partition imports only when Worker count/byte limits require it
   -> import source/channel/broadcast-date scopes
   -> POST retention
-  -> delete broadcast_date < KST today
+  -> delete broadcast_date outside [KST today, KST tomorrow]
 ```
 
 The Worker computes the retention cutoff from KST rather than trusting a date
@@ -79,8 +80,10 @@ They are included because a two-day run must still complete successfully.
 - the number of deleted schedule events;
 - a completed status.
 
-Retention deletes by `broadcast_date < cutoff_date`. It does not use
-`ends_at < now`, so all rows for today remain available.
+Retention deletes by `broadcast_date < start_date OR broadcast_date > end_date`,
+where `start_date` is KST today and `end_date` is KST tomorrow. It does not use
+`ends_at < now`, so all rows for today remain available while stale data from
+the previous eight-day policy is also removed.
 
 ## Failure Handling
 
@@ -95,8 +98,8 @@ Retention deletes by `broadcast_date < cutoff_date`. It does not use
 
 - Collector default window is KST today through tomorrow.
 - A UTC/KST midnight boundary test locks the two-day calculation.
-- Retention removes yesterday and older dates while preserving all of today and
-  tomorrow.
+- Retention removes yesterday and older dates and the day after tomorrow and
+  later dates while preserving all of today and tomorrow.
 - KBS source event IDs remain unique across channels and dates.
 - EBS and CBS homepage URLs are absolute.
 - Python and Worker full test suites, lint, formatting, and type checks pass.
