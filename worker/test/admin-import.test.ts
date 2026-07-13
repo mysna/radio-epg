@@ -3,6 +3,8 @@ import { applyD1Migrations, type D1Migration } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import app from "../src/index";
+import type { ImportBatchInput } from "../src/import-schema";
+import { buildImportStatements } from "../src/routes/admin-import";
 
 const TOKEN = "test-ingest-token";
 const testEnv = env as typeof env & {
@@ -72,6 +74,23 @@ function importBatch(suffix: string) {
   };
 }
 
+function ebsSizedImportBatch(suffix: string): ImportBatchInput {
+  const batch = importBatch(suffix) as ImportBatchInput;
+  batch.programs = Array.from({ length: 904 }, (_, index) => ({
+    source_id: batch.source.source_id,
+    program_id: `ebs.program.${suffix}.${index}`,
+    title: `EBS 프로그램 ${index}`,
+    hosts: [],
+  }));
+  batch.schedules = batch.programs.map((program, index) => ({
+    ...batch.schedules[0],
+    source_event_id: `ebs-event-${suffix}-${index}`,
+    program_id: program.program_id,
+    title: program.title,
+  }));
+  return batch;
+}
+
 async function adminRequest(
   body: unknown,
   options: { token?: string | null; raw?: boolean } = {},
@@ -97,6 +116,28 @@ beforeAll(async () => {
 });
 
 describe("authenticated schedule ingestion", () => {
+  it("prepares an EBS-sized import within the D1 free query limit", async () => {
+    const batch = ebsSizedImportBatch("bulk-statements");
+
+    const statements = await buildImportStatements(testEnv.DB, batch, "payload-hash");
+
+    expect(statements.length).toBeLessThan(50);
+  });
+
+  it("applies an EBS-sized import with bulk statements", async () => {
+    const batch = ebsSizedImportBatch("bulk-apply");
+
+    const response = await adminRequest(batch);
+    const count = await testEnv.DB.prepare(
+      "SELECT COUNT(*) AS count FROM schedule_events WHERE channel_id = ?",
+    )
+      .bind("kbs.1radio.bulk-apply")
+      .first<{ count: number }>();
+
+    expect(response.status).toBe(201);
+    expect(count?.count).toBe(904);
+  });
+
   it("rejects a missing bearer token", async () => {
     const response = await adminRequest(importBatch("missing-token"), { token: null });
 
