@@ -55,7 +55,7 @@ def _parse_official_html(
 ) -> tuple[ScheduleRow, ...]:
     soup = BeautifulSoup(text, "html.parser")
     compact_date = expected_date.strftime("%Y%m%d")
-    container = soup.select_one(f'.swiper-slide[data-fulldate="{compact_date}"]')
+    container = soup.select_one(f'.forSwiper .swiper-slide[data-fulldate="{compact_date}"]')
     if container is None:
         raise CbsSchemaError("CBS response date does not match the requested date")
     parsed: list[tuple[str, str, str | None]] = []
@@ -74,14 +74,15 @@ def _parse_official_html(
         homepage = str(title_node["href"]) if title_node is not None else None
         parsed.append((time_node.get_text(strip=True), title, homepage))
     rows: list[ScheduleRow] = []
-    for index, (start, raw_title, homepage) in enumerate(parsed[:-1]):
+    for index, (start, raw_title, homepage) in enumerate(parsed):
         title = raw_title.removesuffix("(재)").strip()
+        end = parsed[index + 1][0] if index + 1 < len(parsed) else "24:00"
         rows.append(
             ScheduleRow(
                 upstream_id=f"{channel_code}:{compact_date}:{start}:{title}",
                 broadcast_date=expected_date,
                 start=start,
-                end=parsed[index + 1][0],
+                end=end,
                 title=title,
                 homepage_url=homepage,
                 is_rerun=raw_title.endswith("(재)"),
@@ -127,7 +128,11 @@ class CbsAdapter:
         current = window.start
         while current <= window.end:
             for channel in self._mapping.channels:
-                response = await client.get(channel.url.format(date=current.isoformat()))
+                response = await client.get(
+                    channel.url.format(
+                        date=current.isoformat(), date_compact=current.strftime("%Y%m%d")
+                    )
+                )
                 parsed = parse_cbs_schedule(
                     response.text,
                     expected_date=current,
