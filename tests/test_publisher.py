@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 import httpx
 import pytest
 
-from radio_epg.models import ImportBatch, ScheduleCandidate, SourceMetadata
+from radio_epg.models import ImageCandidate, ImportBatch, ScheduleCandidate, SourceMetadata
 from radio_epg.publisher import PublishError, publish_batch
 
 TOKEN = "super-secret-ingest-token"
@@ -35,6 +35,14 @@ def _batch() -> ImportBatch:
         idempotency_key="kbs-2026-07-13",
         source=source,
         schedules=(schedule,),
+        images=(
+            ImageCandidate(
+                entity_type="program",
+                entity_id="kbs:news",
+                source_url="https://images.example.test/news.png",
+                source_page_url="https://schedule.kbs.co.kr/",
+            ),
+        ),
         collected_at=datetime(2026, 7, 13, 1, 1, tzinfo=UTC),
     )
 
@@ -60,6 +68,7 @@ def test_publisher_sends_bearer_token_json_and_explicit_timeouts() -> None:
     assert result == {"status": "applied"}
     assert observed["authorization"] == f"Bearer {TOKEN}"
     assert '"idempotency_key":"kbs-2026-07-13"' in str(observed["body"])
+    assert '"images"' not in str(observed["body"])
     assert observed["timeout"] == {"connect": 5.0, "read": 20.0, "write": 20.0, "pool": 5.0}
 
 
@@ -109,6 +118,7 @@ def test_publisher_does_not_retry_permanent_errors_or_leak_payload() -> None:
         )
 
     assert attempts == 1
+    assert str(captured.value) == "ingestion request failed with HTTP 400 (invalid_import)"
     assert TOKEN not in str(captured.value)
     assert "KBS 뉴스" not in str(captured.value)
 

@@ -1,6 +1,7 @@
 """검증된 import batch를 인증된 Worker ingestion API로 전송한다."""
 
 import asyncio
+import re
 from typing import Any
 
 import httpx
@@ -9,15 +10,29 @@ from radio_epg.models import ImportBatch
 
 _TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
 _TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=20.0, pool=5.0)
+_ERROR_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 
 
 class PublishError(RuntimeError):
     """배치를 안전하게 게시할 수 없을 때 발생한다."""
 
 
-def _publish_error(status_code: int) -> PublishError:
+def _publish_error(response: httpx.Response) -> PublishError:
     """응답 본문이나 인증 정보를 노출하지 않는 게시 오류를 만든다."""
-    return PublishError(f"ingestion request failed with HTTP {status_code}")
+    message = f"ingestion request failed with HTTP {response.status_code}"
+    try:
+        payload: object = response.json()
+    except ValueError:
+        return PublishError(message)
+    if not isinstance(payload, dict):
+        return PublishError(message)
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        return PublishError(message)
+    code = error.get("code")
+    if isinstance(code, str) and _ERROR_CODE.fullmatch(code):
+        message = f"{message} ({code})"
+    return PublishError(message)
 
 
 async def publish_batch(
@@ -37,7 +52,7 @@ async def publish_batch(
 
     url = f"{base_url.rstrip('/')}/v1/admin/import"
     headers = {"Authorization": f"Bearer {token}"}
-    payload = batch.model_dump(mode="json")
+    payload = batch.model_dump(mode="json", exclude={"images"})
 
     async with httpx.AsyncClient(timeout=_TIMEOUT, transport=transport) as client:
         for attempt in range(max_retries + 1):
@@ -54,7 +69,7 @@ async def publish_batch(
                 await asyncio.sleep(retry_base_delay * (2**attempt))
                 continue
             if response.is_error:
-                raise _publish_error(response.status_code)
+                raise _publish_error(response)
 
             try:
                 result = response.json()

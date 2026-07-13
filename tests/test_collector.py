@@ -7,6 +7,7 @@ from radio_epg.broadcast_time import KST
 from radio_epg.collector import Collector
 from radio_epg.config import SourceConfig
 from radio_epg.models import AdapterResult, ImportBatch, ScheduleCandidate, SourceMetadata
+from radio_epg.publisher import PublishError
 
 
 def _source_config(source_id: str) -> SourceConfig:
@@ -97,6 +98,27 @@ def test_default_collection_window_uses_korean_broadcast_date(monkeypatch) -> No
     asyncio.run(collector.collect())
 
     assert adapter.windows == [CollectionWindow(date(2030, 1, 1), date(2030, 1, 8))]
+
+
+def test_collector_reports_sanitized_publish_error_details() -> None:
+    start = datetime(2026, 7, 13, 3, tzinfo=UTC)
+    schedule = _event("healthy", starts_at=start, ends_at=start + timedelta(hours=1))
+
+    async def failing_publisher(_batch: ImportBatch) -> dict[str, str]:
+        raise PublishError("ingestion request failed with HTTP 500 (import_failed)")
+
+    collector = Collector(
+        (FakeAdapter("healthy", _result("healthy", schedules=(schedule,))),),
+        publisher=failing_publisher,
+        today=lambda: date(2026, 7, 13),
+        now=lambda: datetime(2026, 7, 13, 2, tzinfo=UTC),
+    )
+
+    report = asyncio.run(collector.collect())
+
+    assert report.runs[0].error == (
+        "PublishError: ingestion request failed with HTTP 500 (import_failed)"
+    )
 
 
 def test_collector_isolates_failures_and_requests_today_plus_seven_days() -> None:

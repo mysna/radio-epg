@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
 from radio_epg.broadcast_time import KST
 from radio_epg.models import AdapterResult, ImportBatch
+from radio_epg.publisher import PublishError
 from radio_epg.validation import SchedulePolicy, validate_schedule
 
 
@@ -98,6 +99,12 @@ def _korean_today() -> date:
     return datetime.now(KST).date()
 
 
+def _collection_error(error: Exception) -> str:
+    if isinstance(error, PublishError):
+        return f"PublishError: {error}"
+    return type(error).__name__
+
+
 class Collector:
     """한 source 실패가 다른 source 실행을 중단하지 않게 수집한다."""
 
@@ -131,7 +138,7 @@ class Collector:
                 await self._publisher(_batch(result, started_at))
                 status = "succeeded"
             except Exception as caught:  # adapter별 실패 격리 경계
-                error = type(caught).__name__
+                error = _collection_error(caught)
             finished_at = self._now()
             channel_count, program_count, event_count, image_count = _counts(result)
             duration_ms = max(0, round((finished_at - started_at).total_seconds() * 1000))
