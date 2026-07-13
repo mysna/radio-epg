@@ -122,9 +122,9 @@ class Collector:
         self._now = now
 
     async def collect(self) -> CollectionReport:
-        """오늘부터 7일 뒤까지 각 adapter를 독립 실행한다."""
+        """KST 오늘과 내일의 각 adapter를 독립 실행한다."""
         first_day = self._today()
-        window = CollectionWindow(first_day, first_day + timedelta(days=7))
+        window = CollectionWindow(first_day, first_day + timedelta(days=1))
         runs: list[ScrapeRunSummary] = []
 
         for adapter in self._adapters:

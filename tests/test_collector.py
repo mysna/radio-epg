@@ -97,7 +97,7 @@ def test_default_collection_window_uses_korean_broadcast_date(monkeypatch) -> No
 
     asyncio.run(collector.collect())
 
-    assert adapter.windows == [CollectionWindow(date(2030, 1, 1), date(2030, 1, 8))]
+    assert adapter.windows == [CollectionWindow(date(2030, 1, 1), date(2030, 1, 2))]
 
 
 def test_collector_reports_sanitized_publish_error_details() -> None:
@@ -122,7 +122,7 @@ def test_collector_reports_sanitized_publish_error_details() -> None:
     )
 
 
-def test_collector_isolates_failures_and_requests_today_plus_seven_days() -> None:
+def test_collector_isolates_failures_and_requests_today_and_tomorrow() -> None:
     start = datetime(2026, 7, 13, 3, tzinfo=UTC)
     failing = FakeAdapter("broken", RuntimeError("token=do-not-report-this"))
     schedule = _event("healthy", starts_at=start, ends_at=start + timedelta(hours=1))
@@ -137,7 +137,7 @@ def test_collector_isolates_failures_and_requests_today_plus_seven_days() -> Non
 
     report = asyncio.run(collector.collect())
 
-    assert failing.windows == [CollectionWindow(date(2026, 7, 13), date(2026, 7, 20))]
+    assert failing.windows == [CollectionWindow(date(2026, 7, 13), date(2026, 7, 14))]
     assert healthy.windows == failing.windows
     assert [batch.source.source_id for batch in publisher.batches] == ["healthy"]
     assert [run.status for run in report.runs] == ["failed", "succeeded"]
