@@ -1,1 +1,17 @@
 .worktrees/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ty_cache/
+*.egg-info/
+dist/
+
+# Node.js and Cloudflare
+node_modules/
+coverage/
+.wrangler/
+.dev.vars
