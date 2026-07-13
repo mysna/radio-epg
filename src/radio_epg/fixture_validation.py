@@ -63,7 +63,7 @@ def validate_fixtures(root: Path = _ROOT) -> FixtureValidationResult:
     )
     parse_tbn_html(
         (fixture_root / "tbn" / "schedule.html").read_text(),
-        expected_date=expected_date,
+        expected_date=date(2026, 7, 14),
         station_code="main",
     )
     return FixtureValidationResult(mapping_count=6, fixture_family_count=6)

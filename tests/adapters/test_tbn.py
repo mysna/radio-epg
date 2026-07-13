@@ -39,8 +39,23 @@ def test_tbn_mapping_accounts_for_all_regions_and_maps_gyeongin_to_page_six() ->
 def test_tbn_html_parser_preserves_the_requested_region() -> None:
     rows = parse_tbn_html(
         (FIXTURES / "schedule.html").read_text(),
-        expected_date=date(2026, 7, 13),
+        expected_date=date(2026, 7, 14),
         station_code="main",
     )
 
-    assert rows[0].upstream_id == "main-1"
+    assert [(row.start, row.end) for row in rows] == [
+        ("06:00", "08:00"),
+        ("08:00", "24:00"),
+        ("24:00", "30:00"),
+    ]
+    assert rows[0].upstream_id == "main:2026-07-14:06:00:411"
+    assert rows[-1].title == "심야 음악"
+
+
+def test_tbn_html_parser_rejects_the_wrong_date_or_region_page() -> None:
+    fixture = (FIXTURES / "schedule.html").read_text()
+
+    with pytest.raises(TbnSchemaError, match="date"):
+        parse_tbn_html(fixture, expected_date=date(2026, 7, 13), station_code="main")
+    with pytest.raises(TbnSchemaError, match="region"):
+        parse_tbn_html(fixture, expected_date=date(2026, 7, 14), station_code="busan")

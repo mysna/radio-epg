@@ -1,6 +1,6 @@
 {
   "channels": [
-    {"channel_id":"tbn.main.main","upstream_code":"main","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=6&today={date}","parser":"html","evidence_date":"2026-07-13"},
+    {"channel_id":"tbn.main.main","upstream_code":"main","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=6&today={date}","parser":"html","evidence_date":"2026-07-14"},
     {"channel_id":"tbn.main.busan","upstream_code":"busan","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=2&today={date}","parser":"html","evidence_date":"2026-07-13"},
     {"channel_id":"tbn.main.gwangju","upstream_code":"gwangju","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=3&today={date}","parser":"html","evidence_date":"2026-07-13"},
     {"channel_id":"tbn.main.daegu","upstream_code":"daegu","url":"https://www.tbn.or.kr/broadcast/program.tbn?area_code=1&page_code=4&today={date}","parser":"html","evidence_date":"2026-07-13"},
