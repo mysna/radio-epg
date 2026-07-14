@@ -1,9 +1,13 @@
+import asyncio
 from datetime import date
 from pathlib import Path
 
+import httpx
 import pytest
 
-from radio_epg.adapters.additional import parse_station_schedule
+from radio_epg.adapters.additional import AdditionalStationAdapter, parse_station_schedule
+from radio_epg.adapters.base import CollectionWindow
+from radio_epg.config import SourceConfig
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "additional"
 DAY = date(2026, 7, 14)
@@ -47,3 +51,55 @@ def test_parser_rejects_a_response_for_another_date() -> None:
         parse_station_schedule(
             "obs", (FIXTURES / "obs.html").read_text(), expected_date=date(2026, 7, 13)
         )
+
+
+def _source(source_id: str, url: str) -> SourceConfig:
+    return SourceConfig(
+        source_id=source_id,
+        name=source_id,
+        source_kind="official",
+        source_url=url,
+        priority=100,
+        adapter="additional",
+    )
+
+
+def test_tbs_fm_and_efm_have_channel_specific_source_event_ids() -> None:
+    fixture = (FIXTURES / "tbs.html").read_text()
+
+    class Client:
+        async def post(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("POST", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("tbs", "https://tbs.seoul.kr/fm/schedule.do"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+    event_ids = {
+        channel: {row.source_event_id for row in result.schedules if row.channel_id == channel}
+        for channel in ("tbs.fm.main", "tbs.efm.main")
+    }
+
+    assert all(event_ids.values())
+    assert event_ids["tbs.fm.main"].isdisjoint(event_ids["tbs.efm.main"])
+
+
+def test_wbs_retries_a_transient_http_failure() -> None:
+    fixture = (FIXTURES / "wbs.html").read_text()
+
+    class Client:
+        attempts = 0
+
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            status = 503 if self.attempts == 1 else 200
+            return httpx.Response(status, text=fixture, request=httpx.Request("GET", url))
+
+    client = Client()
+    adapter = AdditionalStationAdapter(
+        _source("wbs", "https://wbsi.kr/schedule_radio.php"), client=client
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert result.schedules
+    assert client.attempts == 2

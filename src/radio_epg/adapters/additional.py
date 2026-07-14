@@ -1,5 +1,6 @@
 """사용자가 확인한 공식 편성표 11종의 엄격한 parser."""
 
+import asyncio
 import json
 import re
 import ssl
@@ -22,6 +23,7 @@ from radio_epg.models import AdapterResult
 from radio_epg.validation import SchedulePolicy
 
 _TIME = re.compile(r"(\d{1,2}:\d{2})")
+_TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
 
 
 def _rows(
@@ -281,9 +283,13 @@ class AdditionalStationAdapter:
                 f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
             )
         elif source_id == "wbs":
-            response = await client.get(
-                endpoint, params={"r": "서울", "w": (day.weekday() + 1) % 7}
-            )
+            for attempt in range(3):
+                response = await client.get(
+                    endpoint, params={"r": "서울", "w": (day.weekday() + 1) % 7}
+                )
+                if response.status_code not in _TRANSIENT_STATUSES or attempt == 2:
+                    break
+                await asyncio.sleep(0.25 * (2**attempt))
         elif source_id == "kfn":
             response = await client.post(
                 "https://radio.dema.mil.kr/api/v1/media/radio/fmTimeTableListAjax.do",
@@ -310,10 +316,8 @@ class AdditionalStationAdapter:
                     ("tbs.fm.main", "https://tbs.seoul.kr/fm/schedule.do"),
                     ("tbs.efm.main", "https://tbs.seoul.kr/eFm/schedule.do"),
                 ):
-                    parsed = parse_station_schedule(
-                        "tbs", await self._request(client, day, url=url), expected_date=day
-                    )
-                    collected[channel].extend(parsed["tbs.fm.main"])
+                    text = await self._request(client, day, url=url)
+                    collected[channel].extend(_table(text, day, channel)[channel])
             else:
                 parser_name = {"febc-seoul": "febc"}.get(
                     self.source.source_id, self.source.source_id
