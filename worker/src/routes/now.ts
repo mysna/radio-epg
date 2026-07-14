@@ -29,12 +29,14 @@ nowRoute.get("/", async (context) => {
   for (const radioId of radioIds) {
     const channel = await resolveChannel(context.env.DB, radioId);
     if (!channel) {
-      return errorResponse(
-        context,
-        404,
-        "channel_not_found",
-        "The requested channel alias is not registered.",
-      );
+      results.push({
+        radio_id: radioId,
+        channel_id: null,
+        status: "not_found",
+        current: null,
+        next: null,
+      });
+      continue;
     }
     const schedule = await currentAndNext(context.env.DB, channel.channel_id, requestedAt);
     results.push({

@@ -37,7 +37,9 @@ GET /v1/now?radio_ids=id1,id2
 ```
 
 한 번에 최대 100개 radio ID를 쉼표로 전달할 수 있다. 각 결과는 `current`, `next`와
-`available` 또는 `unavailable` 상태를 포함한다. 응답은 최대 30초 캐시한다.
+`available`, `unavailable`, 또는 `not_found` 상태를 포함한다. 등록되지 않은 radio ID가
+있어도 묶음 요청은 실패하지 않으며, 요청 순서의 해당 결과를 `channel_id: null`,
+`status: "not_found"`, `current: null`, `next: null`로 반환한다. 응답은 최대 30초 캐시한다.
 
 ## 소스 커버리지
 

@@ -269,6 +269,26 @@ describe("current schedule API", () => {
     });
   });
 
+  it("keeps valid results when a radio ID is not registered", async () => {
+    const response = await request(`/v1/now?radio_ids=${RADIO_ID},missing`);
+    const body = (await response.json()) as { results: unknown[] };
+
+    expect(response.status).toBe(200);
+    expect(body.results).toHaveLength(2);
+    expect(body.results[0]).toMatchObject({
+      radio_id: RADIO_ID,
+      channel_id: "kbs.1radio.busan",
+      status: "available",
+    });
+    expect(body.results[1]).toEqual({
+      radio_id: "missing",
+      channel_id: null,
+      status: "not_found",
+      current: null,
+      next: null,
+    });
+  });
+
   it("limits radio ID batches to 100", async () => {
     const ids = Array.from({ length: 101 }, (_, index) => `radio-${index}`).join(",");
     const response = await request(`/v1/now?radio_ids=${ids}`);
