@@ -124,5 +124,104 @@
     "priority": 70,
     "adapter": "afn",
     "enabled": false
+  },
+  {
+    "source_id": "obs",
+    "name": "OBS 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.obs.co.kr/schedule/?type=radio",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "ifm",
+    "name": "iFM 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.ifm.kr/schedule",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "ytn",
+    "name": "YTN 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://radio.ytn.co.kr/schedule/daily.php",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "tbs",
+    "name": "TBS FM/eFM 편성표",
+    "source_kind": "official",
+    "source_url": "https://tbs.seoul.kr/fm/schedule.do",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "febc-seoul",
+    "name": "FEBC 서울 편성표",
+    "source_kind": "official",
+    "source_url": "https://seoul.febc.net/radio/schedule",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "bbs",
+    "name": "BBS 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.bbs.or.kr/HOME2/?ACT=SCHEDULE",
+    "priority": 100,
+    "adapter": "religious",
+    "enabled": false
+  },
+  {
+    "source_id": "cpbc",
+    "name": "CPBC 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.cpbc.co.kr/schedule.html?channel=radio",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "wbs",
+    "name": "WBS 라디오 편성표",
+    "source_kind": "official",
+    "source_url": "https://wbsi.kr/schedule_radio.php",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "kfn",
+    "name": "국방FM(KFN) 편성표",
+    "source_kind": "official",
+    "source_url": "https://radio.dema.mil.kr/web/radio/timetable.do",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": false
+  },
+  {
+    "source_id": "gugak",
+    "name": "국악방송 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.igbf.kr/gugak_web/?sub_num=786",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "afn-humphreys",
+    "name": "AFN FM Humphreys 편성표",
+    "source_kind": "official",
+    "source_url": "https://myafn.dodmedia.osd.mil/Radio.aspx",
+    "priority": 100,
+    "adapter": "afn",
+    "enabled": false
   }
 ]

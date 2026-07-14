@@ -1,0 +1,1 @@
+$afn.ProcessRadioSchedule({"station":"Humphreys","date":"2026-07-14","events":[{"id":"eagle-1","start":"00:00","end":"01:00","title":"AFN Eagle Overnight"},{"id":"eagle-2","start":"01:00","end":"02:00","title":"The Morning Show"}]})
