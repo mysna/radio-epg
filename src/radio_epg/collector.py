@@ -46,6 +46,8 @@ class ScrapeRunSummary(_ReportModel):
     program_count: int = Field(ge=0)
     event_count: int = Field(ge=0)
     image_count: int = Field(ge=0)
+    image_variant_count: int = Field(default=0, ge=0)
+    image_error_count: int = Field(default=0, ge=0)
     error: str | None = None
 
 
@@ -109,6 +111,11 @@ def _collection_error(error: Exception) -> str:
     return type(error).__name__
 
 
+def _publication_count(result: dict[str, Any], key: str) -> int:
+    value = result.get(key, 0)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
 class Collector:
     """한 source 실패가 다른 source 실행을 중단하지 않게 수집한다."""
 
@@ -138,10 +145,14 @@ class Collector:
             result: AdapterResult | None = None
             error: str | None = None
             status: Literal["succeeded", "failed"] = "failed"
+            image_variant_count = 0
+            image_error_count = 0
             try:
                 result = await adapter.collect(window)
                 _validate_result(adapter, result)
-                await self._publisher(_batch(result, started_at))
+                publication = await self._publisher(_batch(result, started_at))
+                image_variant_count = _publication_count(publication, "image_variant_count")
+                image_error_count = _publication_count(publication, "image_error_count")
                 status = "succeeded"
             except Exception as caught:  # adapter별 실패 격리 경계
                 error = _collection_error(caught)
@@ -159,6 +170,8 @@ class Collector:
                     program_count=program_count,
                     event_count=event_count,
                     image_count=image_count,
+                    image_variant_count=image_variant_count,
+                    image_error_count=image_error_count,
                     error=error,
                 )
             )

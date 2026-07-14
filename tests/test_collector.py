@@ -2,6 +2,7 @@ import asyncio
 from datetime import UTC, date, datetime, timedelta
 
 import httpx
+
 import radio_epg.collector as collector_module
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.broadcast_time import KST
@@ -129,7 +130,11 @@ def test_collector_reports_http_status_without_exposing_request_details() -> Non
     )
     response = httpx.Response(503, request=request)
     collector = Collector(
-        (FakeAdapter("broken", httpx.HTTPStatusError("failed", request=request, response=response)),),
+        (
+            FakeAdapter(
+                "broken", httpx.HTTPStatusError("failed", request=request, response=response)
+            ),
+        ),
         publisher=FakePublisher(),
         today=lambda: date(2026, 7, 13),
         now=lambda: datetime(2026, 7, 13, 2, tzinfo=UTC),
@@ -221,3 +226,28 @@ def test_empty_results_preserve_prior_data_and_summary_contains_counts_and_timin
     assert run.program_count == 0
     assert run.event_count == 0
     assert run.image_count == 0
+
+
+def test_collector_reports_best_effort_image_publication_counts() -> None:
+    start = datetime(2026, 7, 13, 3, tzinfo=UTC)
+    schedule = _event("healthy", starts_at=start, ends_at=start + timedelta(hours=1))
+
+    async def publisher(_batch: ImportBatch) -> dict[str, object]:
+        return {
+            "status": "applied",
+            "image_variant_count": 2,
+            "image_error_count": 1,
+        }
+
+    collector = Collector(
+        (FakeAdapter("healthy", _result("healthy", schedules=(schedule,))),),
+        publisher=publisher,
+        today=lambda: date(2026, 7, 13),
+        now=lambda: datetime(2026, 7, 13, 2, tzinfo=UTC),
+    )
+
+    run = asyncio.run(collector.collect()).runs[0]
+
+    assert run.status == "succeeded"
+    assert run.image_variant_count == 2
+    assert run.image_error_count == 1
