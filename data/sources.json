@@ -195,7 +195,7 @@
     "source_url": "https://wbsi.kr/schedule_radio.php",
     "priority": 100,
     "adapter": "additional",
-    "enabled": true
+    "enabled": false
   },
   {
     "source_id": "kfn",
