@@ -167,6 +167,30 @@ def test_publish_images_skips_failed_candidate_and_continues() -> None:
     assert set(stored_entities) == {"program:ok"}
 
 
+def test_publish_images_isolates_a_permanent_api_failure() -> None:
+    attempted_entities: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        entity_id = json.loads(request.read())["asset"]["entity_id"]
+        attempted_entities.append(entity_id)
+        status = 400 if entity_id == "program:failed" else 201
+        return httpx.Response(status, json={"status": "stored"})
+
+    summary = asyncio.run(
+        publish_images(
+            (_candidate("program:failed"), _candidate("program:ok")),
+            source_id="kbs",
+            base_url="https://epg.example.test",
+            token="token",
+            downloader=FakeDownloader(_png()),
+            transport=httpx.MockTransport(handler),
+        )
+    )
+
+    assert summary == ImagePublishSummary(2, 3, 1)
+    assert attempted_entities == ["program:failed", *(["program:ok"] * 3)]
+
+
 def test_publish_images_accepts_an_empty_candidate_tuple() -> None:
     requests = 0
 

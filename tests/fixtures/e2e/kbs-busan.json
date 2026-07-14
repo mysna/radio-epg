@@ -20,7 +20,7 @@
         "program_actor": "진행자 하나",
         "program_intention": "E2E 현재 프로그램",
         "program_genre": "news",
-        "image_w": null,
+        "image_w": "https://images.example.test/e2e-current.png",
         "homepage_url": "https://program.kbs.co.kr/radio/e2e-current"
       },
       {

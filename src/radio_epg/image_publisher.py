@@ -5,11 +5,11 @@ import base64
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol, Self
 
 import httpx
 
-from radio_epg.images.download import SafeImageDownloader
+from radio_epg.images.download import DownloadedImage, SafeImageDownloader
 from radio_epg.images.transform import ImageVariant, transform_image
 from radio_epg.models import ImageCandidate
 
@@ -19,6 +19,16 @@ _TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=20.0, pool=5.0)
 
 class ImagePublishError(RuntimeError):
     """이미지 variant를 안전하게 게시할 수 없을 때 발생한다."""
+
+
+class ImageDownloader(Protocol):
+    """이미지 게시기가 요구하는 제한된 downloader 계약."""
+
+    async def __aenter__(self) -> Self: ...
+
+    async def __aexit__(self, *_exc: object) -> None: ...
+
+    async def download(self, url: str) -> DownloadedImage: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +121,7 @@ async def publish_images(
     token: str,
     max_retries: int = 2,
     retry_base_delay: float = 0.25,
-    downloader: Any | None = None,
+    downloader: ImageDownloader | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> ImagePublishSummary:
