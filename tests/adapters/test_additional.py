@@ -84,15 +84,20 @@ def test_tbs_fm_and_efm_have_channel_specific_source_event_ids() -> None:
     assert event_ids["tbs.fm.main"].isdisjoint(event_ids["tbs.efm.main"])
 
 
-def test_wbs_retries_a_transient_http_failure() -> None:
+def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:
     fixture = (FIXTURES / "wbs.html").read_text()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", skip_sleep)
 
     class Client:
         attempts = 0
 
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
             self.attempts += 1
-            status = 503 if self.attempts == 1 else 200
+            status = 503 if self.attempts <= 3 else 200
             return httpx.Response(status, text=fixture, request=httpx.Request("GET", url))
 
     client = Client()
@@ -102,4 +107,4 @@ def test_wbs_retries_a_transient_http_failure() -> None:
     result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
 
     assert result.schedules
-    assert client.attempts == 2
+    assert client.attempts == 4

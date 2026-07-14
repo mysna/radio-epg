@@ -1,6 +1,7 @@
 import asyncio
 from datetime import UTC, date, datetime, timedelta
 
+import httpx
 import radio_epg.collector as collector_module
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.broadcast_time import KST
@@ -120,6 +121,24 @@ def test_collector_reports_sanitized_publish_error_details() -> None:
     assert report.runs[0].error == (
         "PublishError: ingestion request failed with HTTP 500 (import_failed)"
     )
+
+
+def test_collector_reports_http_status_without_exposing_request_details() -> None:
+    request = httpx.Request(
+        "GET", "https://schedule.example.test/path?token=do-not-report-this"
+    )
+    response = httpx.Response(503, request=request)
+    collector = Collector(
+        (FakeAdapter("broken", httpx.HTTPStatusError("failed", request=request, response=response)),),
+        publisher=FakePublisher(),
+        today=lambda: date(2026, 7, 13),
+        now=lambda: datetime(2026, 7, 13, 2, tzinfo=UTC),
+    )
+
+    report = asyncio.run(collector.collect())
+
+    assert report.runs[0].error == "HTTPStatusError: HTTP 503 Service Unavailable"
+    assert "do-not-report-this" not in report.model_dump_json()
 
 
 def test_collector_isolates_failures_and_requests_today_and_tomorrow() -> None:

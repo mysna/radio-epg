@@ -283,11 +283,11 @@ class AdditionalStationAdapter:
                 f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
             )
         elif source_id == "wbs":
-            for attempt in range(3):
+            for attempt in range(5):
                 response = await client.get(
                     endpoint, params={"r": "서울", "w": (day.weekday() + 1) % 7}
                 )
-                if response.status_code not in _TRANSIENT_STATUSES or attempt == 2:
+                if response.status_code not in _TRANSIENT_STATUSES or attempt == 4:
                     break
                 await asyncio.sleep(0.25 * (2**attempt))
         elif source_id == "kfn":

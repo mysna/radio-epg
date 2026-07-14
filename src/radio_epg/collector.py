@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal, Protocol
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
@@ -102,6 +103,9 @@ def _korean_today() -> date:
 def _collection_error(error: Exception) -> str:
     if isinstance(error, PublishError):
         return f"PublishError: {error}"
+    if isinstance(error, httpx.HTTPStatusError):
+        response = error.response
+        return f"HTTPStatusError: HTTP {response.status_code} {response.reason_phrase}"
     return type(error).__name__
 
 
