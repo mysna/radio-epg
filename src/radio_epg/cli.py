@@ -16,7 +16,6 @@ from radio_epg.collector import Collector
 from radio_epg.config import CollectorSettings, load_sources
 from radio_epg.coverage import build_coverage, render_coverage_markdown
 from radio_epg.fixture_validation import validate_fixtures
-from radio_epg.image_publisher import ImagePublishSummary, publish_images
 from radio_epg.models import ImportBatch
 from radio_epg.publisher import publish_batch
 from radio_epg.registry import default_registry
@@ -26,7 +25,6 @@ _DEFAULT_SMOKE_RADIO_ID = "busan-039-kbs-1radio-busan"
 _SMOKE_TIMEOUT = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
 SchedulePublisher = Callable[..., Awaitable[dict[str, Any]]]
-ImagePublisher = Callable[..., Awaitable[ImagePublishSummary]]
 
 
 class SmokeCheckError(RuntimeError):
@@ -144,21 +142,9 @@ async def publish_collection_batch(
     base_url: str,
     token: str,
     schedule_publisher: SchedulePublisher = publish_batch,
-    image_publisher: ImagePublisher = publish_images,
 ) -> dict[str, Any]:
-    """편성을 먼저 저장한 뒤 이미지 후보를 best-effort로 게시한다."""
-    result = await schedule_publisher(batch, base_url=base_url, token=token)
-    image_summary = await image_publisher(
-        batch.images,
-        source_id=batch.source.source_id,
-        base_url=base_url,
-        token=token,
-    )
-    return {
-        **result,
-        "image_variant_count": image_summary.uploaded_variant_count,
-        "image_error_count": image_summary.failed_candidate_count,
-    }
+    """이미지 게시를 비활성화한 채 편성만 저장한다."""
+    return await schedule_publisher(batch, base_url=base_url, token=token)
 
 
 async def _run_collection(source_id: str | None, start_date: date | None = None) -> int:

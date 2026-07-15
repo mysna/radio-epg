@@ -4,7 +4,6 @@ from datetime import UTC, date, datetime
 import pytest
 
 from radio_epg.cli import app_name, build_parser, publish_collection_batch
-from radio_epg.image_publisher import ImagePublishSummary
 from radio_epg.models import (
     ImageCandidate,
     ImportBatch,
@@ -72,16 +71,12 @@ def _batch() -> ImportBatch:
     )
 
 
-def test_collection_batch_publishes_schedule_before_images_and_returns_counts() -> None:
+def test_collection_batch_publishes_only_schedules_while_images_are_disabled() -> None:
     calls: list[tuple[str, object]] = []
 
     async def schedule_publisher(batch: ImportBatch, **_kwargs: object) -> dict[str, object]:
         calls.append(("schedule", batch))
         return {"status": "applied"}
-
-    async def image_publisher(images, **kwargs: object) -> ImagePublishSummary:
-        calls.append(("images", (images, kwargs["source_id"])))
-        return ImagePublishSummary(1, 2, 1)
 
     batch = _batch()
     result = asyncio.run(
@@ -90,28 +85,16 @@ def test_collection_batch_publishes_schedule_before_images_and_returns_counts() 
             base_url="https://epg.example.test",
             token="token",
             schedule_publisher=schedule_publisher,
-            image_publisher=image_publisher,
         )
     )
 
-    assert calls == [("schedule", batch), ("images", (batch.images, "kbs"))]
-    assert result == {
-        "status": "applied",
-        "image_variant_count": 2,
-        "image_error_count": 1,
-    }
+    assert calls == [("schedule", batch)]
+    assert result == {"status": "applied"}
 
 
 def test_collection_batch_does_not_publish_images_when_schedule_import_fails() -> None:
-    image_called = False
-
     async def schedule_publisher(*_args: object, **_kwargs: object) -> dict[str, object]:
         raise RuntimeError("schedule failed")
-
-    async def image_publisher(*_args: object, **_kwargs: object) -> ImagePublishSummary:
-        nonlocal image_called
-        image_called = True
-        return ImagePublishSummary(0, 0, 0)
 
     with pytest.raises(RuntimeError, match="schedule failed"):
         asyncio.run(
@@ -120,8 +103,5 @@ def test_collection_batch_does_not_publish_images_when_schedule_import_fails() -
                 base_url="https://epg.example.test",
                 token="token",
                 schedule_publisher=schedule_publisher,
-                image_publisher=image_publisher,
             )
         )
-
-    assert image_called is False

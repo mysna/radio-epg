@@ -303,7 +303,7 @@ def normalize_rows(
                     confidence=row.confidence,
                     channel_id=channel_mapping.channel_id,
                     program_id=program_id,
-                    source_event_id=row.upstream_id,
+                    source_event_id=f"{upstream_code}:{row.upstream_id}",
                     broadcast_date=row.broadcast_date,
                     starts_at=starts_at,
                     ends_at=ends_at,

@@ -3,21 +3,17 @@
 import asyncio
 import json
 from datetime import UTC, date, datetime
-from io import BytesIO
 from pathlib import Path
 from typing import cast
 
 import httpx
 import pytest
-from PIL import Image
 
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.adapters.kbs import KbsAdapter
 from radio_epg.cli import SmokeCheckError, publish_collection_batch, smoke_api
 from radio_epg.collector import Collector
 from radio_epg.config import SourceConfig
-from radio_epg.image_publisher import publish_images
-from radio_epg.images.download import DownloadedImage
 from radio_epg.models import AdapterResult, ImportBatch
 from radio_epg.publisher import publish_batch
 
@@ -138,7 +134,7 @@ def test_fixture_collection_serializes_the_worker_import_contract() -> None:
     assert channels[0]["radio_ids"] == [RADIO_ID]
 
 
-def test_fixture_collection_imports_schedule_then_program_image_variants() -> None:
+def test_fixture_collection_imports_schedule_without_image_variants() -> None:
     paths: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -148,18 +144,6 @@ def test_fixture_collection_imports_schedule_then_program_image_variants() -> No
         if request.url.path == "/v1/admin/images":
             return httpx.Response(201, json={"status": "stored"})
         return httpx.Response(404)
-
-    class Downloader:
-        async def __aenter__(self) -> "Downloader":
-            return self
-
-        async def __aexit__(self, *_exc: object) -> None:
-            return None
-
-        async def download(self, url: str) -> DownloadedImage:
-            output = BytesIO()
-            Image.new("RGB", (8, 4), "blue").save(output, format="PNG")
-            return DownloadedImage(output.getvalue(), "image/png", url, 8, 4)
 
     transport = httpx.MockTransport(handler)
 
@@ -172,22 +156,11 @@ def test_fixture_collection_imports_schedule_then_program_image_variants() -> No
                 transport=transport,
             )
 
-        async def image_publisher(images, **kwargs: object):
-            return await publish_images(
-                images,
-                source_id=cast(str, kwargs["source_id"]),
-                base_url="https://epg.example.test",
-                token="test-token",
-                downloader=Downloader(),
-                transport=transport,
-            )
-
         return await publish_collection_batch(
             batch,
             base_url="https://epg.example.test",
             token="test-token",
             schedule_publisher=schedule_publisher,
-            image_publisher=image_publisher,
         )
 
     run = asyncio.run(
@@ -199,10 +172,10 @@ def test_fixture_collection_imports_schedule_then_program_image_variants() -> No
         ).collect()
     ).runs[0]
 
-    assert paths == ["/v1/admin/import", *(["/v1/admin/images"] * 3)]
+    assert paths == ["/v1/admin/import"]
     assert run.status == "succeeded"
     assert run.image_count == 1
-    assert run.image_variant_count == 3
+    assert run.image_variant_count == 0
     assert run.image_error_count == 0
 
 
