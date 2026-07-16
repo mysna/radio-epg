@@ -65,7 +65,7 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
     _assert_read_only(workflow)
     triggers = _mapping(workflow["on"])
     assert "workflow_dispatch" in triggers
-    assert triggers["schedule"] == [{"cron": "17 19 * * *"}]
+    assert triggers["schedule"] == [{"cron": "17 16 * * *"}]
     assert workflow["concurrency"] == {
         "group": "radio-epg-collection",
         "cancel-in-progress": False,

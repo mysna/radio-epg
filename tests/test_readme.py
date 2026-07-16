@@ -22,8 +22,8 @@ def test_readme_covers_configuration_and_command_contracts() -> None:
         "radio-epg smoke",
         "/v1/admin/retention",
         "workflow_dispatch",
-        "17 19 * * *",
-        "04:17 KST",
+        "17 16 * * *",
+        "01:17 KST",
     }
     missing = {token for token in required if token not in readme}
     assert not missing
