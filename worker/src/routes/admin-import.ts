@@ -251,8 +251,8 @@ export async function buildImportStatements(
       .prepare(
         `INSERT INTO scrape_runs (
            id, source_id, idempotency_key, payload_hash, started_at, finished_at, status,
-           channel_count, program_count, event_count, image_count
-         ) VALUES (?, ?, ?, ?, ?, ?, 'succeeded', ?, ?, ?, 0)`,
+           channel_count, program_count, event_count
+         ) VALUES (?, ?, ?, ?, ?, ?, 'succeeded', ?, ?, ?)`,
       )
       .bind(
         `import:${batch.idempotency_key}`,

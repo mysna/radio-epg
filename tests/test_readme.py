@@ -15,7 +15,6 @@ def test_readme_covers_configuration_and_command_contracts() -> None:
         "INGEST_TOKEN",
         "CORS_ORIGINS",
         "wrangler d1 create",
-        "wrangler r2 bucket create",
         "wrangler d1 migrations apply",
         "wrangler secret put",
         "wrangler deploy",
@@ -34,7 +33,6 @@ def test_readme_has_operational_and_extension_sections() -> None:
     headings = {
         "## API 예시",
         "## Source adapter 추가",
-        "## 이미지 출처와 삭제 요청",
         "## 무료 사용량 모니터링",
         "## 백업과 복구",
         "## 문제 해결",

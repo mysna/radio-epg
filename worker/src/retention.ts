@@ -52,7 +52,7 @@ function isCurrentOrPreviousKoreanDate(value: string, now: Date): boolean {
   return value === current || value === previousCalendarDate(current);
 }
 
-/** KST 오늘·내일 편성만 남기고 프로그램·이미지 메타데이터는 보존한다. */
+/** KST 오늘·내일 편성만 남기고 프로그램 메타데이터는 보존한다. */
 export async function deleteExpiredScheduleEvents(
   database: Database,
   now: Date = new Date(),

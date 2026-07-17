@@ -10,12 +10,10 @@ const EMPTY_RADIO_ID = "seoul-007-mbc-sfm-main";
 const ALLOWED_ORIGIN = "https://radio.bsod.kr";
 const testEnv = env as typeof env & {
   DB: D1Database;
-  IMAGES: R2Bucket;
   TEST_MIGRATIONS: D1Migration[];
 };
 const bindings = {
   DB: testEnv.DB,
-  IMAGES: testEnv.IMAGES,
   CORS_ORIGINS: `${ALLOWED_ORIGIN},http://localhost:8000`,
 };
 

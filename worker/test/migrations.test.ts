@@ -6,9 +6,6 @@ const EXPECTED_TABLES = [
   "broadcasters",
   "channel_aliases",
   "channels",
-  "image_assets",
-  "image_takedowns",
-  "image_variants",
   "programs",
   "schedule_events",
   "scrape_runs",
@@ -36,17 +33,77 @@ async function seedChannel(suffix: string): Promise<void> {
 
 beforeAll(async () => {
   if (testEnv.TEST_MIGRATIONS) {
-    await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+    const previous = testEnv.TEST_MIGRATIONS.slice(0, -1);
+    const removeImages = testEnv.TEST_MIGRATIONS.slice(-1);
+    await applyD1Migrations(testEnv.DB, previous);
+    await testEnv.DB.batch([
+      testEnv.DB.prepare(
+        "INSERT INTO sources (id, name, kind, base_url) VALUES (?, ?, ?, ?)",
+      ).bind("legacy", "Legacy", "official", "https://legacy.example.test/"),
+      testEnv.DB.prepare(
+        `INSERT INTO image_assets (
+           id, entity_type, entity_id, content_hash, source_url, source_page_url,
+           first_verified_at, last_verified_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        "a".repeat(64),
+        "program",
+        "legacy.program",
+        "a".repeat(64),
+        "https://legacy.example.test/image.png",
+        "https://legacy.example.test/program",
+        "2026-07-13T00:00:00Z",
+        "2026-07-13T00:00:00Z",
+      ),
+      testEnv.DB.prepare(
+        "INSERT INTO broadcasters (id, name, image_asset_id) VALUES (?, ?, ?)",
+      ).bind("legacy", "Legacy", "a".repeat(64)),
+      testEnv.DB.prepare(
+        "INSERT INTO channels (id, broadcaster_id, name, stn, image_asset_id) VALUES (?, ?, ?, ?, ?)",
+      ).bind("legacy.fm", "legacy", "Legacy FM", "legacy", "a".repeat(64)),
+      testEnv.DB.prepare(
+        "INSERT INTO programs (id, source_id, upstream_id, title, image_asset_id) VALUES (?, ?, ?, ?, ?)",
+      ).bind("legacy.program", "legacy", "program", "Legacy Program", "a".repeat(64)),
+      testEnv.DB.prepare(
+        `INSERT INTO scrape_runs (
+           id, source_id, idempotency_key, started_at, status, image_count
+         ) VALUES (?, ?, ?, ?, ?, ?)`,
+      ).bind("legacy-run", "legacy", "legacy-run", "2026-07-13T00:00:00Z", "succeeded", 1),
+    ]);
+    await applyD1Migrations(testEnv.DB, removeImages);
   }
 });
 
 describe("D1 migration", () => {
-  it("creates every core and image table", async () => {
+  it("creates only the core EPG tables and no image schema", async () => {
     const result = await testEnv.DB.prepare(
       "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != 'd1_migrations' ORDER BY name",
     ).all<{ name: string }>();
 
     expect(result.results.map(({ name }) => name)).toEqual(expect.arrayContaining(EXPECTED_TABLES));
+    expect(result.results.map(({ name }) => name)).not.toEqual(
+      expect.arrayContaining(["image_assets", "image_takedowns", "image_variants"]),
+    );
+
+    for (const table of ["broadcasters", "channels", "programs"]) {
+      const columns = await testEnv.DB.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+      expect(columns.results.map(({ name }) => name)).not.toContain("image_asset_id");
+    }
+    const runColumns = await testEnv.DB.prepare("PRAGMA table_info(scrape_runs)").all<{
+      name: string;
+    }>();
+    expect(runColumns.results.map(({ name }) => name)).not.toContain("image_count");
+
+    const preserved = await testEnv.DB.prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM broadcasters WHERE id = 'legacy') AS broadcasters,
+         (SELECT COUNT(*) FROM channels WHERE id = 'legacy.fm') AS channels,
+         (SELECT COUNT(*) FROM programs WHERE id = 'legacy.program') AS programs,
+         (SELECT COUNT(*) FROM scrape_runs WHERE id = 'legacy-run') AS runs`,
+    ).first<{ broadcasters: number; channels: number; programs: number; runs: number }>();
+    expect(preserved).toEqual({ broadcasters: 1, channels: 1, programs: 1, runs: 1 });
+    const foreignKeys = await testEnv.DB.prepare("PRAGMA foreign_key_check").all();
+    expect(foreignKeys.results).toEqual([]);
   });
 
   it("rejects duplicate aliases", async () => {

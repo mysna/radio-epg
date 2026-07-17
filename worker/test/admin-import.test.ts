@@ -9,12 +9,10 @@ import { buildImportStatements } from "../src/routes/admin-import";
 const TOKEN = "test-ingest-token";
 const testEnv = env as typeof env & {
   DB: D1Database;
-  IMAGES: R2Bucket;
   TEST_MIGRATIONS: D1Migration[];
 };
 const bindings = {
   DB: testEnv.DB,
-  IMAGES: testEnv.IMAGES,
   CORS_ORIGINS: "https://radio.bsod.kr",
   INGEST_TOKEN: TOKEN,
 };

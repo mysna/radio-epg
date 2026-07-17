@@ -13,8 +13,6 @@
 
 - [x] Task 7: Collector runtime과 adapter protocol
 - [x] Task 8: KBS reference adapter
-- [x] Task 9: 이미지 수집, 변환, R2 제공 및 takedown
-
 ## 이후 작업
 
 - [x] Task 10: 전국 방송사 편성 adapter

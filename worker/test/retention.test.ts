@@ -11,12 +11,10 @@ const START_DATE = "2026-07-14";
 const END_DATE = "2026-07-15";
 const testEnv = env as typeof env & {
   DB: D1Database;
-  IMAGES: R2Bucket;
   TEST_MIGRATIONS: D1Migration[];
 };
 const bindings = {
   DB: testEnv.DB,
-  IMAGES: testEnv.IMAGES,
   INGEST_TOKEN: TOKEN,
 };
 
@@ -60,33 +58,12 @@ async function seedRetentionData(): Promise<void> {
       "INSERT INTO channels (id, broadcaster_id, name, stn, ch) VALUES (?, ?, ?, ?, ?)",
     ).bind("retention.fm.main", "retention", "Retention FM", "retention", "fm"),
     testEnv.DB.prepare(
-      `INSERT INTO image_assets (
-        id, source_id, entity_type, entity_id, content_hash, rights_status,
-        source_url, source_page_url, first_verified_at, last_verified_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(
-      "c".repeat(64),
-      "retention",
-      "program",
-      "retention.program",
-      "c".repeat(64),
-      "fixture",
-      "https://images.example.test/program.png",
-      "https://images.example.test/program",
-      "2026-06-01T00:00:00Z",
-      "2026-07-13T00:00:00Z",
-    ),
-    testEnv.DB.prepare(
-      "INSERT INTO image_variants (asset_id, variant_name, mime_type, width, height, byte_size, r2_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    ).bind("c".repeat(64), "medium", "image/png", 1, 1, 68, "images/retention/medium.png"),
-    testEnv.DB.prepare(
-      "INSERT INTO programs (id, source_id, upstream_id, title, image_asset_id) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO programs (id, source_id, upstream_id, title) VALUES (?, ?, ?, ?)",
     ).bind(
       "retention.program",
       "retention",
       "retention.program",
       "Retention program",
-      "c".repeat(64),
     ),
   ]);
   await testEnv.DB.batch(
@@ -152,12 +129,6 @@ describe("KST today-and-tomorrow schedule retention", () => {
     const programs = await testEnv.DB.prepare("SELECT COUNT(*) AS count FROM programs").first<{
       count: number;
     }>();
-    const assets = await testEnv.DB.prepare("SELECT COUNT(*) AS count FROM image_assets").first<{
-      count: number;
-    }>();
-    const variants = await testEnv.DB.prepare("SELECT COUNT(*) AS count FROM image_variants").first<{
-      count: number;
-    }>();
 
     expect(first).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 2 });
     expect(second).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 0 });
@@ -166,8 +137,6 @@ describe("KST today-and-tomorrow schedule retention", () => {
       "retention-tomorrow",
     ]);
     expect(programs?.count).toBe(1);
-    expect(assets?.count).toBe(1);
-    expect(variants?.count).toBe(1);
   });
 
   it("requires authentication and exposes an idempotent maintenance endpoint", async () => {

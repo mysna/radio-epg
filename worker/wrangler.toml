@@ -9,7 +9,3 @@ CORS_ORIGINS = "https://radio.bsod.kr,https://mysna.github.io,http://localhost:8
 binding = "DB"
 database_name = "radio-epg"
 database_id = "851a1f51-1757-4684-be24-5610c3e5fa4e"
-
-[[r2_buckets]]
-binding = "IMAGES"
-bucket_name = "radio-epg-images"
