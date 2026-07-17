@@ -45,9 +45,6 @@ class ScrapeRunSummary(_ReportModel):
     channel_count: int = Field(ge=0)
     program_count: int = Field(ge=0)
     event_count: int = Field(ge=0)
-    image_count: int = Field(ge=0)
-    image_variant_count: int = Field(default=0, ge=0)
-    image_error_count: int = Field(default=0, ge=0)
     error: str | None = None
 
 
@@ -82,19 +79,17 @@ def _batch(result: AdapterResult, collected_at: datetime) -> ImportBatch:
         channels=result.channels,
         programs=result.programs,
         schedules=result.schedules,
-        images=result.images,
         collected_at=collected_at,
     )
 
 
-def _counts(result: AdapterResult | None) -> tuple[int, int, int, int]:
+def _counts(result: AdapterResult | None) -> tuple[int, int, int]:
     if result is None:
-        return (0, 0, 0, 0)
+        return (0, 0, 0)
     return (
         len(result.channels),
         len(result.programs),
         len(result.schedules),
-        len(result.images),
     )
 
 
@@ -109,11 +104,6 @@ def _collection_error(error: Exception) -> str:
         response = error.response
         return f"HTTPStatusError: HTTP {response.status_code} {response.reason_phrase}"
     return type(error).__name__
-
-
-def _publication_count(result: dict[str, Any], key: str) -> int:
-    value = result.get(key, 0)
-    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
 class Collector:
@@ -145,19 +135,15 @@ class Collector:
             result: AdapterResult | None = None
             error: str | None = None
             status: Literal["succeeded", "failed"] = "failed"
-            image_variant_count = 0
-            image_error_count = 0
             try:
                 result = await adapter.collect(window)
                 _validate_result(adapter, result)
-                publication = await self._publisher(_batch(result, started_at))
-                image_variant_count = _publication_count(publication, "image_variant_count")
-                image_error_count = _publication_count(publication, "image_error_count")
+                await self._publisher(_batch(result, started_at))
                 status = "succeeded"
             except Exception as caught:  # adapter별 실패 격리 경계
                 error = _collection_error(caught)
             finished_at = self._now()
-            channel_count, program_count, event_count, image_count = _counts(result)
+            channel_count, program_count, event_count = _counts(result)
             duration_ms = max(0, round((finished_at - started_at).total_seconds() * 1000))
             runs.append(
                 ScrapeRunSummary(
@@ -169,9 +155,6 @@ class Collector:
                     channel_count=channel_count,
                     program_count=program_count,
                     event_count=event_count,
-                    image_count=image_count,
-                    image_variant_count=image_variant_count,
-                    image_error_count=image_error_count,
                     error=error,
                 )
             )

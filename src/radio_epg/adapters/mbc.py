@@ -81,10 +81,9 @@ def _parse_official_rows(
             raise ValueError("MBC schedule date does not match the requested date")
         start = _official_clock(start_text, day_offset=day_offset)
         end = _official_clock(end_text, day_offset=day_offset)
-        image = item.get("OnAirImage") or item.get("Photo") or None
         homepage = item.get("HomepageURL") or None
         subtitle = item.get("SubTitle") or None
-        optional = (image, homepage, subtitle)
+        optional = (homepage, subtitle)
         if any(value is not None and not isinstance(value, str) for value in optional):
             raise ValueError("MBC optional schedule fields changed")
         rows.append(
@@ -95,7 +94,6 @@ def _parse_official_rows(
                 end=end,
                 title=title,
                 subtitle=subtitle,
-                image_url=image,
                 homepage_url=homepage,
                 is_live=item.get("IsOnAirNow") == "Y",
             )

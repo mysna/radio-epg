@@ -1,7 +1,7 @@
 """수집기와 Worker ingestion 사이에서 공유하는 정규화 도메인 모델."""
 
 from datetime import UTC, date, datetime
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 
 from pydantic import (
     AfterValidator,
@@ -103,19 +103,6 @@ class ScheduleCandidate(_DomainModel):
         return value.astimezone(UTC)
 
 
-class ImageCandidate(_DomainModel):
-    """출처와 권리 정보를 보존하는 이미지 후보."""
-
-    entity_type: Literal["broadcaster", "channel", "program"]
-    entity_id: str = Field(min_length=1)
-    source_url: str = Field(min_length=1)
-    source_page_url: str = Field(min_length=1)
-    rights_status: str = "unknown"
-    author: str | None = None
-    license: str | None = None
-    attribution: str | None = None
-
-
 class SourceMetadata(_DomainModel):
     """어댑터 결과와 함께 전달되는 소스 출처 메타데이터."""
 
@@ -139,7 +126,6 @@ class AdapterResult(_DomainModel):
     channels: tuple[Channel, ...] = ()
     programs: tuple[ProgramCandidate, ...] = ()
     schedules: tuple[ScheduleCandidate, ...] = ()
-    images: tuple[ImageCandidate, ...] = ()
     errors: tuple[str, ...] = ()
 
 
@@ -151,7 +137,6 @@ class ImportBatch(_DomainModel):
     channels: tuple[Channel, ...] = ()
     programs: tuple[ProgramCandidate, ...] = ()
     schedules: tuple[ScheduleCandidate, ...] = ()
-    images: tuple[ImageCandidate, ...] = ()
     collected_at: AwareDatetime
 
     @field_serializer("collected_at", when_used="json")

@@ -55,10 +55,6 @@ def _parse_official_html(
             raise ValueError("EBS schedule row title is missing")
         subtitle_node = item.select_one(".tit .txt_cnt")
         homepage_node = item.select_one("a.homepage[href]")
-        image_node = None
-        preview = item.find_previous_sibling("div", class_="layer_window")
-        if preview is not None:
-            image_node = preview.select_one("img[src]")
         title = title_node.get_text(" ", strip=True)
         homepage = (
             urljoin("https://www.ebs.co.kr/", str(homepage_node["href"]))
@@ -75,7 +71,6 @@ def _parse_official_html(
                 subtitle=(
                     subtitle_node.get_text(" ", strip=True) if subtitle_node is not None else None
                 ),
-                image_url=str(image_node["src"]) if image_node is not None else None,
                 homepage_url=homepage,
                 is_live=item.select_one(".icon_wrap .live") is not None,
                 is_rerun=title.endswith("(재)"),

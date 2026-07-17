@@ -96,9 +96,6 @@ class BusanFixtureAdapter:
                     program for program in result.programs if program.program_id in program_ids
                 ),
                 "schedules": schedules,
-                "images": tuple(
-                    image for image in result.images if image.entity_id in program_ids
-                ),
             }
         )
 
@@ -134,15 +131,13 @@ def test_fixture_collection_serializes_the_worker_import_contract() -> None:
     assert channels[0]["radio_ids"] == [RADIO_ID]
 
 
-def test_fixture_collection_imports_schedule_without_image_variants() -> None:
+def test_fixture_collection_imports_schedule() -> None:
     paths: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         paths.append(request.url.path)
         if request.url.path == "/v1/admin/import":
             return httpx.Response(201, json={"status": "applied"})
-        if request.url.path == "/v1/admin/images":
-            return httpx.Response(201, json={"status": "stored"})
         return httpx.Response(404)
 
     transport = httpx.MockTransport(handler)
@@ -174,9 +169,6 @@ def test_fixture_collection_imports_schedule_without_image_variants() -> None:
 
     assert paths == ["/v1/admin/import"]
     assert run.status == "succeeded"
-    assert run.image_count == 1
-    assert run.image_variant_count == 0
-    assert run.image_error_count == 0
 
 
 def test_smoke_api_checks_health_channels_alias_and_coverage() -> None:

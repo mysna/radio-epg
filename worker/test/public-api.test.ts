@@ -139,6 +139,7 @@ describe("public channel API", () => {
       "kbs.1radio.busan",
       "mbc.sfm.main",
     ]);
+    expect(body.channels[0]).not.toHaveProperty("image_url");
   });
 
   it("looks up a channel by canonical ID", async () => {
@@ -190,6 +191,7 @@ describe("public schedule API", () => {
       title: "KBS 뉴스",
       source: { id: "kbs", kind: "official", confidence: 1, stale: true },
     });
+    expect(body.events[0]).not.toHaveProperty("program_image_url");
   });
 
   it("rejects invalid calendar dates with a stable error", async () => {

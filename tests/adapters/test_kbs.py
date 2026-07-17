@@ -116,7 +116,7 @@ def test_adapter_maps_national_and_regional_schedules_and_request_parameters() -
     ] == [("20260713", "20260719"), ("20260720", "20260720")]
 
 
-def test_adapter_preserves_stable_ids_images_extended_hours_and_flags() -> None:
+def test_adapter_preserves_stable_ids_extended_hours_and_flags() -> None:
     adapter = _adapter(FixtureClient(FIXTURES / "weekly.json"))
 
     first = asyncio.run(adapter.collect(CollectionWindow(date(2026, 7, 13), date(2026, 7, 20))))
@@ -138,8 +138,6 @@ def test_adapter_preserves_stable_ids_images_extended_hours_and_flags() -> None:
     assert extended.title == "심야 음악"
     assert extended.starts_at.isoformat() == "2026-07-14T00:00:00+09:00"
     assert extended.ends_at.isoformat() == "2026-07-14T01:30:00+09:00"
-    assert first.images[0].source_url.endswith("synthetic-night.png")
-    assert first.images[0].rights_status == "unknown"
     validate_schedule(first.schedules, policy=adapter.schedule_policy)
 
 

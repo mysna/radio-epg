@@ -7,7 +7,6 @@ from pydantic import ValidationError
 from radio_epg.models import (
     AdapterResult,
     Channel,
-    ImageCandidate,
     ImportBatch,
     ProgramCandidate,
     ScheduleCandidate,
@@ -73,12 +72,6 @@ def test_domain_models_compose_an_adapter_result() -> None:
         ch="1radio",
     )
     program = ProgramCandidate(source_id="kbs", program_id="news", title="KBS 뉴스")
-    image = ImageCandidate(
-        entity_type="program",
-        entity_id="news",
-        source_url="https://example.test/news.png",
-        source_page_url="https://example.test/news",
-    )
     source = SourceMetadata(
         source_id="kbs",
         name="KBS 편성표",
@@ -97,12 +90,11 @@ def test_domain_models_compose_an_adapter_result() -> None:
         channels=(channel,),
         programs=(program,),
         schedules=(schedule,),
-        images=(image,),
     )
 
     assert result.channels[0].channel_id == "kbs.1radio.main"
     assert result.programs[0].title == "KBS 뉴스"
-    assert result.images[0].rights_status == "unknown"
+    assert "images" not in result.model_dump()
 
 
 def test_import_batch_serializes_instants_as_utc_and_keeps_broadcast_date() -> None:
@@ -127,6 +119,7 @@ def test_import_batch_serializes_instants_as_utc_and_keeps_broadcast_date() -> N
 
     serialized = batch.model_dump(mode="json")
 
+    assert "images" not in serialized
     assert serialized["schedules"][0]["starts_at"] == "2026-07-13T16:30:00Z"
     assert serialized["schedules"][0]["broadcast_date"] == "2026-07-13"
     assert datetime.fromisoformat(serialized["collected_at"]).tzinfo == UTC

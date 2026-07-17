@@ -143,7 +143,7 @@ async def publish_collection_batch(
     token: str,
     schedule_publisher: SchedulePublisher = publish_batch,
 ) -> dict[str, Any]:
-    """이미지 게시를 비활성화한 채 편성만 저장한다."""
+    """검증된 편성 배치를 저장한다."""
     return await schedule_publisher(batch, base_url=base_url, token=token)
 
 

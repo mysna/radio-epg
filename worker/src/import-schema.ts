@@ -77,9 +77,9 @@ export const importBatchSchema = z
     channels: z.array(channelSchema).max(250).default([]),
     programs: z.array(programSchema).max(1000).default([]),
     schedules: z.array(scheduleSchema).min(1).max(2000),
-    images: z.array(z.unknown()).max(0).default([]),
     collected_at: timestamp,
   })
+  .strict()
   .superRefine((batch, context) => {
     for (const program of batch.programs) {
       if (program.source_id !== batch.source.source_id) {

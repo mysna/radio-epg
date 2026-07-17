@@ -98,8 +98,6 @@ def parse_sbs_current_schedule(
             if not all(isinstance(value, str) for value in required):
                 raise SbsSchemaError("SBS current schedule row fields changed")
             vod_id, start, end, title = cast(tuple[str, str, str, str], required)
-            onair = item.get("onair")
-            image = onair.get("image") if isinstance(onair, dict) else None
             rows.append(
                 ScheduleRow(
                     upstream_id=f"{vod_id}:{start}",
@@ -107,7 +105,6 @@ def parse_sbs_current_schedule(
                     start=start.zfill(5),
                     end=end.zfill(5),
                     title=title,
-                    image_url=image if isinstance(image, str) else None,
                     homepage_url=(
                         item["hom_url"] if isinstance(item.get("hom_url"), str) else None
                     ),

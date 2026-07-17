@@ -7,7 +7,6 @@ import httpx
 import pytest
 
 from radio_epg.models import (
-    ImageCandidate,
     ImportBatch,
     ProgramCandidate,
     ScheduleCandidate,
@@ -43,14 +42,6 @@ def _batch() -> ImportBatch:
         idempotency_key="kbs-2026-07-13",
         source=source,
         schedules=(schedule,),
-        images=(
-            ImageCandidate(
-                entity_type="program",
-                entity_id="kbs:news",
-                source_url="https://images.example.test/news.png",
-                source_page_url="https://schedule.kbs.co.kr/",
-            ),
-        ),
         collected_at=datetime(2026, 7, 13, 1, 1, tzinfo=UTC),
     )
 

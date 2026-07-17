@@ -18,7 +18,6 @@ from radio_epg.config import SourceConfig
 from radio_epg.models import (
     AdapterResult,
     Channel,
-    ImageCandidate,
     ProgramCandidate,
     ScheduleCandidate,
     SourceMetadata,
@@ -45,7 +44,6 @@ class ScheduleRow:
     end: str
     title: str
     subtitle: str | None = None
-    image_url: str | None = None
     homepage_url: str | None = None
     is_live: bool = False
     is_rerun: bool = False
@@ -145,7 +143,6 @@ def parse_html_schedule(
             if title_node is None:
                 raise ValueError("HTML schedule row is missing a title")
             subtitle_node = item.select_one(".subtitle")
-            image_node = item.select_one("img[src]")
             homepage_node = item.select_one("a.title[href]")
             parsed[channel].append(
                 ScheduleRow(
@@ -159,7 +156,6 @@ def parse_html_schedule(
                         if subtitle_node is not None
                         else None
                     ),
-                    image_url=(str(image_node["src"]) if image_node is not None else None),
                     homepage_url=(
                         str(homepage_node["href"]) if homepage_node is not None else None
                     ),
@@ -202,7 +198,7 @@ def parse_json_channel_rows(
             if not all(isinstance(value, str) for value in required):
                 raise ValueError("schedule row is missing required string fields")
             optional_strings: dict[str, str | None] = {}
-            for key in ("subtitle", "image", "homepage"):
+            for key in ("subtitle", "homepage"):
                 value = raw.get(key)
                 if value is not None and not isinstance(value, str):
                     raise ValueError(f"schedule row {key} must be a string")
@@ -218,7 +214,6 @@ def parse_json_channel_rows(
                     end=required[2],
                     title=required[3],
                     subtitle=optional_strings["subtitle"],
-                    image_url=optional_strings["image"],
                     homepage_url=optional_strings["homepage"],
                     is_live=raw.get("live", False),
                     is_rerun=raw.get("rerun", False),
@@ -278,7 +273,6 @@ def normalize_rows(
     if unknown:
         raise MappingSchemaError(f"response contains unmapped channels: {sorted(unknown)!r}")
     programs: dict[str, ProgramCandidate] = {}
-    images: dict[str, ImageCandidate] = {}
     schedules: list[ScheduleCandidate] = []
     for upstream_code, channel_rows in rows.items():
         channel_mapping = by_upstream[upstream_code]
@@ -313,16 +307,6 @@ def normalize_rows(
                     is_rerun=row.is_rerun,
                 )
             )
-            if row.image_url:
-                images.setdefault(
-                    program_id,
-                    ImageCandidate(
-                        entity_type="program",
-                        entity_id=program_id,
-                        source_url=row.image_url,
-                        source_page_url=row.homepage_url or source.source_url,
-                    ),
-                )
     return AdapterResult(
         source=SourceMetadata(
             source_id=source.source_id,
@@ -335,6 +319,5 @@ def normalize_rows(
         channels=catalog_channels(mapping, catalog),
         programs=tuple(programs.values()),
         schedules=tuple(schedules),
-        images=tuple(images.values()),
         errors=tuple(errors),
     )

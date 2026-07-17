@@ -26,7 +26,6 @@ def test_sbs_maps_power_love_and_dmb_daily_data() -> None:
 
     assert set(rows) == {"power", "love", "dmb"}
     assert rows["power"][0].title == "조정식의 펀펀투데이"
-    assert rows["power"][0].image_url == "https://img.sbs.co.kr/program/power.jpg"
 
 
 def test_sbs_rejects_a_future_request_that_repeats_todays_schedule() -> None:
@@ -57,7 +56,6 @@ def test_sbs_parses_the_official_current_day_shape_only_for_today() -> None:
     rows = parse_sbs_current_schedule(payload, expected_date=today, today=today)
 
     assert rows["power"][0].upstream_id == "power-vod:5:00"
-    assert rows["power"][0].image_url == "https://image.cloud.sbs.co.kr/power.png"
     with pytest.raises(SbsUnavailableDateError):
         parse_sbs_current_schedule(payload, expected_date=date(2026, 7, 14), today=today)
 

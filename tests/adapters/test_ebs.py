@@ -10,12 +10,11 @@ FIXTURES = Path(__file__).parents[1] / "fixtures" / "ebs"
 MAPPING = Path(__file__).parents[2] / "data" / "mappings" / "ebs.json"
 
 
-def test_ebs_fm_supports_extended_hours_subtitles_and_images() -> None:
+def test_ebs_fm_supports_extended_hours_and_subtitles() -> None:
     rows = parse_ebs_schedule((FIXTURES / "fm.html").read_text(), expected_date=date(2026, 7, 13))
 
     assert [row.start for row in rows] == ["05:00", "24:20"]
     assert rows[0].subtitle == "영어회화 레벨1"
-    assert rows[0].image_url == "https://static.ebs.co.kr/images/english.jpg"
 
 
 def test_ebs_official_html_resolves_protocol_relative_homepage_urls() -> None:

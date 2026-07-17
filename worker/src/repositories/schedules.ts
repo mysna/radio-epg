@@ -15,7 +15,6 @@ interface ScheduleRow {
   source_kind: string;
   fetched_at: string;
   confidence: number;
-  program_image_asset_id: string | null;
 }
 
 const SCHEDULE_SELECT = `
@@ -32,8 +31,7 @@ const SCHEDULE_SELECT = `
     schedule_events.source_url,
     schedule_events.source_kind,
     schedule_events.fetched_at,
-    schedule_events.confidence,
-    programs.image_asset_id AS program_image_asset_id
+    schedule_events.confidence
   FROM schedule_events
   LEFT JOIN programs ON programs.id = schedule_events.program_id
 `;
@@ -54,9 +52,6 @@ function toPublicEvent(row: ScheduleRow, now: Date): PublicScheduleEvent {
     ends_at: row.ends_at,
     is_live: row.is_live === 1,
     is_rerun: row.is_rerun === 1,
-    program_image_url: row.program_image_asset_id
-      ? `/v1/images/${row.program_image_asset_id}/medium`
-      : null,
     source: {
       id: row.source_id,
       url: row.source_url,

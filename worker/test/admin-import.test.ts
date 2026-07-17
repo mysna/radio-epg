@@ -69,7 +69,6 @@ function importBatch(suffix: string) {
         is_rerun: false,
       },
     ],
-    images: [],
     collected_at: "2026-07-13T01:01:00Z",
   };
 }
@@ -161,6 +160,13 @@ describe("authenticated schedule ingestion", () => {
 
   it("rejects an invalid import schema", async () => {
     const response = await adminRequest({ idempotency_key: "invalid" });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "invalid_import" } });
+  });
+
+  it("rejects the removed images import field", async () => {
+    const response = await adminRequest({ ...importBatch("images-field"), images: [] });
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ error: { code: "invalid_import" } });

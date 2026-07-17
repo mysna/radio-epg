@@ -17,7 +17,6 @@ from radio_epg.http import PoliteHttpClient
 from radio_epg.models import (
     AdapterResult,
     Channel,
-    ImageCandidate,
     ProgramCandidate,
     ScheduleCandidate,
     SourceMetadata,
@@ -102,7 +101,6 @@ class _SchedulePayload(_BoundaryModel):
     program_actor: str | None = None
     program_intention: str | None = None
     program_genre: str | None = None
-    image_w: str | None = None
     homepage_url: str | None = None
 
     @model_validator(mode="after")
@@ -262,7 +260,6 @@ class KbsAdapter:
         }
         fetched_at = self._now()
         programs: dict[str, ProgramCandidate] = {}
-        images: dict[str, ImageCandidate] = {}
         schedules: list[ScheduleCandidate] = []
 
         for group in payloads:
@@ -333,17 +330,6 @@ class KbsAdapter:
                         homepage_url=item.homepage_url,
                     ),
                 )
-                if item.image_w:
-                    images.setdefault(
-                        program_id,
-                        ImageCandidate(
-                            entity_type="program",
-                            entity_id=program_id,
-                            source_url=item.image_w,
-                            source_page_url=item.homepage_url or self.source.source_url,
-                            rights_status="unknown",
-                        ),
-                    )
 
         if not schedules:
             raise KbsEmptyScheduleError("KBS weekly response is empty")
@@ -361,5 +347,4 @@ class KbsAdapter:
             channels=_catalog_channels(self._mapping, self._catalog),
             programs=tuple(programs.values()),
             schedules=tuple(schedules),
-            images=tuple(images.values()),
         )

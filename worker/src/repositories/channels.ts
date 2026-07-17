@@ -11,7 +11,6 @@ interface ChannelRow {
   active: number;
   broadcaster_id: string;
   broadcaster_name: string;
-  image_asset_id: string | null;
 }
 
 interface AliasRow {
@@ -29,7 +28,6 @@ const CHANNEL_SELECT = `
     channels.ch,
     channels.city,
     channels.active,
-    channels.image_asset_id,
     broadcasters.id AS broadcaster_id,
     broadcasters.name AS broadcaster_name
   FROM channels
@@ -47,7 +45,6 @@ function toPublicChannel(row: ChannelRow, aliases: ChannelAlias[]): PublicChanne
     active: row.active === 1,
     broadcaster: { id: row.broadcaster_id, name: row.broadcaster_name },
     aliases,
-    image_url: row.image_asset_id ? `/v1/images/${row.image_asset_id}/medium` : null,
   };
 }
 

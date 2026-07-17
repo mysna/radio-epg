@@ -2,7 +2,6 @@ import type { DatabaseBindings } from "./db";
 
 /** Worker가 요청 처리 중 사용하는 환경 binding. */
 export interface Bindings extends DatabaseBindings {
-  IMAGES: R2Bucket;
   CORS_ORIGINS?: string;
   INGEST_TOKEN?: string;
 }
@@ -29,7 +28,6 @@ export interface PublicChannel {
   active: boolean;
   broadcaster: { id: string; name: string };
   aliases: ChannelAlias[];
-  image_url: string | null;
 }
 
 /** 편성 출처와 freshness 정보. */
@@ -52,6 +50,5 @@ export interface PublicScheduleEvent {
   ends_at: string;
   is_live: boolean;
   is_rerun: boolean;
-  program_image_url: string | null;
   source: PublicSource;
 }

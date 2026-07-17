@@ -4,12 +4,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from radio_epg.cli import app_name, build_parser, publish_collection_batch
-from radio_epg.models import (
-    ImageCandidate,
-    ImportBatch,
-    ScheduleCandidate,
-    SourceMetadata,
-)
+from radio_epg.models import ImportBatch, ScheduleCandidate, SourceMetadata
 
 
 def test_app_name() -> None:
@@ -59,19 +54,11 @@ def _batch() -> ImportBatch:
                 title="뉴스",
             ),
         ),
-        images=(
-            ImageCandidate(
-                entity_type="program",
-                entity_id="kbs:news",
-                source_url="https://images.example.test/news.png",
-                source_page_url="https://schedule.kbs.co.kr/news",
-            ),
-        ),
         collected_at=now,
     )
 
 
-def test_collection_batch_publishes_only_schedules_while_images_are_disabled() -> None:
+def test_collection_batch_publishes_schedules() -> None:
     calls: list[tuple[str, object]] = []
 
     async def schedule_publisher(batch: ImportBatch, **_kwargs: object) -> dict[str, object]:
@@ -92,7 +79,7 @@ def test_collection_batch_publishes_only_schedules_while_images_are_disabled() -
     assert result == {"status": "applied"}
 
 
-def test_collection_batch_does_not_publish_images_when_schedule_import_fails() -> None:
+def test_collection_batch_propagates_schedule_import_failure() -> None:
     async def schedule_publisher(*_args: object, **_kwargs: object) -> dict[str, object]:
         raise RuntimeError("schedule failed")
 

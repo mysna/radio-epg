@@ -12,14 +12,13 @@ MAPPING = Path(__file__).parents[2] / "data" / "mappings" / "mbc.json"
 CATALOG = Path(__file__).parents[2] / "data" / "radio_channels.json"
 
 
-def test_mbc_jsonp_maps_the_three_verified_central_channels_and_image() -> None:
+def test_mbc_jsonp_maps_the_three_verified_central_channels() -> None:
     rows = parse_mbc_schedule(
         (FIXTURES / "schedule.jsonp").read_text(), expected_date=date(2026, 7, 13)
     )
 
     assert set(rows) == {"sfm", "fm4u", "chm"}
     assert rows["sfm"][0].upstream_id == "mbc-s-1"
-    assert rows["sfm"][0].image_url == "https://img.imbc.com/program/sfm.png"
     assert rows["sfm"][0].is_live is True
 
 

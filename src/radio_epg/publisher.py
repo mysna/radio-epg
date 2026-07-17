@@ -42,7 +42,7 @@ def _publish_error(response: httpx.Response) -> PublishError:
 
 
 def _payload(batch: ImportBatch) -> dict[str, Any]:
-    return batch.model_dump(mode="json", exclude={"images"})
+    return batch.model_dump(mode="json")
 
 
 def _payload_size(batch: ImportBatch) -> int:
@@ -73,7 +73,6 @@ def _subset_batch(
                 program for program in batch.programs if program.program_id in program_ids
             ),
             "schedules": schedules,
-            "images": (),
         }
     )
 
