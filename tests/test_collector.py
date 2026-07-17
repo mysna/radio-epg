@@ -125,9 +125,7 @@ def test_collector_reports_sanitized_publish_error_details() -> None:
 
 
 def test_collector_reports_http_status_without_exposing_request_details() -> None:
-    request = httpx.Request(
-        "GET", "https://schedule.example.test/path?token=do-not-report-this"
-    )
+    request = httpx.Request("GET", "https://schedule.example.test/path?token=do-not-report-this")
     response = httpx.Response(503, request=request)
     collector = Collector(
         (
