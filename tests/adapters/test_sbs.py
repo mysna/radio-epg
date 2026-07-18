@@ -86,6 +86,42 @@ def test_sbs_normalization_scopes_reused_event_ids_by_channel() -> None:
     )
 
     assert {event.source_event_id for event in result.schedules} == {
-        "power:shared-vod:05:00",
-        "love:shared-vod:05:00",
+        "power:2026-07-15:shared-vod:05:00",
+        "love:2026-07-15:shared-vod:05:00",
+    }
+
+
+def test_sbs_normalization_scopes_reused_event_ids_by_broadcast_date() -> None:
+    source = SourceConfig(
+        source_id="sbs",
+        name="SBS 편성표",
+        source_kind="official",
+        source_url="https://www.sbs.co.kr/",
+        priority=100,
+        adapter="sbs",
+    )
+
+    def normalized_id(broadcast_date: date) -> str | None:
+        row = ScheduleRow(
+            upstream_id="shared-vod:05:00",
+            broadcast_date=broadcast_date,
+            start="05:00",
+            end="06:00",
+            title="매일 같은 프로그램",
+        )
+        result = normalize_rows(
+            source=source,
+            mapping=load_channel_mapping(MAPPING),
+            catalog_path=CATALOG,
+            rows={"power": (row,)},
+            fetched_at=datetime(2026, 7, 18, tzinfo=UTC),
+        )
+        return result.schedules[0].source_event_id
+
+    assert {
+        normalized_id(date(2026, 7, 17)),
+        normalized_id(date(2026, 7, 18)),
+    } == {
+        "power:2026-07-17:shared-vod:05:00",
+        "power:2026-07-18:shared-vod:05:00",
     }
