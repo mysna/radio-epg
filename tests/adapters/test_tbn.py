@@ -52,6 +52,16 @@ def test_tbn_html_parser_preserves_the_requested_region() -> None:
     assert rows[-1].title == "심야 음악"
 
 
+def test_tbn_html_parser_accepts_official_gwangju_region_name() -> None:
+    rows = parse_tbn_html(
+        (FIXTURES / "schedule_gwangju.html").read_text(),
+        expected_date=date(2026, 8, 9),
+        station_code="gwangju",
+    )
+
+    assert rows[0].upstream_id == "gwangju:2026-08-09:05:00:528"
+
+
 def test_tbn_html_parser_rejects_the_wrong_date_or_region_page() -> None:
     fixture = (FIXTURES / "schedule.html").read_text()
 

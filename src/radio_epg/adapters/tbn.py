@@ -59,7 +59,7 @@ _PAGE_CODES = {
 _STATION_NAMES = {
     "main": "경인",
     "busan": "부산",
-    "gwangju": "광주",
+    "gwangju": "전남광주",
     "daegu": "대구",
     "daejeon": "대전",
     "gangwon": "강원",
