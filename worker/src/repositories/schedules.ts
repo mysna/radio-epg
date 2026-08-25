@@ -17,8 +17,12 @@ interface ScheduleRow {
   confidence: number;
 }
 
-const SCHEDULE_SELECT = `
-  SELECT
+export interface CurrentAndNext {
+  current: PublicScheduleEvent | null;
+  next: PublicScheduleEvent | null;
+}
+
+const SCHEDULE_COLUMNS = `
     schedule_events.id AS event_id,
     schedule_events.program_id,
     schedule_events.title,
@@ -32,8 +36,11 @@ const SCHEDULE_SELECT = `
     schedule_events.source_kind,
     schedule_events.fetched_at,
     schedule_events.confidence
+`;
+
+const SCHEDULE_SELECT = `
+  SELECT ${SCHEDULE_COLUMNS}
   FROM schedule_events
-  LEFT JOIN programs ON programs.id = schedule_events.program_id
 `;
 
 /** source fetch 시각이 freshness 허용 시간을 넘었는지 판단한다. */
@@ -86,19 +93,56 @@ export async function currentAndNext(
   database: Database,
   channelId: string,
   now: Date,
-): Promise<{ current: PublicScheduleEvent | null; next: PublicScheduleEvent | null }> {
+): Promise<CurrentAndNext> {
+  const schedules = await currentAndNextForChannels(database, [channelId], now);
+  return schedules.get(channelId) ?? { current: null, next: null };
+}
+
+/**
+ * 여러 채널의 현재·다음 편성을 한 번의 질의로 조회한다. 채널마다 질의를
+ * 반복하면 요청 하나가 채널 수만큼 D1 조회를 일으킨다.
+ */
+export async function currentAndNextForChannels(
+  database: Database,
+  channelIds: string[],
+  now: Date,
+): Promise<Map<string, CurrentAndNext>> {
+  const schedules = new Map<string, CurrentAndNext>();
+  if (channelIds.length === 0) {
+    return schedules;
+  }
+
   const timestamp = now.toISOString();
   const result = await database
     .prepare(
-      `${SCHEDULE_SELECT}
-       WHERE schedule_events.channel_id = ? AND schedule_events.ends_at > ?
-       ORDER BY schedule_events.starts_at
-       LIMIT 2`,
+      `SELECT * FROM (
+         SELECT
+           schedule_events.channel_id,
+           ${SCHEDULE_COLUMNS},
+           ROW_NUMBER() OVER (
+             PARTITION BY schedule_events.channel_id ORDER BY schedule_events.starts_at
+           ) AS position
+         FROM schedule_events
+         WHERE schedule_events.channel_id IN (SELECT value FROM json_each(?1))
+           AND schedule_events.ends_at > ?2
+       )
+       WHERE position <= 2`,
     )
-    .bind(channelId, timestamp)
-    .all<ScheduleRow>();
-  const events = result.results.map((row) => toPublicEvent(row, now));
-  const current = events.find((event) => event.starts_at <= timestamp && timestamp < event.ends_at) ?? null;
-  const next = events.find((event) => event.starts_at > timestamp) ?? null;
-  return { current, next };
+    .bind(JSON.stringify(channelIds), timestamp)
+    .all<ScheduleRow & { channel_id: string }>();
+
+  const byChannel = new Map<string, PublicScheduleEvent[]>();
+  for (const row of result.results) {
+    const events = byChannel.get(row.channel_id) ?? [];
+    events.push(toPublicEvent(row, now));
+    byChannel.set(row.channel_id, events);
+  }
+
+  for (const [channelId, events] of byChannel) {
+    schedules.set(channelId, {
+      current: events.find((event) => event.starts_at <= timestamp && timestamp < event.ends_at) ?? null,
+      next: events.find((event) => event.starts_at > timestamp) ?? null,
+    });
+  }
+  return schedules;
 }

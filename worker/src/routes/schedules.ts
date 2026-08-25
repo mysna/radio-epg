@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
-import { cachedJson, errorResponse } from "../errors";
+import { edgeCachedJson } from "../cache";
+import { errorResponse } from "../errors";
 import { resolveChannel } from "../repositories/channels";
 import { schedulesForDate } from "../repositories/schedules";
 import type { AppEnv } from "../types";
@@ -32,28 +33,26 @@ schedules.get("/", async (context) => {
     );
   }
 
-  const channel = await resolveChannel(context.env.DB, identifier);
-  if (!channel) {
-    return errorResponse(
-      context,
-      404,
-      "channel_not_found",
-      "The requested channel alias is not registered.",
-    );
-  }
+  return edgeCachedJson(context, "public, max-age=300", async () => {
+    const channel = await resolveChannel(context.env.DB, identifier);
+    if (!channel) {
+      return errorResponse(
+        context,
+        404,
+        "channel_not_found",
+        "The requested channel alias is not registered.",
+      );
+    }
 
-  const events = await schedulesForDate(context.env.DB, channel.channel_id, date, new Date());
-  return cachedJson(
-    context,
-    {
+    const events = await schedulesForDate(context.env.DB, channel.channel_id, date, new Date());
+    return {
       channel_id: channel.channel_id,
       broadcast_date: date,
       status: events.length > 0 ? "available" : "unavailable",
       stale: events.some((event) => event.source.stale),
       events,
-    },
-    "public, max-age=300",
-  );
+    };
+  });
 });
 
 export default schedules;

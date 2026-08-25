@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 
-import { cachedJson, errorResponse } from "../errors";
-import { resolveChannel } from "../repositories/channels";
-import { currentAndNext } from "../repositories/schedules";
+import { edgeCachedJson } from "../cache";
+import { errorResponse } from "../errors";
+import { resolveChannelIds } from "../repositories/channels";
+import { currentAndNextForChannels } from "../repositories/schedules";
 import type { AppEnv } from "../types";
 
 const nowRoute = new Hono<AppEnv>();
@@ -24,34 +25,38 @@ nowRoute.get("/", async (context) => {
     );
   }
 
-  const requestedAt = new Date();
-  const results = [];
-  for (const radioId of radioIds) {
-    const channel = await resolveChannel(context.env.DB, radioId);
-    if (!channel) {
-      results.push({
-        radio_id: radioId,
-        channel_id: null,
-        status: "not_found",
-        current: null,
-        next: null,
-      });
-      continue;
-    }
-    const schedule = await currentAndNext(context.env.DB, channel.channel_id, requestedAt);
-    results.push({
-      radio_id: radioId,
-      channel_id: channel.channel_id,
-      status: schedule.current || schedule.next ? "available" : "unavailable",
-      ...schedule,
-    });
-  }
+  return edgeCachedJson(context, "public, max-age=30", async () => {
+    const requestedAt = new Date();
+    // 식별자 해석과 편성 조회를 각각 한 번씩만 수행한다.
+    const channelIds = await resolveChannelIds(context.env.DB, radioIds);
+    const schedules = await currentAndNextForChannels(
+      context.env.DB,
+      [...new Set(channelIds.values())],
+      requestedAt,
+    );
 
-  return cachedJson(
-    context,
-    { requested_at: requestedAt.toISOString(), results },
-    "public, max-age=30",
-  );
+    const results = radioIds.map((radioId) => {
+      const channelId = channelIds.get(radioId);
+      if (!channelId) {
+        return {
+          radio_id: radioId,
+          channel_id: null,
+          status: "not_found",
+          current: null,
+          next: null,
+        };
+      }
+      const schedule = schedules.get(channelId) ?? { current: null, next: null };
+      return {
+        radio_id: radioId,
+        channel_id: channelId,
+        status: schedule.current || schedule.next ? "available" : "unavailable",
+        ...schedule,
+      };
+    });
+
+    return { requested_at: requestedAt.toISOString(), results };
+  });
 });
 
 export default nowRoute;

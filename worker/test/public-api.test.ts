@@ -289,6 +289,46 @@ describe("current schedule API", () => {
     });
   });
 
+  it("serves repeated identical requests from the edge cache", async () => {
+    const path = `/v1/now?radio_ids=${EMPTY_RADIO_ID},${RADIO_ID}`;
+    const readStatus = async () => {
+      const body = (await (await request(path)).json()) as { results: Array<{ status: string }> };
+      return body.results[0].status;
+    };
+    expect(await readStatus()).toBe("unavailable");
+
+    await testEnv.DB.prepare(
+      `INSERT INTO schedule_events (
+        id, event_key, channel_id, source_id, broadcast_date, starts_at, ends_at,
+        title, source_url, source_kind, fetched_at, confidence
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        "event-cache-probe",
+        "event-cache-probe",
+        "mbc.sfm.main",
+        "kbs",
+        "2026-07-13",
+        "2026-07-13T03:00:00Z",
+        "2026-07-13T04:00:00Z",
+        "캐시 확인용",
+        "https://schedule.kbs.co.kr/",
+        "official",
+        "2026-07-11T03:00:00Z",
+        1,
+      )
+      .run();
+
+    try {
+      // 새 편성이 들어와도 캐시가 살아 있는 동안에는 D1을 다시 읽지 않는다.
+      expect(await readStatus()).toBe("unavailable");
+    } finally {
+      await testEnv.DB.prepare("DELETE FROM schedule_events WHERE id = ?")
+        .bind("event-cache-probe")
+        .run();
+    }
+  });
+
   it("limits radio ID batches to 100", async () => {
     const ids = Array.from({ length: 101 }, (_, index) => `radio-${index}`).join(",");
     const response = await request(`/v1/now?radio_ids=${ids}`);
