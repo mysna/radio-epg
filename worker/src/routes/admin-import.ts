@@ -209,16 +209,20 @@ export async function buildImportStatements(
       .bind(JSON.stringify(programs)),
     database
       .prepare(
+        // json_each를 바깥 루프로 두어 scope 인덱스로만 대상 행을 찾고,
+        // 이번 배치에 다시 등장하는 이벤트는 남겨 재삽입 쓰기를 피한다.
         `DELETE FROM schedule_events
-         WHERE EXISTS (
-           SELECT 1
-           FROM json_each(?) AS scope
-           WHERE schedule_events.source_id = json_extract(scope.value, '$.source_id')
-             AND schedule_events.channel_id = json_extract(scope.value, '$.channel_id')
-             AND schedule_events.broadcast_date = json_extract(scope.value, '$.broadcast_date')
+         WHERE rowid IN (
+           SELECT scoped.rowid
+           FROM json_each(?1) AS scope
+           JOIN schedule_events AS scoped
+             ON scoped.source_id = json_extract(scope.value, '$.source_id')
+             AND scoped.channel_id = json_extract(scope.value, '$.channel_id')
+             AND scoped.broadcast_date = json_extract(scope.value, '$.broadcast_date')
+           WHERE scoped.id NOT IN (SELECT value FROM json_each(?2))
          )`,
       )
-      .bind(JSON.stringify(scopes)),
+      .bind(JSON.stringify(scopes), JSON.stringify(events.map((event) => event.id))),
     database
       .prepare(
         `INSERT INTO schedule_events (
@@ -244,7 +248,37 @@ export async function buildImportStatements(
            json_extract(value, '$.source_url'),
            json_extract(value, '$.source_kind'),
            json_extract(value, '$.fetched_at')
-         FROM json_each(?)`,
+         FROM json_each(?)
+         WHERE true
+         ON CONFLICT(id) DO UPDATE SET
+           channel_id = excluded.channel_id,
+           program_id = excluded.program_id,
+           source_id = excluded.source_id,
+           source_event_id = excluded.source_event_id,
+           broadcast_date = excluded.broadcast_date,
+           starts_at = excluded.starts_at,
+           ends_at = excluded.ends_at,
+           title = excluded.title,
+           subtitle = excluded.subtitle,
+           is_live = excluded.is_live,
+           is_rerun = excluded.is_rerun,
+           confidence = excluded.confidence,
+           source_url = excluded.source_url,
+           source_kind = excluded.source_kind,
+           fetched_at = excluded.fetched_at,
+           updated_at = CURRENT_TIMESTAMP
+         WHERE
+           schedule_events.starts_at IS NOT excluded.starts_at
+           OR schedule_events.ends_at IS NOT excluded.ends_at
+           OR schedule_events.title IS NOT excluded.title
+           OR schedule_events.subtitle IS NOT excluded.subtitle
+           OR schedule_events.program_id IS NOT excluded.program_id
+           OR schedule_events.source_event_id IS NOT excluded.source_event_id
+           OR schedule_events.is_live IS NOT excluded.is_live
+           OR schedule_events.is_rerun IS NOT excluded.is_rerun
+           OR schedule_events.confidence IS NOT excluded.confidence
+           OR schedule_events.source_url IS NOT excluded.source_url
+           OR schedule_events.source_kind IS NOT excluded.source_kind`,
       )
       .bind(JSON.stringify(events)),
     database

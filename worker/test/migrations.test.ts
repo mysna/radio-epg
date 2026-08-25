@@ -33,8 +33,11 @@ async function seedChannel(suffix: string): Promise<void> {
 
 beforeAll(async () => {
   if (testEnv.TEST_MIGRATIONS) {
-    const previous = testEnv.TEST_MIGRATIONS.slice(0, -1);
-    const removeImages = testEnv.TEST_MIGRATIONS.slice(-1);
+    const removeImagesIndex = testEnv.TEST_MIGRATIONS.findIndex((migration) =>
+      migration.name.includes("remove_images"),
+    );
+    const previous = testEnv.TEST_MIGRATIONS.slice(0, removeImagesIndex);
+    const removeImages = testEnv.TEST_MIGRATIONS.slice(removeImagesIndex);
     await applyD1Migrations(testEnv.DB, previous);
     await testEnv.DB.batch([
       testEnv.DB.prepare(

@@ -60,11 +60,13 @@ export async function deleteExpiredScheduleEvents(
 ): Promise<RetentionResult> {
   const startDate = collectionStartDate ?? koreanCalendarDate(now);
   const endDate = nextCalendarDate(startDate);
-  const result = await database
-    .prepare("DELETE FROM schedule_events WHERE broadcast_date < ? OR broadcast_date > ?")
-    .bind(startDate, endDate)
-    .run();
-  return { start_date: startDate, end_date: endDate, deleted: result.meta.changes };
+  // OR 조건은 인덱스를 쓰지 못하므로 범위를 나눠 broadcast_date 인덱스를 태운다.
+  const [before, after] = await database.batch<unknown>([
+    database.prepare("DELETE FROM schedule_events WHERE broadcast_date < ?").bind(startDate),
+    database.prepare("DELETE FROM schedule_events WHERE broadcast_date > ?").bind(endDate),
+  ]);
+  const deleted = before.meta.changes + after.meta.changes;
+  return { start_date: startDate, end_date: endDate, deleted };
 }
 
 const retention = new Hono<AppEnv>();

@@ -267,6 +267,24 @@ describe("authenticated schedule ingestion", () => {
     expect(events.results.map(({ title }) => title)).toEqual(["KBS 뉴스"]);
   });
 
+  it("replaces stale events in the reimported scope", async () => {
+    expect((await adminRequest(importBatch("replace"))).status).toBe(201);
+
+    const replacement = importBatch("replace");
+    replacement.idempotency_key = "kbs-replace-second";
+    replacement.schedules[0].source_event_id = "event-replace-renumbered";
+    replacement.schedules[0].title = "KBS 저녁 뉴스";
+    const response = await adminRequest(replacement);
+    const events = await testEnv.DB.prepare(
+      "SELECT title FROM schedule_events WHERE channel_id = ?",
+    )
+      .bind("kbs.1radio.replace")
+      .all<{ title: string }>();
+
+    expect(response.status).toBe(201);
+    expect(events.results.map(({ title }) => title)).toEqual(["KBS 저녁 뉴스"]);
+  });
+
   it("does not erase valid events with an empty batch", async () => {
     const original = importBatch("empty");
     expect((await adminRequest(original)).status).toBe(201);
