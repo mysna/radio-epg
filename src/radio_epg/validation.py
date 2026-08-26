@@ -27,6 +27,19 @@ def _is_nested(first: ScheduleCandidate, second: ScheduleCandidate) -> bool:
     return first_contains_second or second_contains_first
 
 
+def _describe(event: ScheduleCandidate) -> str:
+    """충돌한 편성을 재현 가능한 최소 정보로 요약한다."""
+    return (
+        f"{event.channel_id} {event.starts_at.isoformat()}~{event.ends_at.isoformat()} "
+        f"{event.source_event_id!r} {event.title!r}"
+    )
+
+
+def _conflict(reason: str, first: ScheduleCandidate, second: ScheduleCandidate) -> str:
+    """검증 실패 사유와 충돌한 두 편성을 한 줄로 만든다."""
+    return f"{reason}: {_describe(first)} vs {_describe(second)}"
+
+
 def _validate_pair(
     first: ScheduleCandidate,
     second: ScheduleCandidate,
@@ -37,13 +50,17 @@ def _validate_pair(
         return
     if first.ends_at == second.starts_at or second.ends_at == first.starts_at:
         if not policy.allow_adjacent:
-            raise ScheduleValidationError("adjacent events require adapter declaration")
+            raise ScheduleValidationError(
+                _conflict("adjacent events require adapter declaration", first, second)
+            )
         return
     if _is_nested(first, second):
         if not policy.allow_nested:
-            raise ScheduleValidationError("nested events require adapter declaration")
+            raise ScheduleValidationError(
+                _conflict("nested events require adapter declaration", first, second)
+            )
         return
-    raise ScheduleValidationError("conflicting overlap from one source")
+    raise ScheduleValidationError(_conflict("conflicting overlap from one source", first, second))
 
 
 def validate_schedule(

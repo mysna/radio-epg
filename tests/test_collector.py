@@ -193,7 +193,8 @@ def test_collector_publishes_only_structurally_valid_results() -> None:
 
     assert publisher.batches == []
     assert report.runs[0].status == "failed"
-    assert report.runs[0].error == "ScheduleValidationError"
+    assert report.runs[0].error is not None
+    assert report.runs[0].error.startswith("ScheduleValidationError: ")
 
 
 def test_empty_results_preserve_prior_data_and_summary_contains_counts_and_timing() -> None:

@@ -11,7 +11,11 @@ from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
 from radio_epg.broadcast_time import KST
 from radio_epg.models import AdapterResult, ImportBatch
 from radio_epg.publisher import PublishError
-from radio_epg.validation import SchedulePolicy, validate_schedule
+from radio_epg.validation import (
+    SchedulePolicy,
+    ScheduleValidationError,
+    validate_schedule,
+)
 
 
 class EmptyScheduleError(ValueError):
@@ -100,6 +104,8 @@ def _korean_today() -> date:
 def _collection_error(error: Exception) -> str:
     if isinstance(error, PublishError):
         return f"PublishError: {error}"
+    if isinstance(error, ScheduleValidationError):
+        return f"ScheduleValidationError: {error}"
     if isinstance(error, httpx.HTTPStatusError):
         response = error.response
         return f"HTTPStatusError: HTTP {response.status_code} {response.reason_phrase}"
