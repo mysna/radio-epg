@@ -284,6 +284,15 @@ Worker의 `INGEST_TOKEN`과 GitHub `EPG_INGEST_TOKEN`이 같은지 확인하되 
 출력하지 않는다. 하나를 바꿨다면 둘 다 회전하고 수동 `workflow_dispatch`를 실행한다.
 Collector는 오류 응답 본문과 token을 진단 결과에 포함하지 않는다.
 
+### 한 source만 `ScheduleValidationError`로 실패
+
+수집은 source별로 격리되므로 나머지 source는 정상 반영된다. 실패한 실행의 리포트 `error`에
+충돌한 두 편성의 채널, 시각, `source_event_id`, 제목이 함께 남는다. 상류 응답 자체가
+필요하면 실패한 실행의 `upstream-responses-<run_id>` artifact를 내려받는다. Collector는
+`EPG_RESPONSE_DUMP_DIR`가 설정된 경우에만 상류 응답 본문을 그 경로에 순서대로 기록하며,
+workflow는 실패했을 때만 그 디렉터리를 14일 보관 artifact로 올린다. 로컬에서 같은 덤프를
+남기려면 같은 환경 변수를 지정하고 `radio-epg collect`를 실행한다.
+
 ### D1 migration 또는 deploy 권한 오류
 
 `CLOUDFLARE_ACCOUNT_ID`가 D1 소유 계정인지 확인한다. 토큰 범위가 그 계정 하나를 포함하고

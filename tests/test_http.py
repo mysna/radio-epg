@@ -1,8 +1,10 @@
 import asyncio
+from pathlib import Path
 
 import httpx
+import pytest
 
-from radio_epg.http import PoliteHttpClient
+from radio_epg.http import DUMP_DIR_ENV, PoliteHttpClient
 
 
 class FakeClock:
@@ -98,3 +100,64 @@ def test_http_client_retries_transient_failures_with_a_bounded_backoff() -> None
     assert response.status_code == 200
     assert attempts == 3
     assert clock.sleeps == [0.25, 0.5]
+
+
+def test_dump_dir_records_each_upstream_response_body(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"path": request.url.path})
+
+    async def scenario() -> None:
+        async with PoliteHttpClient(
+            transport=httpx.MockTransport(handler),
+            per_host_delay=0,
+            dump_dir=tmp_path / "responses",
+        ) as client:
+            await client.get("https://schedule.example.test/radio/daily")
+            await client.get("https://schedule.example.test/radio/weekly")
+
+    asyncio.run(scenario())
+
+    dumped = sorted(path.name for path in (tmp_path / "responses").iterdir())
+    assert dumped == [
+        "001-schedule.example.test-radio-daily.json",
+        "002-schedule.example.test-radio-weekly.json",
+    ]
+    body = (tmp_path / "responses" / dumped[0]).read_text(encoding="utf-8")
+    assert '"/radio/daily"' in body
+
+
+def test_responses_are_not_dumped_without_configuration(tmp_path: Path) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"ok": True})
+
+    async def scenario() -> None:
+        async with PoliteHttpClient(
+            transport=httpx.MockTransport(handler),
+            per_host_delay=0,
+        ) as client:
+            await client.get("https://schedule.example.test/radio/daily")
+
+    asyncio.run(scenario())
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_dump_dir_env_configures_the_client(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(DUMP_DIR_ENV, str(tmp_path / "from-env"))
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, html="<html></html>")
+
+    async def scenario() -> None:
+        async with PoliteHttpClient(
+            transport=httpx.MockTransport(handler),
+            per_host_delay=0,
+        ) as client:
+            await client.get("https://schedule.example.test/radio/daily")
+
+    asyncio.run(scenario())
+
+    dumped = [path.name for path in (tmp_path / "from-env").iterdir()]
+    assert dumped == ["001-schedule.example.test-radio-daily.html"]

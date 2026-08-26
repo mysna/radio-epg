@@ -81,18 +81,25 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
 
     steps = _steps(collect)
     ingestion = next(step for step in steps if step.get("name") == "Collect and import schedules")
-    assert ingestion["env"] == {
+    credentials = {
         "EPG_API_BASE_URL": "${{ vars.EPG_API_BASE_URL }}",
         "EPG_INGEST_TOKEN": "${{ secrets.EPG_INGEST_TOKEN }}",
     }
+    dump_dir = "${{ runner.temp }}/upstream-responses"
+    assert ingestion["env"] == {**credentials, "EPG_RESPONSE_DUMP_DIR": dump_dir}
     retention = next(step for step in steps if step.get("name") == "Apply schedule retention")
     assert retention["if"] == "always()"
-    assert retention["env"] == ingestion["env"]
+    assert retention["env"] == credentials
     assert "/v1/admin/retention?start_date=${EPG_COLLECTION_DATE}" in retention["run"]
     assert steps.index(ingestion) < steps.index(retention)
     diagnostics = next(step for step in steps if step.get("name") == "Upload sanitized diagnostics")
     assert diagnostics["if"] == "failure()"
     assert _mapping(diagnostics["with"])["if-no-files-found"] == "ignore"
+    responses = next(step for step in steps if step.get("name") == "Upload upstream responses")
+    assert responses["if"] == "failure()"
+    responses_with = _mapping(responses["with"])
+    assert responses_with["path"] == dump_dir
+    assert responses_with["if-no-files-found"] == "ignore"
 
 
 def test_deployment_migrates_before_protected_worker_deploy() -> None:

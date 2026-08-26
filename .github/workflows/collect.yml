@@ -33,6 +33,7 @@ jobs:
         env:
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
           EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
+          EPG_RESPONSE_DUMP_DIR: ${{ runner.temp }}/upstream-responses
       - name: Apply schedule retention
         if: always()
         run: >-
@@ -51,5 +52,13 @@ jobs:
         with:
           name: collection-diagnostics-${{ github.run_id }}
           path: collection-diagnostics.md
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload upstream responses
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-responses-${{ github.run_id }}
+          path: ${{ runner.temp }}/upstream-responses
           if-no-files-found: ignore
           retention-days: 14
