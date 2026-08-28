@@ -186,8 +186,11 @@ Environments**에는 이름이 정확히 `production`인 environment를 만들�
 reviewer와 `main` branch 제한을 설정한다. `deploy-worker.yml`은 이 environment 승인을 받은
 뒤 D1 마이그레이션과 Worker 배포를 수행한다.
 
-일일 수집 schedule은 UTC `17 16 * * *`, 즉 다음 날 **01:17 KST**다. GitHub 예약 실행은
-부하가 높을 때 지연될 수 있고 default branch에 workflow가 있어야 한다. 즉시 수집하려면
+일일 수집 schedule은 UTC `17 16 * * *`와 `47 17 * * *`, 즉 다음 날 **01:17 KST**와
+**02:47 KST**다. GitHub 예약 실행은 부하가 높을 때 지연되거나 아예 누락될 수 있으므로 두 번째
+cron이 첫 실행이 없었던 날을 대신 처리한다. 두 실행은 같은 KST 방송일을 대상으로 하고
+`concurrency` 그룹이 겹침을 막으며 import는 멱등이므로 둘 다 실행되어도 결과는 같다. 예약
+실행에는 default branch에 workflow가 있어야 한다. 즉시 수집하려면
 Actions의 **Collect schedules → Run workflow**에서 `workflow_dispatch`를 실행한다. 실패하면
 workflow run의 `collection-diagnostics-<RUN_ID>` artifact를 확인하고, 원인을 수정한 뒤
 **Re-run failed jobs**를 사용한다. 진단 artifact에는 coverage만 들어가며 환경 변수나 토큰은
