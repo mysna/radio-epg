@@ -4,8 +4,42 @@ import { cachedJson } from "./errors";
 import type { AppEnv } from "./types";
 
 /** WebWorker lib의 CacheStorage 타입에는 없는 Cloudflare 기본 캐시를 가져온다. */
-function edgeCache(): Cache {
+export function edgeCache(): Cache {
   return (caches as unknown as { default: Cache }).default;
+}
+
+/**
+ * 채널 하나의 값을 edge cache에서 읽는다. 요청 조합(radio_ids)이 아니라
+ * channel_id를 키로 쓰므로, 사용자마다 다른 재생목록 조합이어도 겹치는
+ * 채널은 캐시를 공유해 D1 조회를 피한다.
+ */
+export async function matchChannelCache<T>(
+  cache: Cache,
+  cacheNamespace: string,
+  channelId: string,
+): Promise<T | null> {
+  const hit = await cache.match(`https://edge-cache.internal/${cacheNamespace}/${channelId}`);
+  if (!hit) {
+    return null;
+  }
+  return (await hit.json()) as T;
+}
+
+/** 채널 하나의 값을 edge cache에 지정한 max-age만큼 저장한다. */
+export async function putChannelCache(
+  cache: Cache,
+  cacheNamespace: string,
+  channelId: string,
+  value: unknown,
+  maxAgeSeconds: number,
+): Promise<void> {
+  const response = new Response(JSON.stringify(value), {
+    headers: {
+      "Cache-Control": `public, max-age=${maxAgeSeconds}`,
+      "Content-Type": "application/json",
+    },
+  });
+  await cache.put(`https://edge-cache.internal/${cacheNamespace}/${channelId}`, response);
 }
 
 /** 질의 문자열 순서가 달라도 같은 항목을 쓰도록 캐시 키를 정규화한다. */
