@@ -289,6 +289,23 @@ describe("current schedule API", () => {
     });
   });
 
+  it("caps the cache lifetime when the next boundary is far away", async () => {
+    const response = await request(`/v1/now?radio_ids=${RADIO_ID}`);
+
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=300");
+  });
+
+  it("ends the cache lifetime when the current program ends", async () => {
+    vi.setSystemTime(new Date("2026-07-13T03:58:00Z"));
+    try {
+      const response = await request("/v1/now?radio_ids=kbs/1radio/busan");
+
+      expect(response.headers.get("Cache-Control")).toBe("public, max-age=120");
+    } finally {
+      vi.setSystemTime(NOW);
+    }
+  });
+
   it("serves repeated identical requests from the edge cache", async () => {
     const path = `/v1/now?radio_ids=${EMPTY_RADIO_ID},${RADIO_ID}`;
     const readStatus = async () => {

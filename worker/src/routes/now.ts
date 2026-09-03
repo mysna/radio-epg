@@ -8,7 +8,22 @@ import type { AppEnv } from "../types";
 
 const nowRoute = new Hono<AppEnv>();
 const CACHE_NAMESPACE = "now/channel";
-const CACHE_MAX_AGE_SECONDS = 30;
+const MIN_CACHE_AGE_SECONDS = 30;
+const MAX_CACHE_AGE_SECONDS = 300;
+
+/**
+ * 캐시 수명을 현재 편성이 끝나는 시각까지로 잡는다. 고정 30초로 캐시하면 한
+ * 시간짜리 프로그램 하나를 보여주려고 같은 채널을 120번 다시 조회하지만,
+ * 경계까지 유지하면 값이 실제로 바뀌는 시점에만 D1을 읽는다.
+ */
+function cacheAgeSeconds(schedule: CurrentAndNext, now: Date): number {
+  const boundary = schedule.current?.ends_at ?? schedule.next?.starts_at;
+  if (!boundary) {
+    return MAX_CACHE_AGE_SECONDS;
+  }
+  const remaining = Math.floor((new Date(boundary).getTime() - now.getTime()) / 1000);
+  return Math.min(MAX_CACHE_AGE_SECONDS, Math.max(MIN_CACHE_AGE_SECONDS, remaining));
+}
 
 /**
  * 채널별로 캐시를 조회하고, 미스인 채널만 한 번의 D1 질의로 채운다. 사용자마다
@@ -41,7 +56,13 @@ async function currentAndNextCached(
       misses.map(async (channelId) => {
         const schedule = fresh.get(channelId) ?? { current: null, next: null };
         schedules.set(channelId, schedule);
-        await putChannelCache(cache, CACHE_NAMESPACE, channelId, schedule, CACHE_MAX_AGE_SECONDS);
+        await putChannelCache(
+          cache,
+          CACHE_NAMESPACE,
+          channelId,
+          schedule,
+          cacheAgeSeconds(schedule, now),
+        );
       }),
     );
   }
@@ -95,10 +116,16 @@ nowRoute.get("/", async (context) => {
     };
   });
 
+  // 응답 수명은 가장 먼저 바뀌는 채널에 맞춘다.
+  const maxAgeSeconds = [...schedules.values()].reduce(
+    (shortest, schedule) => Math.min(shortest, cacheAgeSeconds(schedule, requestedAt)),
+    MAX_CACHE_AGE_SECONDS,
+  );
+
   return cachedJson(
     context,
     { requested_at: requestedAt.toISOString(), results },
-    `public, max-age=${CACHE_MAX_AGE_SECONDS}`,
+    `public, max-age=${maxAgeSeconds}`,
   );
 });
 

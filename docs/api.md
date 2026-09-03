@@ -39,7 +39,8 @@ GET /v1/now?radio_ids=id1,id2
 한 번에 최대 100개 radio ID를 쉼표로 전달할 수 있다. 각 결과는 `current`, `next`와
 `available`, `unavailable`, 또는 `not_found` 상태를 포함한다. 등록되지 않은 radio ID가
 있어도 묶음 요청은 실패하지 않으며, 요청 순서의 해당 결과를 `channel_id: null`,
-`status: "not_found"`, `current: null`, `next: null`로 반환한다. 응답은 최대 30초 캐시한다.
+`status: "not_found"`, `current: null`, `next: null`로 반환한다. 응답은 현재 편성이
+끝나는 시각까지 캐시하며, 수명은 최소 30초에서 최대 5분으로 제한한다.
 
 ## 소스 커버리지
 
@@ -124,7 +125,8 @@ HTTP/JSON 계약을 충족하지 않으면 0이 아닌 종료 상태가 된다.
 ## 캐시와 CORS
 
 성공한 공개 응답은 `ETag`를 제공하며 같은 `If-None-Match` 요청에는 `304`를 반환한다.
-채널은 1시간, 날짜별 편성과 커버리지는 5분, 현재/다음 응답은 30초 캐시한다.
+채널과 커버리지는 1시간, 날짜별 편성은 5분 캐시한다. 현재/다음 응답은 편성 경계까지
+캐시하되 30초에서 5분 사이로 제한한다.
 
 브라우저 요청은 `CORS_ORIGINS`의 쉼표 구분 allowlist에 있는 정확한 origin만 허용한다.
 서버 간 요청처럼 `Origin` 헤더가 없는 요청은 CORS 검사 대상이 아니다.

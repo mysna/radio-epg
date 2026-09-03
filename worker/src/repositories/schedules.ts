@@ -17,6 +17,11 @@ interface ScheduleRow {
   confidence: number;
 }
 
+// 진행 중 편성은 아무리 길어도 12시간 안에 시작했고, 다음 편성은 보존 기간
+// 안에서 하루를 넘겨 비어 있지 않다. 이 두 경계로 조회 구간을 제한한다.
+const LOOKBEHIND_MILLISECONDS = 12 * 60 * 60 * 1000;
+const LOOKAHEAD_MILLISECONDS = 24 * 60 * 60 * 1000;
+
 export interface CurrentAndNext {
   current: PublicScheduleEvent | null;
   next: PublicScheduleEvent | null;
@@ -113,8 +118,12 @@ export async function currentAndNextForChannels(
   }
 
   const timestamp = now.toISOString();
+  const windowStart = new Date(now.getTime() - LOOKBEHIND_MILLISECONDS).toISOString();
+  const windowEnd = new Date(now.getTime() + LOOKAHEAD_MILLISECONDS).toISOString();
   const result = await database
     .prepare(
+      // starts_at 범위를 좁혀 (channel_id, starts_at) 인덱스를 구간 탐색으로 쓴다.
+      // 범위가 없으면 보존 기간 이틀치 편성을 채널마다 전부 읽는다.
       `SELECT * FROM (
          SELECT
            schedule_events.channel_id,
@@ -124,11 +133,13 @@ export async function currentAndNextForChannels(
            ) AS position
          FROM schedule_events
          WHERE schedule_events.channel_id IN (SELECT value FROM json_each(?1))
+           AND schedule_events.starts_at >= ?3
+           AND schedule_events.starts_at < ?4
            AND schedule_events.ends_at > ?2
        )
        WHERE position <= 2`,
     )
-    .bind(JSON.stringify(channelIds), timestamp)
+    .bind(JSON.stringify(channelIds), timestamp, windowStart, windowEnd)
     .all<ScheduleRow & { channel_id: string }>();
 
   const byChannel = new Map<string, PublicScheduleEvent[]>();
