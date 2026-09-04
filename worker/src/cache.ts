@@ -70,11 +70,14 @@ function notModified(response: Response, ifNoneMatch: string | undefined): Respo
 
 /**
  * 공개 읽기 응답을 Cloudflare edge cache에 담는다. build가 Response를 반환하면
- * 오류 응답으로 보고 캐시하지 않는다.
+ * 오류 응답으로 보고 캐시하지 않는다. cacheControl이 함수이면 build 결과를 보고
+ * 정책을 정한다 — 막 배포되었거나 수집 중이라 결과가 비어 있는 응답을 일반
+ * TTL로 캐싱하면, 뒤이어 데이터가 채워져도 그 TTL이 끝날 때까지 edge가 빈
+ * 응답을 계속 돌려준다.
  */
 export async function edgeCachedJson(
   context: Context<AppEnv>,
-  cacheControl: string,
+  cacheControl: string | ((built: unknown) => string),
   build: () => Promise<unknown>,
 ): Promise<Response> {
   const cache = edgeCache();
@@ -91,7 +94,9 @@ export async function edgeCachedJson(
     return built;
   }
 
-  const response = await cachedJson(context, built, cacheControl);
+  const resolvedCacheControl =
+    typeof cacheControl === "function" ? cacheControl(built) : cacheControl;
+  const response = await cachedJson(context, built, resolvedCacheControl);
   if (response.status === 200) {
     await cache.put(key, response.clone());
   }

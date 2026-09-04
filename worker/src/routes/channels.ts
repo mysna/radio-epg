@@ -8,9 +8,16 @@ import type { AppEnv } from "../types";
 const channels = new Hono<AppEnv>();
 
 channels.get("/", async (context) =>
-  edgeCachedJson(context, "public, max-age=3600", async () => ({
-    channels: await listChannels(context.get("db")),
-  })),
+  edgeCachedJson(
+    context,
+    (built) =>
+      (built as { channels: unknown[] }).channels.length === 0
+        ? "public, max-age=60"
+        : "public, max-age=3600",
+    async () => ({
+      channels: await listChannels(context.get("db")),
+    }),
+  ),
 );
 
 channels.get("/:identifier", async (context) =>
