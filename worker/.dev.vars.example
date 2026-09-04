@@ -1,1 +1,4 @@
 INGEST_TOKEN=<GENERATE_A_RANDOM_TOKEN>
+# 로컬 개발은 `turso dev`로 띄운 서버를 그대로 가리키면 된다 (인증 불필요).
+TURSO_DATABASE_URL=http://127.0.0.1:8080
+TURSO_AUTH_TOKEN=

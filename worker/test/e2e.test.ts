@@ -1,19 +1,18 @@
 import { env } from "cloudflare:workers";
-import { applyD1Migrations, type D1Migration } from "cloudflare:test";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import batch from "../../tests/fixtures/e2e/kbs-import.json";
+import { createDatabase } from "../src/db";
 import app from "../src/index";
+import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const TOKEN = "test-ingest-token";
 const RADIO_ID = "busan-039-kbs-1radio-busan";
 const NOW = new Date("2026-07-12T20:30:00Z");
-const testEnv = env as typeof env & {
-  DB: D1Database;
-  TEST_MIGRATIONS: D1Migration[];
-};
+const db = createDatabase({ url: "http://127.0.0.1:8092" });
+const testEnv = env as typeof env & { TEST_MIGRATIONS: MigrationFile[] };
 const bindings = {
-  DB: testEnv.DB,
+  DB: db,
   CORS_ORIGINS: "https://radio.bsod.kr",
   INGEST_TOKEN: TOKEN,
 };
@@ -34,7 +33,7 @@ async function post(path: string, body: unknown): Promise<Response> {
 }
 
 beforeAll(async () => {
-  await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+  await applyMigrations(db, testEnv.TEST_MIGRATIONS);
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
 

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { edgeCache, matchChannelCache, putChannelCache } from "../cache";
+import type { Database } from "../db";
 import { cachedJson, errorResponse } from "../errors";
 import { resolveChannelIds } from "../repositories/channels";
 import { currentAndNextForChannels, type CurrentAndNext } from "../repositories/schedules";
@@ -14,7 +15,7 @@ const MAX_CACHE_AGE_SECONDS = 300;
 /**
  * 캐시 수명을 현재 편성이 끝나는 시각까지로 잡는다. 고정 30초로 캐시하면 한
  * 시간짜리 프로그램 하나를 보여주려고 같은 채널을 120번 다시 조회하지만,
- * 경계까지 유지하면 값이 실제로 바뀌는 시점에만 D1을 읽는다.
+ * 경계까지 유지하면 값이 실제로 바뀌는 시점에만 DB를 읽는다.
  */
 function cacheAgeSeconds(schedule: CurrentAndNext, now: Date): number {
   const boundary = schedule.current?.ends_at ?? schedule.next?.starts_at;
@@ -26,12 +27,12 @@ function cacheAgeSeconds(schedule: CurrentAndNext, now: Date): number {
 }
 
 /**
- * 채널별로 캐시를 조회하고, 미스인 채널만 한 번의 D1 질의로 채운다. 사용자마다
+ * 채널별로 캐시를 조회하고, 미스인 채널만 한 번의 DB 질의로 채운다. 사용자마다
  * 다른 재생목록 조합을 요청 단위로 캐시하면 조합이 거의 겹치지 않아 캐시가
  * 무의미해지므로, channel_id 단위로 캐시해 조합과 무관하게 재사용한다.
  */
 async function currentAndNextCached(
-  database: AppEnv["Bindings"]["DB"],
+  database: Database,
   channelIds: string[],
   now: Date,
 ): Promise<Map<string, CurrentAndNext>> {
@@ -88,10 +89,11 @@ nowRoute.get("/", async (context) => {
   }
 
   const requestedAt = new Date();
+  const db = context.get("db");
   // 식별자 해석과 편성 조회를 각각 한 번씩만 수행한다.
-  const channelIds = await resolveChannelIds(context.env.DB, radioIds);
+  const channelIds = await resolveChannelIds(db, radioIds);
   const schedules = await currentAndNextCached(
-    context.env.DB,
+    db,
     [...new Set(channelIds.values())],
     requestedAt,
   );

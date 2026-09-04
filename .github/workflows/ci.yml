@@ -39,6 +39,10 @@ jobs:
           cache-dependency-path: worker/package-lock.json
       - name: Install locked dependencies
         run: npm ci --prefix worker
+      - name: Install Turso CLI
+        run: |
+          curl -sSfL https://get.tur.so/install.sh | bash
+          echo "$HOME/.turso" >> "$GITHUB_PATH"
       - name: Test
         run: npm --prefix worker test -- --run
       - name: Type check

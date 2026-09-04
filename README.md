@@ -1,8 +1,8 @@
 # Radio EPG API
 
 `radio.bsod.kr` 라디오 플레이어의 채널 ID와 호환되는 한국 라디오 편성표 API다.
-Python Collector가 공식 편성 소스를 수집·검증하고, Cloudflare Worker가 D1에 저장한 채널과
-편성을 공개 API로 제공한다.
+Python Collector가 공식 편성 소스를 수집·검증하고, Cloudflare Worker가 Turso(libSQL)에 저장한
+채널과 편성을 공개 API로 제공한다.
 
 현재 카탈로그의 194개 정규 채널과 226개 플레이어 별칭은 모두 소유 source가 정해져 있다.
 이 중 70개 채널은 fixture로 검증된 adapter가 활성화되어 있고, 124개 채널은 공식 계약을
@@ -13,15 +13,22 @@ Python Collector가 공식 편성 소스를 수집·검증하고, Cloudflare Wor
 
 - `src/radio_epg/`: 수집기, 검증 모델, adapter, 게시 클라이언트
 - `data/`: 현재 라디오 채널 카탈로그, source와 채널 매핑
-- `worker/`: Hono 기반 Worker와 D1 마이그레이션
+- `worker/`: Hono 기반 Worker와 Turso(libSQL) 마이그레이션
 - `tests/`: fixture 계약, 통합, 문서와 workflow 테스트
 - `.github/workflows/`: CI, 일일 수집, Worker 배포, 비차단 live probe
 - `docs/api.md`: 공개·관리 API의 상세 계약
 
 ## 로컬 개발
 
-Python 3.12, Node.js 24, `uv`, npm이 필요하다. OCR fixture를 다시 만들거나 live OCR을
-실행할 때만 Tesseract와 한국어 데이터, Cairo 런타임이 추가로 필요하다.
+Python 3.12, Node.js 24, `uv`, npm, Turso CLI가 필요하다. Turso CLI는 로컬 개발 DB(`turso
+dev`)와 원격 프로젝트 관리에 모두 쓰인다.
+
+```bash
+curl -sSfL https://get.tur.so/install.sh | bash
+```
+
+OCR fixture를 다시 만들거나 live OCR을 실행할 때만 Tesseract와 한국어 데이터, Cairo 런타임이
+추가로 필요하다.
 
 ```bash
 uv sync --locked --dev
@@ -31,13 +38,15 @@ npm ci --prefix worker
 일반 개발은 잠금 파일 그대로 설치하는 `npm ci`를 사용한다. 의존성을 의도적으로
 갱신하고 `worker/package-lock.json`도 함께 검토할 때만 `npm install`을 사용한다.
 
-Worker의 로컬 D1을 만들고 실행한다. `worker/.dev.vars.example`을 복사한 뒤 예제 문자열을
-로컬 전용 난수로 반드시 바꾼다.
+로컬 Turso 서버를 띄우고 마이그레이션을 적용한 뒤 Worker를 실행한다. `worker/.dev.vars.example`을
+복사한 뒤 예제 문자열을 로컬 전용 난수로 반드시 바꾼다. 기본값(`http://127.0.0.1:8080`)은
+인증 없이 동작하는 로컬 `turso dev` 서버를 가리킨다.
 
 ```bash
 cd worker
 cp .dev.vars.example .dev.vars
-npx wrangler d1 migrations apply DB --local
+turso dev &                          # 로컬 libSQL 서버, 기본 포트 8080
+TURSO_DATABASE_URL=http://127.0.0.1:8080 npm run db:migrate
 npx wrangler dev
 ```
 
@@ -71,10 +80,10 @@ npm --prefix worker run typecheck
 git diff --check
 ```
 
-## Cloudflare 최초 설정
+## Cloudflare/Turso 최초 설정
 
-명령은 저장소의 Wrangler 4 잠금 버전을 사용한다. Cloudflare 계정에서 Workers와 D1을
-사용할 수 있게 한 뒤 로컬에서는 `cd worker` 상태로 실행한다.
+명령은 저장소의 Wrangler 4 잠금 버전을 사용한다. Cloudflare 계정에서 Workers를, Turso
+계정에서 데이터베이스를 사용할 수 있게 한 뒤 로컬에서는 `cd worker` 상태로 실행한다.
 
 ### 1. 로그인과 리소스 생성
 
@@ -82,32 +91,36 @@ git diff --check
 cd worker
 npm ci
 npx wrangler login
-npx wrangler d1 create radio-epg
+turso auth login          # 브라우저에서 계정 인증
+turso db create radio-epg
+turso db show radio-epg --url
+turso db tokens create radio-epg
 ```
 
-`wrangler d1 create`가 출력한 UUID를 `worker/wrangler.toml`의 `database_id`에 복사한다.
+`db show --url` 결과를 `worker/wrangler.toml`의 `TURSO_DATABASE_URL`에 복사한다.
+`db tokens create` 결과는 파일에 쓰지 말고 3단계에서 Worker secret으로만 등록한다.
 
-공식 참고 문서: [D1 Wrangler 명령](https://developers.cloudflare.com/d1/wrangler-commands/).
+공식 참고 문서: [Turso CLI](https://docs.turso.tech/cli/introduction).
 
-### 2. D1 마이그레이션
+### 2. Turso 마이그레이션
 
-로컬과 원격은 별도 데이터베이스다. 먼저 로컬에서 검사하고 원격에 적용한다.
+로컬과 원격은 별도 데이터베이스다. 먼저 로컬 `turso dev`에서 검사하고 원격에 적용한다.
 
 ```bash
-npx wrangler d1 migrations apply DB --local
-npx wrangler d1 migrations apply DB --remote
+TURSO_DATABASE_URL=http://127.0.0.1:8080 npm run db:migrate
+TURSO_DATABASE_URL=<REMOTE_URL> TURSO_AUTH_TOKEN=<TOKEN> npm run db:migrate
 ```
 
-마이그레이션은 순서대로 기록되므로 이미 적용된 파일을 수정하지 않는다. 새 변경은 다음
-번호의 SQL 파일로 추가한다. 자세한 동작은
-[D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)를 따른다.
+마이그레이션은 파일명 순서대로 적용되고 `_migrations` 테이블에 적용 이력을 남기므로
+다시 실행해도 이미 적용된 파일은 건너뛴다. 이미 적용된 파일은 수정하지 않고, 새 변경은
+다음 번호의 SQL 파일로 추가한다.
 
 이미지 기능을 사용하던 기존 배포는 `0005_remove_images.sql` 적용과 새 Worker 배포가 끝난
 뒤 Cloudflare Dashboard에서 `radio-epg-images` bucket의 기존 객체를 모두 삭제한다. 복구가
 필요 없음을 확인한 다음 빈 bucket도 삭제한다. 저장소에서 R2 binding을 먼저 제거했으므로
 이 정리는 서비스 요청 경로에 영향을 주지 않으며, 삭제한 객체와 bucket은 복구할 수 없다.
 
-### 3. ingestion secret과 CORS
+### 3. ingestion secret, Turso 토큰, CORS
 
 최소 32바이트 난수를 한 번 생성하고 같은 값을 두 위치에 저장한다.
 
@@ -120,6 +133,16 @@ npx wrangler secret put INGEST_TOKEN
 `EPG_INGEST_TOKEN`이다. 두 값을 README, `.env.example`, `worker/.dev.vars.example`,
 `wrangler.toml`에 직접 쓰지 않는다. `wrangler secret put`은 Worker 새 버전을 즉시 만들 수
 있으므로 운영 교체 전후에 수집 workflow를 멈추고 두 값을 함께 회전한다.
+
+같은 방식으로 1단계에서 만든 Turso 토큰도 Worker secret으로 등록한다.
+
+```bash
+npx wrangler secret put TURSO_AUTH_TOKEN
+```
+
+이 값은 GitHub Actions secret `TURSO_AUTH_TOKEN`으로도 등록한다(마이그레이션 적용 단계에서
+사용). `TURSO_DATABASE_URL`은 secret이 아니므로 `wrangler.toml`의 `[vars]`와 GitHub Actions
+variable `TURSO_DATABASE_URL`에 그대로 저장한다.
 
 `CORS_ORIGINS`는 secret이 아니라 쉼표 구분 allowlist다. `worker/wrangler.toml`에서 운영
 origin과 필요한 로컬 origin만 정확히 지정한다.
@@ -140,7 +163,6 @@ Cloudflare Dashboard의 Account API tokens에서 이 계정 하나만 대상으�
 
 - `Account Settings Read`
 - `Workers Scripts Edit`
-- `D1 Edit`
 
 custom domain route를 workflow에서 만들지 않으므로 Zone 전체 권한은 주지 않는다. 이후
 route 자동화를 추가할 때만 대상 zone 하나에 `Workers Routes Edit`를 추가한다. 토큰은
@@ -152,14 +174,14 @@ route 자동화를 추가할 때만 대상 zone 하나에 `Workers Routes Edit`�
 ### 5. 최초 배포와 smoke 확인
 
 ```bash
-npx wrangler d1 migrations apply DB --remote
+TURSO_DATABASE_URL=<REMOTE_URL> TURSO_AUTH_TOKEN=<TOKEN> npm run db:migrate
 npx wrangler deploy
 curl --fail 'https://<WORKER_SUBDOMAIN>.workers.dev/health'
 curl --fail 'https://<WORKER_SUBDOMAIN>.workers.dev/v1/channels'
 curl --fail 'https://<WORKER_SUBDOMAIN>.workers.dev/v1/coverage'
 ```
 
-빈 D1에서는 채널 배열이 비어 있는 것이 정상이다. 위 세 endpoint가 응답하면 실제 URL을
+빈 DB에서는 채널 배열이 비어 있는 것이 정상이다. 위 세 endpoint가 응답하면 실제 URL을
 GitHub variable `EPG_API_BASE_URL`에 넣고 아래 Actions 설정과 첫 수동 수집을 마친다.
 첫 import 이후 Collector의 배포 smoke 명령으로 네 경로(`/health`, `/v1/channels`, 알려진
 radio ID, `/v1/coverage`)의 상태와 의미 있는 데이터를 한 번에 검사한다.
@@ -180,11 +202,13 @@ Repository **Settings → Secrets and variables → Actions**에서 다음을 �
 | Variable | `CLOUDFLARE_ACCOUNT_ID` | 배포 대상 account ID |
 | Variable | `EPG_API_BASE_URL` | 배포된 Worker의 HTTPS base URL |
 | Secret | `EPG_INGEST_TOKEN` | Worker `INGEST_TOKEN`과 같은 값 |
+| Variable | `TURSO_DATABASE_URL` | `wrangler.toml`의 `TURSO_DATABASE_URL`과 같은 값 |
+| Secret | `TURSO_AUTH_TOKEN` | Worker secret `TURSO_AUTH_TOKEN`과 같은 값 |
 
 Repository **Settings → Actions → General**에서 Actions 실행을 허용한다. **Settings →
 Environments**에는 이름이 정확히 `production`인 environment를 만들고, 가능하면 required
 reviewer와 `main` branch 제한을 설정한다. `deploy-worker.yml`은 이 environment 승인을 받은
-뒤 D1 마이그레이션과 Worker 배포를 수행한다.
+뒤 Turso 마이그레이션과 Worker 배포를 수행한다.
 
 일일 수집 schedule은 UTC `17 16 * * *`와 `47 17 * * *`, 즉 다음 날 **01:17 KST**와
 **02:47 KST**다. GitHub 예약 실행은 부하가 높을 때 지연되거나 아예 누락될 수 있으므로 두 번째
@@ -250,34 +274,37 @@ fixture로 자동 갱신하지 말고 구조와 권리를 사람이 검토한다
 
 ## 무료 사용량 모니터링
 
-2026-07-13 기준 공식 무료 구간의 핵심 수치는 Workers 100,000 요청/일, D1 5백만 row
-read/일·100,000 row write/일·계정 전체 5GB다. 수치는 바뀔 수 있으므로 운영 전
+핵심 수치는 Workers 100,000 요청/일, Turso 무료 플랜의 월간 row read/write 한도와 총
+저장량이다. 수치는 바뀔 수 있으므로 운영 전
 [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
-[D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)을 다시 확인한다.
+[Turso pricing](https://turso.tech/pricing)을 다시 확인한다.
 
-Cloudflare Dashboard에서 다음을 주 1회와 장애 발생 시 확인한다.
+각 Dashboard에서 다음을 주 1회와 장애 발생 시 확인한다.
 
-- Workers 요청 수, CPU time, error rate
-- D1 **Metrics → Row Metrics**의 rows read/written과 저장량
+- Cloudflare: Workers 요청 수, CPU time, error rate
+- Turso: 프로젝트의 row read/write와 저장량
 - GitHub collection 성공률, source별 stale 수, artifact 생성 여부
 
-유료 계정은 **Manage Account → Billing → Billable Usage → Budget alerts**에서 낮은 임계값의
-예산 경고를 만든다. 무료 한도에서도 사용량 화면을 직접 감시한다. D1 인덱스를 제거하거나
-전체 scan 쿼리를 추가하기 전에는 rows read 변화를 확인한다. 현재 예산 경고 동작은
-[Cloudflare budget alerts](https://developers.cloudflare.com/billing/manage/budget-alerts/)를 따른다.
+Cloudflare 유료 계정은 **Manage Account → Billing → Billable Usage → Budget alerts**에서
+낮은 임계값의 예산 경고를 만든다. Turso 인덱스를 제거하거나 전체 scan 쿼리를 추가하기
+전에는 row read 변화를 확인한다.
 
 ## 백업과 복구
 
-마이그레이션 전과 정기적으로 원격 D1을 별도 암호화 저장소에 export한다.
+마이그레이션 전과 정기적으로 원격 Turso DB를 별도 암호화 저장소에 dump한다.
 
 ```bash
 cd worker
-npx wrangler d1 export radio-epg --remote --output '<BACKUP_PATH>/radio-epg.sql'
+turso db shell radio-epg .dump > '<BACKUP_PATH>/radio-epg.sql'
 ```
 
-복구 연습은 운영 DB에 직접 하지 말고 새 D1 database를 만든 뒤 export를 적용해 API smoke
-테스트를 수행한다. D1의 Time Travel 보존 기간은 plan에 따라 다르므로 장기 백업을 대체하지
-않는다.
+복구 연습은 운영 DB에 직접 하지 말고 새 Turso database를 만든 뒤 dump를 적용해 API smoke
+테스트를 수행한다.
+
+```bash
+turso db create radio-epg-restore-test
+turso db shell radio-epg-restore-test < '<BACKUP_PATH>/radio-epg.sql'
+```
 
 ## 문제 해결
 
@@ -296,11 +323,12 @@ Collector는 오류 응답 본문과 token을 진단 결과에 포함하지 않�
 workflow는 실패했을 때만 그 디렉터리를 14일 보관 artifact로 올린다. 로컬에서 같은 덤프를
 남기려면 같은 환경 변수를 지정하고 `radio-epg collect`를 실행한다.
 
-### D1 migration 또는 deploy 권한 오류
+### Turso migration 또는 deploy 권한 오류
 
-`CLOUDFLARE_ACCOUNT_ID`가 D1 소유 계정인지 확인한다. 토큰 범위가 그 계정 하나를 포함하고
-`Workers Scripts Edit`, `D1 Edit`를 갖는지 확인한다. 적용된
-마이그레이션은 `npx wrangler d1 migrations list DB --remote`로 확인한다. migration 성공
+`CLOUDFLARE_ACCOUNT_ID`가 배포 대상 계정인지, 토큰 범위가 그 계정 하나를 포함하고
+`Workers Scripts Edit`를 갖는지 확인한다. `TURSO_AUTH_TOKEN`이 만료되었거나 잘못된 DB를
+가리키면 `npm run db:migrate`가 인증/연결 오류로 실패한다. `turso db tokens create radio-epg`로
+새 토큰을 발급해 Worker secret과 GitHub Actions secret을 함께 회전한다. migration 성공
 전에 `wrangler deploy`만 재실행하지 않는다.
 
 ### 브라우저만 `403 origin_not_allowed`

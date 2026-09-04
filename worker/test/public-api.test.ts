@@ -1,42 +1,41 @@
 import { env } from "cloudflare:workers";
-import { applyD1Migrations, type D1Migration } from "cloudflare:test";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { createDatabase } from "../src/db";
 import app from "../src/index";
+import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const NOW = new Date("2026-07-13T03:30:00Z");
 const RADIO_ID = "busan-039-kbs-1radio-busan";
 const EMPTY_RADIO_ID = "seoul-007-mbc-sfm-main";
 const ALLOWED_ORIGIN = "https://radio.bsod.kr";
-const testEnv = env as typeof env & {
-  DB: D1Database;
-  TEST_MIGRATIONS: D1Migration[];
-};
+const db = createDatabase({ url: "http://127.0.0.1:8093" });
+const testEnv = env as typeof env & { TEST_MIGRATIONS: MigrationFile[] };
 const bindings = {
-  DB: testEnv.DB,
+  DB: db,
   CORS_ORIGINS: `${ALLOWED_ORIGIN},http://localhost:8000`,
 };
 
 async function seedPublicApi(): Promise<void> {
-  await testEnv.DB.batch([
-    testEnv.DB.prepare(
+  await db.batch([
+    db.prepare(
       "INSERT INTO sources (id, name, kind, base_url, priority) VALUES (?, ?, ?, ?, ?)",
     ).bind("kbs", "KBS 편성표", "official", "https://schedule.kbs.co.kr/", 100),
-    testEnv.DB.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
+    db.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
       "kbs",
       "KBS",
     ),
-    testEnv.DB.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
+    db.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
       "mbc",
       "MBC",
     ),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO channels (id, broadcaster_id, name, region_id, stn, ch, city) VALUES (?, ?, ?, ?, ?, ?, ?)",
     ).bind("kbs.1radio.busan", "kbs", "KBS부산 1라디오", "busan", "kbs", "1radio", "busan"),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO channels (id, broadcaster_id, name, region_id, stn, ch) VALUES (?, ?, ?, ?, ?, ?)",
     ).bind("mbc.sfm.main", "mbc", "MBC 표준FM", "seoul", "mbc", "sfm"),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO channel_aliases (channel_id, alias_type, alias_value) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)",
     ).bind(
       "kbs.1radio.busan",
@@ -49,7 +48,7 @@ async function seedPublicApi(): Promise<void> {
       "radio_id",
       EMPTY_RADIO_ID,
     ),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO programs (id, source_id, upstream_id, title) VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
     ).bind(
       "kbs.news",
@@ -61,7 +60,7 @@ async function seedPublicApi(): Promise<void> {
       "next",
       "다음 프로그램",
     ),
-    testEnv.DB.prepare(
+    db.prepare(
       `INSERT INTO schedule_events (
         id, event_key, channel_id, program_id, source_id, source_event_id,
         broadcast_date, starts_at, ends_at, title, source_url, source_kind,
@@ -98,7 +97,7 @@ async function seedPublicApi(): Promise<void> {
       "2026-07-11T03:00:00Z",
       1,
     ),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO scrape_runs (id, source_id, idempotency_key, started_at, finished_at, status, event_count) VALUES (?, ?, ?, ?, ?, ?, ?)",
     ).bind(
       "run-kbs",
@@ -117,7 +116,7 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
 }
 
 beforeAll(async () => {
-  await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+  await applyMigrations(db, testEnv.TEST_MIGRATIONS);
   await seedPublicApi();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
@@ -314,7 +313,7 @@ describe("current schedule API", () => {
     };
     expect(await readStatus()).toBe("unavailable");
 
-    await testEnv.DB.prepare(
+    await db.prepare(
       `INSERT INTO schedule_events (
         id, event_key, channel_id, source_id, broadcast_date, starts_at, ends_at,
         title, source_url, source_kind, fetched_at, confidence
@@ -337,10 +336,10 @@ describe("current schedule API", () => {
       .run();
 
     try {
-      // 새 편성이 들어와도 캐시가 살아 있는 동안에는 D1을 다시 읽지 않는다.
+      // 새 편성이 들어와도 캐시가 살아 있는 동안에는 DB를 다시 읽지 않는다.
       expect(await readStatus()).toBe("unavailable");
     } finally {
-      await testEnv.DB.prepare("DELETE FROM schedule_events WHERE id = ?")
+      await db.prepare("DELETE FROM schedule_events WHERE id = ?")
         .bind("event-cache-probe")
         .run();
     }

@@ -9,13 +9,13 @@ const channels = new Hono<AppEnv>();
 
 channels.get("/", async (context) =>
   edgeCachedJson(context, "public, max-age=3600", async () => ({
-    channels: await listChannels(context.env.DB),
+    channels: await listChannels(context.get("db")),
   })),
 );
 
 channels.get("/:identifier", async (context) =>
   edgeCachedJson(context, "public, max-age=3600", async () => {
-    const channel = await resolveChannel(context.env.DB, context.req.param("identifier"));
+    const channel = await resolveChannel(context.get("db"), context.req.param("identifier"));
     if (!channel) {
       return errorResponse(
         context,

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { isAuthorized } from "../auth";
+import type { Database, DatabaseStatement } from "../db";
 import { errorResponse } from "../errors";
 import {
   importBatchSchema,
@@ -35,10 +36,10 @@ async function eventIdentity(event: ImportScheduleInput): Promise<string> {
 }
 
 export async function buildImportStatements(
-  database: D1Database,
+  database: Database,
   batch: ImportBatchInput,
   payloadHash: string,
-): Promise<D1PreparedStatement[]> {
+): Promise<DatabaseStatement[]> {
   const broadcasters = Array.from(
     new Set(batch.channels.map((channel) => channel.broadcaster_id)),
     (id) => ({ id, name: batch.source.name }),
@@ -303,7 +304,7 @@ export async function buildImportStatements(
 }
 
 async function findImport(
-  database: D1Database,
+  database: Database,
   idempotencyKey: string,
 ): Promise<{ payload_hash: string | null } | null> {
   return database
@@ -342,7 +343,8 @@ adminImport.post("/", async (context) => {
   }
 
   const payloadHash = await sha256(JSON.stringify(parsed.data));
-  const existing = await findImport(context.env.DB, parsed.data.idempotency_key);
+  const db = context.get("db");
+  const existing = await findImport(db, parsed.data.idempotency_key);
   if (existing) {
     if (existing.payload_hash === payloadHash) {
       return context.json(
@@ -359,10 +361,10 @@ adminImport.post("/", async (context) => {
   }
 
   try {
-    const statements = await buildImportStatements(context.env.DB, parsed.data, payloadHash);
-    await context.env.DB.batch(statements);
+    const statements = await buildImportStatements(db, parsed.data, payloadHash);
+    await db.batch(statements);
   } catch {
-    const concurrent = await findImport(context.env.DB, parsed.data.idempotency_key);
+    const concurrent = await findImport(db, parsed.data.idempotency_key);
     if (concurrent?.payload_hash === payloadHash) {
       return context.json(
         { status: "already_applied", idempotency_key: parsed.data.idempotency_key },

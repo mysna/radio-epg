@@ -11,7 +11,7 @@ export function edgeCache(): Cache {
 /**
  * 채널 하나의 값을 edge cache에서 읽는다. 요청 조합(radio_ids)이 아니라
  * channel_id를 키로 쓰므로, 사용자마다 다른 재생목록 조합이어도 겹치는
- * 채널은 캐시를 공유해 D1 조회를 피한다.
+ * 채널은 캐시를 공유해 DB 조회를 피한다.
  */
 export async function matchChannelCache<T>(
   cache: Cache,

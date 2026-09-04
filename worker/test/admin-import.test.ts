@@ -1,18 +1,17 @@
 import { env } from "cloudflare:workers";
-import { applyD1Migrations, type D1Migration } from "cloudflare:test";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { createDatabase } from "../src/db";
 import app from "../src/index";
 import type { ImportBatchInput } from "../src/import-schema";
 import { buildImportStatements } from "../src/routes/admin-import";
+import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const TOKEN = "test-ingest-token";
-const testEnv = env as typeof env & {
-  DB: D1Database;
-  TEST_MIGRATIONS: D1Migration[];
-};
+const db = createDatabase({ url: "http://127.0.0.1:8095" });
+const testEnv = env as typeof env & { TEST_MIGRATIONS: MigrationFile[] };
 const bindings = {
-  DB: testEnv.DB,
+  DB: db,
   CORS_ORIGINS: "https://radio.bsod.kr",
   INGEST_TOKEN: TOKEN,
 };
@@ -109,14 +108,14 @@ async function adminRequest(
 }
 
 beforeAll(async () => {
-  await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+  await applyMigrations(db, testEnv.TEST_MIGRATIONS);
 });
 
 describe("authenticated schedule ingestion", () => {
-  it("prepares an EBS-sized import within the D1 free query limit", async () => {
+  it("prepares an EBS-sized import with a bounded number of statements", async () => {
     const batch = ebsSizedImportBatch("bulk-statements");
 
-    const statements = await buildImportStatements(testEnv.DB, batch, "payload-hash");
+    const statements = await buildImportStatements(db, batch, "payload-hash");
 
     expect(statements.length).toBeLessThan(50);
   });
@@ -125,7 +124,7 @@ describe("authenticated schedule ingestion", () => {
     const batch = ebsSizedImportBatch("bulk-apply");
 
     const response = await adminRequest(batch);
-    const count = await testEnv.DB.prepare(
+    const count = await db.prepare(
       "SELECT COUNT(*) AS count FROM schedule_events WHERE channel_id = ?",
     )
       .bind("kbs.1radio.bulk-apply")
@@ -173,7 +172,7 @@ describe("authenticated schedule ingestion", () => {
   it("applies the first valid import", async () => {
     const batch = importBatch("first");
     const response = await adminRequest(batch);
-    const event = await testEnv.DB.prepare(
+    const event = await db.prepare(
       "SELECT title FROM schedule_events WHERE channel_id = ?",
     )
       .bind("kbs.1radio.first")
@@ -256,7 +255,7 @@ describe("authenticated schedule ingestion", () => {
     });
 
     const response = await adminRequest(changed);
-    const events = await testEnv.DB.prepare(
+    const events = await db.prepare(
       "SELECT title FROM schedule_events WHERE channel_id = ? ORDER BY starts_at",
     )
       .bind("kbs.1radio.rollback")
@@ -275,7 +274,7 @@ describe("authenticated schedule ingestion", () => {
     replacement.schedules[0].source_event_id = "event-replace-renumbered";
     replacement.schedules[0].title = "KBS 저녁 뉴스";
     const response = await adminRequest(replacement);
-    const events = await testEnv.DB.prepare(
+    const events = await db.prepare(
       "SELECT title FROM schedule_events WHERE channel_id = ?",
     )
       .bind("kbs.1radio.replace")
@@ -291,7 +290,7 @@ describe("authenticated schedule ingestion", () => {
 
     const empty = { ...importBatch("empty"), idempotency_key: "kbs-empty-invalid", schedules: [] };
     const response = await adminRequest(empty);
-    const count = await testEnv.DB.prepare(
+    const count = await db.prepare(
       "SELECT COUNT(*) AS count FROM schedule_events WHERE channel_id = ?",
     )
       .bind("kbs.1radio.empty")

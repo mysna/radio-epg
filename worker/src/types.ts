@@ -1,14 +1,17 @@
-import type { DatabaseBindings } from "./db";
+import type { Database, DatabaseBindings } from "./db";
 
 /** Worker가 요청 처리 중 사용하는 환경 binding. */
 export interface Bindings extends DatabaseBindings {
   CORS_ORIGINS?: string;
   INGEST_TOKEN?: string;
+  TURSO_DATABASE_URL?: string;
+  TURSO_AUTH_TOKEN?: string;
 }
 
-/** Hono 애플리케이션의 환경 타입. */
+/** Hono 애플리케이션의 환경 타입. db 미들웨어가 Variables.db를 채운다. */
 export interface AppEnv {
   Bindings: Bindings;
+  Variables: { db: Database };
 }
 
 /** 공개 API가 반환하는 채널 별칭. */
