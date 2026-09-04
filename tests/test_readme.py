@@ -14,9 +14,11 @@ def test_readme_covers_configuration_and_command_contracts() -> None:
         "EPG_INGEST_TOKEN",
         "INGEST_TOKEN",
         "CORS_ORIGINS",
-        "wrangler d1 create",
-        "wrangler d1 migrations apply",
+        "turso db create",
+        "npm run db:migrate",
         "wrangler secret put",
+        "TURSO_DATABASE_URL",
+        "TURSO_AUTH_TOKEN",
         "wrangler deploy",
         "radio-epg smoke",
         "/v1/admin/retention",
@@ -47,4 +49,9 @@ def test_example_environment_files_use_visible_placeholders() -> None:
         "EPG_API_BASE_URL=https://<WORKER_SUBDOMAIN>.workers.dev",
         "EPG_INGEST_TOKEN=<GENERATE_A_RANDOM_TOKEN>",
     ]
-    assert worker.splitlines() == ["INGEST_TOKEN=<GENERATE_A_RANDOM_TOKEN>"]
+    assert worker.splitlines() == [
+        "INGEST_TOKEN=<GENERATE_A_RANDOM_TOKEN>",
+        "# 로컬 개발은 `turso dev`로 띄운 서버를 그대로 가리키면 된다 (인증 불필요).",
+        "TURSO_DATABASE_URL=http://127.0.0.1:8080",
+        "TURSO_AUTH_TOKEN=",
+    ]

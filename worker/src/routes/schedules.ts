@@ -34,7 +34,7 @@ schedules.get("/", async (context) => {
   }
 
   return edgeCachedJson(context, "public, max-age=300", async () => {
-    const channel = await resolveChannel(context.env.DB, identifier);
+    const channel = await resolveChannel(context.get("db"), identifier);
     if (!channel) {
       return errorResponse(
         context,
@@ -44,7 +44,7 @@ schedules.get("/", async (context) => {
       );
     }
 
-    const events = await schedulesForDate(context.env.DB, channel.channel_id, date, new Date());
+    const events = await schedulesForDate(context.get("db"), channel.channel_id, date, new Date());
     return {
       channel_id: channel.channel_id,
       broadcast_date: date,

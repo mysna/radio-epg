@@ -61,7 +61,7 @@ export async function deleteExpiredScheduleEvents(
   const startDate = collectionStartDate ?? koreanCalendarDate(now);
   const endDate = nextCalendarDate(startDate);
   // OR 조건은 인덱스를 쓰지 못하므로 범위를 나눠 broadcast_date 인덱스를 태운다.
-  const [before, after] = await database.batch<unknown>([
+  const [before, after] = await database.batch([
     database.prepare("DELETE FROM schedule_events WHERE broadcast_date < ?").bind(startDate),
     database.prepare("DELETE FROM schedule_events WHERE broadcast_date > ?").bind(endDate),
   ]);
@@ -96,7 +96,7 @@ retention.post("/", async (context) => {
       );
     }
     const result = await deleteExpiredScheduleEvents(
-      context.env.DB,
+      context.get("db"),
       now,
       collectionStartDate,
     );

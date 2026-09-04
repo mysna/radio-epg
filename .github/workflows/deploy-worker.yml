@@ -23,6 +23,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -32,9 +34,9 @@ jobs:
           cache-dependency-path: worker/package-lock.json
       - name: Install locked dependencies
         run: npm ci --prefix worker
-      - name: Apply remote D1 migrations
+      - name: Apply Turso migrations
         working-directory: worker
-        run: npm exec -- wrangler d1 migrations apply DB --remote
+        run: npm run db:migrate
       - name: Deploy Worker
         working-directory: worker
         run: npm exec -- wrangler deploy

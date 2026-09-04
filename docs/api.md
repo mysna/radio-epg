@@ -59,7 +59,7 @@ Content-Type: application/json
 ```
 
 Collector 전용 서버 간 API다. 요청은 1MB 이하의 검증된 batch여야 하며, 채널·프로그램과
-`source_id`/`channel_id`/`broadcast_date` 범위의 편성을 하나의 D1 batch로 반영한다.
+`source_id`/`channel_id`/`broadcast_date` 범위의 편성을 하나의 DB batch로 반영한다.
 동일한 `idempotency_key`와 동일한 payload를 다시 보내면 `200 already_applied`, 같은 키에
 다른 payload를 보내면 `409 idempotency_conflict`를 반환한다. 최초 적용은
 `201 applied`를 반환한다.
@@ -89,7 +89,7 @@ Authorization: Bearer <INGEST_TOKEN>
 }
 ```
 
-인증 실패는 `401 unauthorized`, D1 정리 실패는 `500 retention_failed`다. 일일 수집
+인증 실패는 `401 unauthorized`, DB 정리 실패는 `500 retention_failed`다. 일일 수집
 workflow는 일부 source import가 실패해도 수집 시도 뒤에 이 endpoint를 호출하며, 원래
 수집 실패는 성공으로 바꾸지 않는다.
 

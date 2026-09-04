@@ -1,20 +1,19 @@
 import { env } from "cloudflare:workers";
-import { applyD1Migrations, type D1Migration } from "cloudflare:test";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { createDatabase } from "../src/db";
 import app from "../src/index";
 import { deleteExpiredScheduleEvents } from "../src/retention";
+import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const TOKEN = "test-ingest-token";
 const NOW = new Date("2026-07-13T15:30:00Z");
 const START_DATE = "2026-07-14";
 const END_DATE = "2026-07-15";
-const testEnv = env as typeof env & {
-  DB: D1Database;
-  TEST_MIGRATIONS: D1Migration[];
-};
+const db = createDatabase({ url: "http://127.0.0.1:8094" });
+const testEnv = env as typeof env & { TEST_MIGRATIONS: MigrationFile[] };
 const bindings = {
-  DB: testEnv.DB,
+  DB: db,
   INGEST_TOKEN: TOKEN,
 };
 
@@ -46,18 +45,18 @@ const retentionEvents = [
 ];
 
 async function seedRetentionData(): Promise<void> {
-  await testEnv.DB.batch([
-    testEnv.DB.prepare(
+  await db.batch([
+    db.prepare(
       "INSERT INTO sources (id, name, kind, base_url, priority) VALUES (?, ?, ?, ?, ?)",
     ).bind("retention", "Retention source", "official", "https://source.example.test/", 100),
-    testEnv.DB.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
+    db.prepare("INSERT INTO broadcasters (id, name) VALUES (?, ?)").bind(
       "retention",
       "Retention broadcaster",
     ),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO channels (id, broadcaster_id, name, stn, ch) VALUES (?, ?, ?, ?, ?)",
     ).bind("retention.fm.main", "retention", "Retention FM", "retention", "fm"),
-    testEnv.DB.prepare(
+    db.prepare(
       "INSERT INTO programs (id, source_id, upstream_id, title) VALUES (?, ?, ?, ?)",
     ).bind(
       "retention.program",
@@ -66,9 +65,9 @@ async function seedRetentionData(): Promise<void> {
       "Retention program",
     ),
   ]);
-  await testEnv.DB.batch(
+  await db.batch(
     retentionEvents.map((event) =>
-      testEnv.DB
+      db
         .prepare(
           `INSERT INTO schedule_events (
              id, event_key, channel_id, program_id, source_id, source_event_id,
@@ -97,7 +96,7 @@ async function seedRetentionData(): Promise<void> {
 }
 
 beforeAll(async () => {
-  await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+  await applyMigrations(db, testEnv.TEST_MIGRATIONS);
   await seedRetentionData();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
@@ -109,7 +108,7 @@ afterAll(() => {
 
 describe("KST today-and-tomorrow schedule retention", () => {
   it("uses a broadcast-date index for bounded cleanup", async () => {
-    const plan = await testEnv.DB.prepare(
+    const plan = await db.prepare(
       "EXPLAIN QUERY PLAN DELETE FROM schedule_events WHERE broadcast_date < ? OR broadcast_date > ?",
     )
       .bind(START_DATE, END_DATE)
@@ -121,12 +120,12 @@ describe("KST today-and-tomorrow schedule retention", () => {
   });
 
   it("keeps only today and tomorrow and is idempotent", async () => {
-    const first = await deleteExpiredScheduleEvents(testEnv.DB, NOW);
-    const second = await deleteExpiredScheduleEvents(testEnv.DB, NOW);
-    const events = await testEnv.DB.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
+    const first = await deleteExpiredScheduleEvents(db, NOW);
+    const second = await deleteExpiredScheduleEvents(db, NOW);
+    const events = await db.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
       id: string;
     }>();
-    const programs = await testEnv.DB.prepare("SELECT COUNT(*) AS count FROM programs").first<{
+    const programs = await db.prepare("SELECT COUNT(*) AS count FROM programs").first<{
       count: number;
     }>();
 
@@ -175,10 +174,10 @@ describe("KST today-and-tomorrow schedule retention", () => {
     );
     expect(stale.status).toBe(400);
 
-    await testEnv.DB.prepare("DELETE FROM schedule_events").run();
-    await testEnv.DB.batch(
+    await db.prepare("DELETE FROM schedule_events").run();
+    await db.batch(
       retentionEvents.map((event) =>
-        testEnv.DB
+        db
           .prepare(
             `INSERT INTO schedule_events (
                id, event_key, channel_id, program_id, source_id, source_event_id,
@@ -210,7 +209,7 @@ describe("KST today-and-tomorrow schedule retention", () => {
       { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
       bindings,
     );
-    const events = await testEnv.DB.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
+    const events = await db.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
       id: string;
     }>();
 

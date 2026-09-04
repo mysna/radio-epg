@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 
+import { createDatabase } from "./db";
 import { errorResponse } from "./errors";
 import retention from "./retention";
 import adminImport from "./routes/admin-import";
@@ -10,6 +11,20 @@ import schedules from "./routes/schedules";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
+
+// 테스트는 바인딩으로 Database를 직접 주입하고, 배포 환경은 여기서 Turso 접속 정보로
+// 한 번만 만들어 재사용한다. /health처럼 DB가 필요 없는 라우트는 바인딩이 없어도 통과한다.
+app.use("*", async (context, next) => {
+  const bindings = context.env ?? {};
+  const db =
+    bindings.DB ?? (bindings.TURSO_DATABASE_URL
+      ? createDatabase({ url: bindings.TURSO_DATABASE_URL, authToken: bindings.TURSO_AUTH_TOKEN })
+      : undefined);
+  if (db) {
+    context.set("db", db);
+  }
+  await next();
+});
 
 app.use("/v1/*", async (context, next) => {
   const origin = context.req.header("Origin");

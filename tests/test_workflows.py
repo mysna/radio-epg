@@ -110,12 +110,14 @@ def test_deployment_migrates_before_protected_worker_deploy() -> None:
     assert deploy["env"] == {
         "CLOUDFLARE_API_TOKEN": "${{ secrets.CLOUDFLARE_API_TOKEN }}",
         "CLOUDFLARE_ACCOUNT_ID": "${{ vars.CLOUDFLARE_ACCOUNT_ID }}",
+        "TURSO_DATABASE_URL": "${{ vars.TURSO_DATABASE_URL }}",
+        "TURSO_AUTH_TOKEN": "${{ secrets.TURSO_AUTH_TOKEN }}",
     }
     steps = _steps(deploy)
-    migration = next(step for step in steps if step.get("name") == "Apply remote D1 migrations")
+    migration = next(step for step in steps if step.get("name") == "Apply Turso migrations")
     deployment = next(step for step in steps if step.get("name") == "Deploy Worker")
     assert migration["working-directory"] == "worker"
-    assert migration["run"] == "npm exec -- wrangler d1 migrations apply DB --remote"
+    assert migration["run"] == "npm run db:migrate"
     assert deployment["working-directory"] == "worker"
     assert deployment["run"] == "npm exec -- wrangler deploy"
     assert steps.index(migration) < steps.index(deployment)

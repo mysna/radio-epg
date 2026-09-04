@@ -19,7 +19,7 @@ coverage.get("/", async (context) =>
   // 집계는 schedule_events 전체를 훑는다. 수집은 하루 두 번뿐이라 5분마다 다시
   // 세면 같은 값을 얻으려고 전체 테이블을 수백 번 더 읽는다.
   edgeCachedJson(context, "public, max-age=3600", async () => {
-    const result = await context.env.DB.prepare(
+    const result = await context.get("db").prepare(
       `SELECT
          sources.id AS source_id,
          sources.name,

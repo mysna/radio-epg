@@ -105,7 +105,7 @@ export async function currentAndNext(
 
 /**
  * 여러 채널의 현재·다음 편성을 한 번의 질의로 조회한다. 채널마다 질의를
- * 반복하면 요청 하나가 채널 수만큼 D1 조회를 일으킨다.
+ * 반복하면 요청 하나가 채널 수만큼 DB 조회를 일으킨다.
  */
 export async function currentAndNextForChannels(
   database: Database,
