@@ -6,4 +6,4 @@ compatibility_date = "2026-07-13"
 CORS_ORIGINS = "https://radio.bsod.kr,https://mysna.github.io,http://localhost:8000"
 # Turso 프로젝트의 DB URL (turso db show radio-epg --url). 토큰은 비밀값이므로
 # 여기 두지 말고 `wrangler secret put TURSO_AUTH_TOKEN`으로 등록한다.
-TURSO_DATABASE_URL = "libsql://radio-epg-<org>.turso.io"
+TURSO_DATABASE_URL = "libsql://radio-epg-mysna.aws-ap-northeast-1.turso.io"
