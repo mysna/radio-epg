@@ -56,6 +56,7 @@ def test_ci_runs_locked_quality_and_test_suites() -> None:
 
     worker_runs = _runs(_job(workflow, "worker"))
     assert "npm ci --prefix worker" in worker_runs
+    assert any("get.tur.so/install.sh" in run for run in worker_runs)
     assert "npm --prefix worker test -- --run" in worker_runs
     assert "npm --prefix worker run typecheck" in worker_runs
 
