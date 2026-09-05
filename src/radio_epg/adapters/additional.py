@@ -200,15 +200,13 @@ def _febc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ..
 # 오는 것은 직접 확인했다.
 def _bbs(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
-    items = []
+    entries: list[tuple[str, str]] = []
     for node in soup.select(".program"):
         time_node, title_node = node.select_one(".date-box p"), node.select_one(".date-box strong")
         if time_node and title_node:
-            items.append(
-                (time_node.get_text(strip=True), title_node.get_text(" ", strip=True), None)
-            )
+            entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
     channel = "bbs.main.main"
-    return {channel: _rows(channel, day, items)}
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
 def _cpbc(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:

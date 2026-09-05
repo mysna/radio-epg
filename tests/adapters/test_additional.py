@@ -7,6 +7,7 @@ import pytest
 
 from radio_epg.adapters.additional import (
     AdditionalStationAdapter,
+    _bbs,
     _cbs_regional,
     _febc,
     _knn_busan,
@@ -305,6 +306,16 @@ def test_knn_busan_parser_reads_the_matching_channel_section(
 
     assert set(rows) == {channel}
     assert rows[channel][0].title == first_title
+
+
+def test_bbs_normalizes_times_that_wrap_past_midnight() -> None:
+    text = (FIXTURES / "bbs-midnight-wrap.html").read_text()
+
+    rows = _bbs(text, date(2026, 9, 6))
+
+    starts = [row.start for row in rows["bbs.main.main"]]
+    assert starts == ["22:00", "23:55", "24:00", "24:40", "25:00", "25:45"]
+    assert rows["bbs.main.main"][-1].end == "30:00"
 
 
 def test_ggn_collects_the_weekday_matching_template() -> None:
