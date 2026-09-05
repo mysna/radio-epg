@@ -192,10 +192,10 @@
     "source_id": "bbs",
     "name": "BBS 편성표",
     "source_kind": "official",
-    "source_url": "https://www.bbs.or.kr/HOME2/?ACT=SCHEDULE",
+    "source_url": "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html",
     "priority": 100,
-    "adapter": "religious",
-    "enabled": false
+    "adapter": "additional",
+    "enabled": true
   },
   {
     "source_id": "cpbc",

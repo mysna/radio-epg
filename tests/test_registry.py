@@ -98,6 +98,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "ytn",
         "tbs",
         "febc",
+        "bbs",
         "cpbc",
         "gugak",
     ]
@@ -114,7 +115,7 @@ def test_additional_official_schedule_sources_are_registered_but_not_enabled_wit
         "ytn": "https://radio.ytn.co.kr/schedule/daily.php",
         "tbs": "https://tbs.seoul.kr/fm/schedule.do",
         "febc": "https://seoul.febc.net/radio/schedule",
-        "bbs": "https://www.bbs.or.kr/HOME2/?ACT=SCHEDULE",
+        "bbs": "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html",
         "cpbc": "https://www.cpbc.co.kr/schedule.html?channel=radio",
         "wbs": "https://wbsi.kr/schedule_radio.php",
         "kfn": "https://radio.dema.mil.kr/web/radio/timetable.do",
@@ -123,6 +124,6 @@ def test_additional_official_schedule_sources_are_registered_but_not_enabled_wit
     }
 
     assert {source_id: sources[source_id].source_url for source_id in expected} == expected
-    disabled = {"bbs", "wbs", "kfn", "afn-humphreys"}
+    disabled = {"wbs", "kfn", "afn-humphreys"}
     assert all(not sources[source_id].enabled for source_id in disabled)
     assert all(sources[source_id].enabled for source_id in expected.keys() - disabled)

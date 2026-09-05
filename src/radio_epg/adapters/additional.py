@@ -167,11 +167,14 @@ def _febc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ..
     return {channel: _rows(channel, day, items)}
 
 
+# 실제 편성표는 CODE(방송국)·SchGubun(TV/RADIO)·SchDate로 요청하는 AJAX 조각
+# (template/ajaxSchedule.html)으로 내려오고, 그 조각 자체에는 날짜 문자열이 없어
+# _require_date로 되짚어 검증할 수 없다. 날짜를 바꿔 요청하면 실제로 다른 편성이
+# 오는 것은 직접 확인했다.
 def _bbs(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
-    _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
     items = []
-    for node in soup.select("#DivSchedule .program"):
+    for node in soup.select(".program"):
         time_node, title_node = node.select_one(".date-box p"), node.select_one(".date-box strong")
         if time_node and title_node:
             items.append(
@@ -427,6 +430,7 @@ _CHANNELS = {
     "ytn": ("ytn.main.main",),
     "tbs": ("tbs.fm.main", "tbs.efm.main"),
     "cpbc": ("cpbc.main.main",),
+    "bbs": ("bbs.main.main",),
     "wbs": ("wbs.main.main",),
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
@@ -496,6 +500,11 @@ class AdditionalStationAdapter:
         elif source_id == "cpbc":
             response = await client.get(
                 f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
+            )
+        elif source_id == "bbs":
+            response = await client.get(
+                "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html",
+                params={"CODE": "WWW", "SchGubun": "RADIO", "SchDate": day.isoformat()},
             )
         elif source_id == "wbs":
             for attempt in range(5):
