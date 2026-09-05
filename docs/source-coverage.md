@@ -77,7 +77,7 @@
 | `febc.main.mokpo` | enabled | febc |  |
 | `febc.main.pohang` | enabled | febc |  |
 | `febc.main.ulsan` | enabled | febc |  |
-| `ggn.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
+| `ggn.main.main` | enabled | independent |  |
 | `ifm.main.main` | enabled | independent |  |
 | `kbs.1fm.busan` | enabled | kbs |  |
 | `kbs.1fm.changwon` | enabled | kbs |  |

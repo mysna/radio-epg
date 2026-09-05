@@ -92,6 +92,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "regional-mbc",
         "regional-cbs",
         "regional-sbs",
+        "ggn",
         "obs",
         "ifm",
         "ytn",

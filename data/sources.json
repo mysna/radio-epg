@@ -117,6 +117,15 @@
     "enabled": false
   },
   {
+    "source_id": "ggn",
+    "name": "GGN 글로벌광주방송 편성표 (요일 템플릿)",
+    "source_kind": "official",
+    "source_url": "https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
     "source_id": "community",
     "name": "공동체 라디오 편성표",
     "source_kind": "official-with-fallback",

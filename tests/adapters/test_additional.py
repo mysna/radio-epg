@@ -278,6 +278,23 @@ def test_knn_busan_parser_reads_the_matching_channel_section(
     assert rows[channel][0].title == first_title
 
 
+def test_ggn_collects_the_weekday_matching_template() -> None:
+    fixture = (FIXTURES / "ggn.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("ggn", "https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
+
+    assert {row.channel_id for row in result.schedules} == {"ggn.main.main"}
+    assert result.schedules[0].title == "GGN뉴스"
+    assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
+
+
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:
     fixture = (FIXTURES / "wbs.html").read_text()
 

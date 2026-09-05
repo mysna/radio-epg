@@ -387,6 +387,11 @@ def _ubc_ulsan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
 _UBC_ULSAN_CHANNEL = "sbs.powerfm.ulsan"
 
 
+# GGN(글로벌광주방송)는 요일 tab(day=1 월 ~ 7 일)만 있고 날짜별 편성은 아니다.
+# 표 구조가 MBC 지역국과 동일(첫 셀 시간, 둘째 셀 제목)해서 같은 파서를 그대로 쓴다.
+_GGN_CHANNEL = "ggn.main.main"
+
+
 def parse_station_schedule(
     station: str, text: str, *, expected_date: date
 ) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -440,6 +445,7 @@ _CHANNELS = {
     "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values())
     + _KNN_BUSAN_CHANNELS
     + (_TJB_DAEJEON_CHANNEL, _UBC_ULSAN_CHANNEL),
+    "ggn": (_GGN_CHANNEL,),
 }
 
 
@@ -509,7 +515,7 @@ class AdditionalStationAdapter:
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
             )
-        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs"}:
+        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn"}:
             response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
@@ -578,6 +584,13 @@ class AdditionalStationAdapter:
                 ubc_text = await self._request(client, day, url=ubc_url)
                 collected[_UBC_ULSAN_CHANNEL].extend(
                     _ubc_ulsan(ubc_text, day, _UBC_ULSAN_CHANNEL)[_UBC_ULSAN_CHANNEL]
+                )
+            elif self.source.source_id == "ggn":
+                weekday = day.weekday() + 1
+                url = f"https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94&day={weekday}"
+                text = await self._request(client, day, url=url)
+                collected[_GGN_CHANNEL].extend(
+                    _mbc_regional_weekly(text, day, _GGN_CHANNEL)[_GGN_CHANNEL]
                 )
             else:
                 parsed = parse_station_schedule(
