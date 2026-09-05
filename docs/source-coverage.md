@@ -26,7 +26,7 @@
 | `cbs.sfm.chuncheon` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `cbs.sfm.daegu` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `cbs.sfm.daejeon` | enabled | religious |  |
-| `cbs.sfm.gwangju` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.gwangju` | enabled | religious |  |
 | `cbs.sfm.gyeongnam` | enabled | religious |  |
 | `cbs.sfm.jeju` | enabled | religious |  |
 | `cbs.sfm.jeonbuk` | enabled | religious |  |

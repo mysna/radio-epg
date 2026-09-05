@@ -73,7 +73,7 @@
   },
   {
     "source_id": "regional-cbs",
-    "name": "지역 CBS 편성표 (부산·전북·청주·대전·경남·제주·전남·울산)",
+    "name": "지역 CBS 편성표 (부산·광주·전북·청주·대전·포항·경남·제주·전남·울산)",
     "source_kind": "official",
     "source_url": "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp",
     "priority": 100,

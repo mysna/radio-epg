@@ -7,7 +7,6 @@ import pytest
 
 from radio_epg.adapters.additional import (
     AdditionalStationAdapter,
-    _cbs_pohang_weekly,
     _cbs_regional,
     _febc,
     _knn_busan,
@@ -179,12 +178,10 @@ def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
 
 def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     fixture = (FIXTURES / "cbs-regional-busan.json").read_text()
-    pohang_fixture = (FIXTURES / "cbs-pohang-weekly.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            body = pohang_fixture if "phcbs.co.kr" in url else fixture
-            return httpx.Response(200, text=body, request=httpx.Request("GET", url))
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
         _source("regional-cbs", "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"),
@@ -195,46 +192,9 @@ def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     channel_ids = {row.channel_id for row in result.schedules}
     assert "cbs.sfm.busan" in channel_ids
     assert "cbs.mfm.busan" in channel_ids
-    assert "cbs.sfm.ulsan" in channel_ids
-
-
-@pytest.mark.parametrize(
-    ("day", "first_title"),
-    [
-        (date(2026, 9, 7), "새아침입니다"),  # 월요일
-        (date(2026, 9, 12), "새아침입니다"),  # 토요일
-        (date(2026, 9, 13), "새아침입니다"),  # 일요일
-    ],
-)
-def test_cbs_pohang_weekly_parser_picks_the_matching_weekday_bucket(
-    day: date, first_title: str
-) -> None:
-    text = (FIXTURES / "cbs-pohang-weekly.html").read_text()
-
-    rows = _cbs_pohang_weekly(text, day, "cbs.sfm.pohang")
-
-    assert set(rows) == {"cbs.sfm.pohang"}
-    assert rows["cbs.sfm.pohang"][0].title == first_title
-    assert all(row.confidence == pytest.approx(0.7) for row in rows["cbs.sfm.pohang"])
-
-
-def test_regional_cbs_includes_pohangs_weekly_template() -> None:
-    cbs_fixture = (FIXTURES / "cbs-regional-busan.json").read_text()
-    pohang_fixture = (FIXTURES / "cbs-pohang-weekly.html").read_text()
-
-    class Client:
-        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            fixture = pohang_fixture if "phcbs.co.kr" in url else cbs_fixture
-            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
-
-    adapter = AdditionalStationAdapter(
-        _source("regional-cbs", "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"),
-        client=Client(),
-    )
-    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
-
-    channel_ids = {row.channel_id for row in result.schedules}
+    assert "cbs.sfm.gwangju" in channel_ids
     assert "cbs.sfm.pohang" in channel_ids
+    assert "cbs.sfm.ulsan" in channel_ids
 
 
 def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> None:
