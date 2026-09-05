@@ -13,6 +13,7 @@ from radio_epg.adapters.additional import (
     _knn_busan,
     _mbc_regional_weekly,
     _sbs_affiliate_tbc,
+    _tjb_daejeon,
     parse_station_schedule,
 )
 from radio_epg.adapters.base import CollectionWindow
@@ -244,13 +245,19 @@ def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> Non
     assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
 
 
-def test_regional_sbs_collects_tbc_daegu_and_knn_busan() -> None:
+def test_regional_sbs_collects_tbc_knn_and_tjb() -> None:
     tbc_fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
     knn_fixture = (FIXTURES / "sbs-knn-busan.html").read_text()
+    tjb_fixture = (FIXTURES / "sbs-tjb-daejeon.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            body = knn_fixture if "knn.co.kr" in url else tbc_fixture
+            if "knn.co.kr" in url:
+                body = knn_fixture
+            elif "tjb.co.kr" in url:
+                body = tjb_fixture
+            else:
+                body = tbc_fixture
             return httpx.Response(200, text=body, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
@@ -259,7 +266,22 @@ def test_regional_sbs_collects_tbc_daegu_and_knn_busan() -> None:
     result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
 
     channel_ids = {row.channel_id for row in result.schedules}
-    assert channel_ids == {"sbs.powerfm.daegu", "sbs.powerfm.busan", "sbs.lovefm.busan"}
+    assert channel_ids == {
+        "sbs.powerfm.daegu",
+        "sbs.powerfm.busan",
+        "sbs.lovefm.busan",
+        "sbs.powerfm.daejeon",
+    }
+
+
+def test_tjb_daejeon_parser_normalizes_the_midnight_crossing() -> None:
+    text = (FIXTURES / "sbs-tjb-daejeon.html").read_text()
+
+    rows = _tjb_daejeon(text, REGIONAL_DAY, "sbs.powerfm.daejeon")
+
+    assert set(rows) == {"sbs.powerfm.daejeon"}
+    starts = [row.start for row in rows["sbs.powerfm.daejeon"]]
+    assert starts == ["05:00", "06:00", "06:30", "25:00", "26:00", "27:00", "28:00"]
 
 
 @pytest.mark.parametrize(

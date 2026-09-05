@@ -319,6 +319,36 @@ _SBS_AFFILIATE_STATIONS: dict[str, tuple[str, str]] = {
 }
 
 
+def _normalize_wrapping_times(
+    entries: Iterable[tuple[str, str]],
+) -> list[tuple[str, str, str | None]]:
+    """자정을 넘기면 다시 00:00부터 시작하는 시각을 단조 증가하도록 정규화한다.
+
+    일부 방송사는 자정을 지나면서 시각을 그냥 00:00으로 되돌리고(예: KNN), 일부는
+    "25:00"처럼 24시간을 더한 값과 다시 00:00으로 되돌린 값을 한 응답 안에 섞어서
+    보낸다(예: TJB). 두 경우 모두 "정규화한(24시간 나눈 나머지) 값이 직전보다
+    줄어드는 순간"을 하루가 넘어간 걸로 보고 그 뒤부터 24시간을 누적해서 더한다.
+    같은 시각이 반복되면(생중계가 정규 편성을 대체하는 경우 등) 먼저 온 행만 남긴다.
+    """
+    result: list[tuple[str, str, str | None]] = []
+    previous_canonical: int | None = None
+    previous_total: int | None = None
+    day_offset = 0
+    for time_text, title in entries:
+        hour, minute = (int(part) for part in time_text.split(":"))
+        canonical = (hour * 60 + minute) % (24 * 60)
+        if previous_canonical is not None and canonical < previous_canonical:
+            day_offset += 24 * 60
+        total = canonical + day_offset
+        if total == previous_total:
+            continue
+        previous_canonical = canonical
+        previous_total = total
+        hour, minute = divmod(total, 60)
+        result.append((f"{hour:02d}:{minute:02d}", title, None))
+    return result
+
+
 # KNN(부산)은 하나의 AJAX 응답(schedule.do?date=...&channel=...) 안에 TV/파워FM/러브FM
 # 편성표를 전부 담아 보내고 channel 파라미터는 어느 탭을 펼쳐 보일지에만 쓰인다. 응답
 # 본문에 날짜 문자열이 없어 _require_date로 되짚어 검증할 수 없지만, 서로 다른 날짜를
@@ -329,10 +359,7 @@ def _knn_busan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
     container = soup.find(id=container_id)
     if container is None:
         raise ValueError("official schedule channel section missing")
-    items: list[tuple[str, str, str | None]] = []
-    previous_raw_minutes: int | None = None
-    previous_total_minutes: int | None = None
-    day_offset = 0
+    entries: list[tuple[str, str]] = []
     for row in container.select("tr"):
         cells = row.find_all("td")
         if len(cells) < 2:
@@ -343,27 +370,33 @@ def _knn_busan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
         if badge is not None:
             badge.decompose()
         title = title_cell.get_text(" ", strip=True)
-        if not (match and title):
-            continue
-        hour, minute = (int(part) for part in match.group(1).split(":"))
-        raw_minutes = hour * 60 + minute
-        # 자정을 넘기면 시각이 다시 00:00부터 시작하므로, 앞선 시각보다 줄어드는
-        # 순간을 하루가 넘어간 걸로 보고 그 뒤부터는 24시간을 더한다.
-        if previous_raw_minutes is not None and raw_minutes < previous_raw_minutes:
-            day_offset += 24 * 60
-        total_minutes = raw_minutes + day_offset
-        # 프로야구 등 생중계가 정규 편성을 대체하면 같은 시각에 "대체 OO"로 원래
-        # 편성도 함께 내려온다. 실제로 나가는 건 먼저 온 행(생중계)이므로 그것만 쓴다.
-        if total_minutes == previous_total_minutes:
-            continue
-        previous_raw_minutes = raw_minutes
-        previous_total_minutes = total_minutes
-        hour, minute = divmod(total_minutes, 60)
-        items.append((f"{hour:02d}:{minute:02d}", title, None))
-    return {channel: _rows(channel, day, items)}
+        if match and title:
+            entries.append((match.group(1), title))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
 _KNN_BUSAN_CHANNELS = ("sbs.powerfm.busan", "sbs.lovefm.busan")
+
+
+# TJB(대전)는 날짜별 페이지(/sub0502/pairing/radio/date/YYYY-MM-DD)를 서버 렌더링해서
+# 준다. 자정 전후 표기가 뒤섞여 있어(23:30 -> 00:00 -> 25:00 -> 02:00) 정규화가 필요하다.
+def _tjb_daejeon(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    _require_date(text, day)
+    soup = BeautifulSoup(text, "html.parser")
+    entries: list[tuple[str, str]] = []
+    for row in soup.select("table#content_tb tr"):
+        time_node = row.select_one(".time")
+        title_node = row.select_one(".program")
+        if time_node is None or title_node is None:
+            continue
+        match = _TIME.search(time_node.get_text(strip=True))
+        title = title_node.get_text(strip=True)
+        if match and title:
+            entries.append((match.group(1), title))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+
+
+_TJB_DAEJEON_CHANNEL = "sbs.powerfm.daejeon"
 
 
 def parse_station_schedule(
@@ -418,7 +451,8 @@ _CHANNELS = {
     )
     + tuple(channel for channel, _ in _CBS_WEEKLY_STATIONS.values()),
     "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values())
-    + _KNN_BUSAN_CHANNELS,
+    + _KNN_BUSAN_CHANNELS
+    + (_TJB_DAEJEON_CHANNEL,),
 }
 
 
@@ -548,6 +582,11 @@ class AdditionalStationAdapter:
                 knn_text = await self._request(client, day, url=knn_url)
                 for channel in _KNN_BUSAN_CHANNELS:
                     collected[channel].extend(_knn_busan(knn_text, day, channel)[channel])
+                tjb_url = f"https://www.tjb.co.kr/sub0502/pairing/radio/date/{day.isoformat()}"
+                tjb_text = await self._request(client, day, url=tjb_url)
+                collected[_TJB_DAEJEON_CHANNEL].extend(
+                    _tjb_daejeon(tjb_text, day, _TJB_DAEJEON_CHANNEL)[_TJB_DAEJEON_CHANNEL]
+                )
             else:
                 parsed = parse_station_schedule(
                     self.source.source_id, await self._request(client, day), expected_date=day

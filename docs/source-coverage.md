@@ -173,7 +173,7 @@
 | `sbs.powerfm.cheongju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.chuncheon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.daegu` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.daejeon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.daejeon` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.gwangju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.jeju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.jeonju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
