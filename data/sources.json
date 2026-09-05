@@ -64,12 +64,12 @@
   },
   {
     "source_id": "regional-mbc",
-    "name": "지역 MBC 편성표",
+    "name": "지역 MBC 편성표 (강릉 주간 템플릿)",
     "source_kind": "official",
-    "source_url": "https://schedule.imbc.com/",
+    "source_url": "https://www.mbceg.co.kr/schedule/cp_depart",
     "priority": 100,
-    "adapter": "regional_mbc",
-    "enabled": false
+    "adapter": "additional",
+    "enabled": true
   },
   {
     "source_id": "sbs-affiliates",
@@ -153,118 +153,10 @@
     "enabled": true
   },
   {
-    "source_id": "febc-seoul",
-    "name": "FEBC 서울 편성표",
+    "source_id": "febc",
+    "name": "FEBC 편성표 (서울 및 12개 지역국)",
     "source_kind": "official",
     "source_url": "https://seoul.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-busan",
-    "name": "FEBC 부산 편성표",
-    "source_kind": "official",
-    "source_url": "https://busan.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-changwon",
-    "name": "FEBC 창원 편성표",
-    "source_kind": "official",
-    "source_url": "https://changwon.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-daegu",
-    "name": "FEBC 대구 편성표",
-    "source_kind": "official",
-    "source_url": "https://daegu.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-daejeon",
-    "name": "FEBC 대전 편성표",
-    "source_kind": "official",
-    "source_url": "https://daejeon.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-gangwon",
-    "name": "FEBC 강원 편성표",
-    "source_kind": "official",
-    "source_url": "https://gangwon.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-gwangju",
-    "name": "FEBC 광주 편성표",
-    "source_kind": "official",
-    "source_url": "https://gj.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-jeju",
-    "name": "FEBC 제주 편성표",
-    "source_kind": "official",
-    "source_url": "https://jeju.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-jeonbuk",
-    "name": "FEBC 전북 편성표",
-    "source_kind": "official",
-    "source_url": "https://jb.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-jeonnam",
-    "name": "FEBC 전남동부 편성표",
-    "source_kind": "official",
-    "source_url": "https://jndb.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-mokpo",
-    "name": "FEBC 목포 편성표",
-    "source_kind": "official",
-    "source_url": "https://mokpo.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-pohang",
-    "name": "FEBC 포항 편성표",
-    "source_kind": "official",
-    "source_url": "https://pohang.febc.net/radio/schedule",
-    "priority": 100,
-    "adapter": "additional",
-    "enabled": true
-  },
-  {
-    "source_id": "febc-ulsan",
-    "name": "FEBC 울산 편성표",
-    "source_kind": "official",
-    "source_url": "https://ulsan.febc.net/radio/schedule",
     "priority": 100,
     "adapter": "additional",
     "enabled": true

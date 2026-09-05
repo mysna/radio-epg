@@ -5,7 +5,7 @@ Python Collector가 공식 편성 소스를 수집·검증하고, Cloudflare Wor
 채널과 편성을 공개 API로 제공한다.
 
 현재 카탈로그의 194개 정규 채널과 226개 플레이어 별칭은 모두 소유 source가 정해져 있다.
-이 중 93개 채널은 fixture로 검증된 adapter가 활성화되어 있고, 101개 채널은 공식 계약을
+이 중 95개 채널은 fixture로 검증된 adapter가 활성화되어 있고, 99개 채널은 공식 계약을
 확인할 때까지 이유와 검증일을 포함한 `unsupported` 상태로 남긴다. 상세 내역은
 [`docs/source-coverage.md`](docs/source-coverage.md)에서 확인한다.
 

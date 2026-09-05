@@ -5,7 +5,12 @@ from pathlib import Path
 import httpx
 import pytest
 
-from radio_epg.adapters.additional import AdditionalStationAdapter, parse_station_schedule
+from radio_epg.adapters.additional import (
+    AdditionalStationAdapter,
+    _febc,
+    _mbc_regional_weekly,
+    parse_station_schedule,
+)
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.config import SourceConfig
 
@@ -20,8 +25,6 @@ DAY = date(2026, 7, 14)
         ("ifm", "html", {"ifm.main.main"}, "당신의 BGM"),
         ("ytn", "html", {"ytn.main.main"}, "YTN24"),
         ("tbs", "html", {"tbs.fm.main"}, "권순우의 새벽공감 1부"),
-        ("febc-seoul", "html", {"febc.main.main"}, "별처럼 빛나는 그대에게"),
-        ("febc-busan", "html", {"febc.main.busan"}, "별처럼 빛나는 그대에게"),
         ("bbs", "html", {"bbs.main.main"}, "경전공부"),
         ("cpbc", "json", {"cpbc.main.main"}, "라디오 고해소 비밀번호 1053"),
         ("wbs", "html", {"wbs.main.main"}, "법문이 있는 음악카페"),
@@ -45,6 +48,22 @@ def test_each_official_source_has_a_fixture_verified_parser(
     assert set(rows) == channels
     assert next(iter(rows.values()))[0].title == first_title
     assert all(channel_rows[0].end == channel_rows[1].start for channel_rows in rows.values())
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "channel"),
+    [
+        ("febc-seoul", "febc.main.main"),
+        ("febc-busan", "febc.main.busan"),
+    ],
+)
+def test_febc_parser_maps_the_shared_cms_response_to_the_requested_channel(
+    fixture_name: str, channel: str
+) -> None:
+    rows = _febc((FIXTURES / f"{fixture_name}.html").read_text(), DAY, channel)
+
+    assert set(rows) == {channel}
+    assert rows[channel][0].title == "별처럼 빛나는 그대에게"
 
 
 def test_parser_rejects_a_response_for_another_date() -> None:
@@ -85,20 +104,60 @@ def test_tbs_fm_and_efm_have_channel_specific_source_event_ids() -> None:
     assert event_ids["tbs.fm.main"].isdisjoint(event_ids["tbs.efm.main"])
 
 
-def test_febc_regions_collect_into_their_own_channel() -> None:
-    fixture = (FIXTURES / "febc-busan.html").read_text()
+def test_febc_collects_every_region_as_one_source() -> None:
+    seoul_fixture = (FIXTURES / "febc-seoul.html").read_text()
+    busan_fixture = (FIXTURES / "febc-busan.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            fixture = busan_fixture if "busan" in url else seoul_fixture
             return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
-        _source("febc-busan", "https://busan.febc.net/radio/schedule"), client=Client()
+        _source("febc", "https://seoul.febc.net/radio/schedule"), client=Client()
     )
     result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
 
-    assert result.schedules
-    assert {row.channel_id for row in result.schedules} == {"febc.main.busan"}
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert "febc.main.main" in channel_ids
+    assert "febc.main.busan" in channel_ids
+    assert len(channel_ids) == 13
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "channel", "first_title"),
+    [
+        ("mbc-gangneung-am", "mbc.sfm.gangneung", "낭만 가요 1,2부"),
+        ("mbc-gangneung-fm", "mbc.fm4u.gangneung", "FM영화음악"),
+    ],
+)
+def test_mbc_regional_weekly_parser_marks_rows_with_reduced_confidence(
+    fixture_name: str, channel: str, first_title: str
+) -> None:
+    rows = _mbc_regional_weekly((FIXTURES / f"{fixture_name}.html").read_text(), DAY, channel)
+
+    assert set(rows) == {channel}
+    assert rows[channel][0].title == first_title
+    assert all(row.confidence == pytest.approx(0.7) for row in rows[channel])
+
+
+def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
+    am_fixture = (FIXTURES / "mbc-gangneung-am.html").read_text()
+    fm_fixture = (FIXTURES / "mbc-gangneung-fm.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            fixture = am_fixture if "g=am" in url else fm_fixture
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("regional-mbc", "https://www.mbceg.co.kr/schedule/cp_depart"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {"mbc.sfm.gangneung", "mbc.fm4u.gangneung"}
+    assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
 
 
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:

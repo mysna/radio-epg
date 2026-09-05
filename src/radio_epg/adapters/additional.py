@@ -27,7 +27,11 @@ _TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
 
 
 def _rows(
-    channel: str, day: date, items: Iterable[tuple[str, str, str | None]]
+    channel: str,
+    day: date,
+    items: Iterable[tuple[str, str, str | None]],
+    *,
+    confidence: float = 1.0,
 ) -> tuple[ScheduleRow, ...]:
     values = list(items)
     result: list[ScheduleRow] = []
@@ -41,6 +45,7 @@ def _rows(
                 end=end,
                 title=title.strip(),
                 is_rerun="(재)" in title,
+                confidence=confidence,
             )
         )
     if not result:
@@ -81,6 +86,39 @@ def _table(
     return {channel: _rows(channel, day, items)}
 
 
+# MBC 지역국 자체 홈페이지는 요일별로 고정된 주간 편성 템플릿만 제공하고, 그날그날의
+# 실제 특보·결방 여부는 반영하지 않는다. 그래도 방송사가 직접 공개한 정규 편성이므로
+# 낮은 confidence로 신뢰도를 낮춰서 싣는다.
+_MBC_TEMPLATE_CONFIDENCE = 0.7
+
+
+def _mbc_regional_weekly(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    items: list[tuple[str, str, str | None]] = []
+    for row in soup.select("tr"):
+        cells = row.find_all(["td", "th"], recursive=False)
+        if len(cells) < 2:
+            continue
+        match = _TIME.search(cells[0].get_text(" ", strip=True))
+        title = cells[1].get_text(" ", strip=True)
+        if match and title:
+            items.append((match.group(1), title, None))
+    return {channel: _rows(channel, day, items, confidence=_MBC_TEMPLATE_CONFIDENCE)}
+
+
+# 지역 MBC는 공유 CMS 없이 방송사마다 완전히 별도 도메인을 쓴다. 실제로 접속·구조를
+# 확인한 방송국만 여기 추가한다. g=am은 표준FM, g=fm은 FM4U, d는 날짜가 아니라
+# 요일 index(일=0~토=6)다.
+_MBC_REGIONAL_STATIONS: dict[str, tuple[str, str, str]] = {
+    # station: (표준FM channel_id, FM4U channel_id, base_url)
+    "gangneung": (
+        "mbc.sfm.gangneung",
+        "mbc.fm4u.gangneung",
+        "https://www.mbceg.co.kr/schedule/cp_depart",
+    ),
+}
+
+
 def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
@@ -98,20 +136,21 @@ def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
 
 
 # FEBC 지역국은 서울과 동일한 CMS를 지역별 subdomain으로 그대로 미러링한다.
-_FEBC_CHANNELS = {
-    "febc-seoul": "febc.main.main",
-    "febc-busan": "febc.main.busan",
-    "febc-changwon": "febc.main.changwon",
-    "febc-daegu": "febc.main.daegu",
-    "febc-daejeon": "febc.main.daejeon",
-    "febc-gangwon": "febc.main.gangwon",
-    "febc-gwangju": "febc.main.gwangju",
-    "febc-jeju": "febc.main.jeju",
-    "febc-jeonbuk": "febc.main.jeonbuk",
-    "febc-jeonnam": "febc.main.jeonnam",
-    "febc-mokpo": "febc.main.mokpo",
-    "febc-pohang": "febc.main.pohang",
-    "febc-ulsan": "febc.main.ulsan",
+# 방송사 하나(FEBC)가 소유한 채널 13개이므로 tbs처럼 소스 하나 아래에서 함께 수집한다.
+_FEBC_REGIONS: dict[str, tuple[str, str]] = {
+    "seoul": ("febc.main.main", "https://seoul.febc.net/radio/schedule"),
+    "busan": ("febc.main.busan", "https://busan.febc.net/radio/schedule"),
+    "changwon": ("febc.main.changwon", "https://changwon.febc.net/radio/schedule"),
+    "daegu": ("febc.main.daegu", "https://daegu.febc.net/radio/schedule"),
+    "daejeon": ("febc.main.daejeon", "https://daejeon.febc.net/radio/schedule"),
+    "gangwon": ("febc.main.gangwon", "https://gangwon.febc.net/radio/schedule"),
+    "gwangju": ("febc.main.gwangju", "https://gj.febc.net/radio/schedule"),
+    "jeju": ("febc.main.jeju", "https://jeju.febc.net/radio/schedule"),
+    "jeonbuk": ("febc.main.jeonbuk", "https://jb.febc.net/radio/schedule"),
+    "jeonnam": ("febc.main.jeonnam", "https://jndb.febc.net/radio/schedule"),
+    "mokpo": ("febc.main.mokpo", "https://mokpo.febc.net/radio/schedule"),
+    "pohang": ("febc.main.pohang", "https://pohang.febc.net/radio/schedule"),
+    "ulsan": ("febc.main.ulsan", "https://ulsan.febc.net/radio/schedule"),
 }
 
 
@@ -223,8 +262,6 @@ def parse_station_schedule(
                 "wbs": "wbs.main.main",
             }[station],
         )
-    if station in _FEBC_CHANNELS:
-        return _febc(text, expected_date, _FEBC_CHANNELS[station])
     parsers = {
         "ytn": _ytn,
         "bbs": _bbs,
@@ -248,7 +285,12 @@ _CHANNELS = {
     "wbs": ("wbs.main.main",),
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
-    **{source_id: (channel,) for source_id, channel in _FEBC_CHANNELS.items()},
+    "febc": tuple(channel for channel, _ in _FEBC_REGIONS.values()),
+    "regional-mbc": tuple(
+        channel
+        for sfm_channel, fm4u_channel, _ in _MBC_REGIONAL_STATIONS.values()
+        for channel in (sfm_channel, fm4u_channel)
+    ),
 }
 
 
@@ -294,7 +336,7 @@ class AdditionalStationAdapter:
             response = await client.get(endpoint, params={"ymd": day.strftime("%Y%m%d")})
         elif source_id == "tbs":
             response = await client.post(endpoint, data={"onDate": day.strftime("%Y%m%d")})
-        elif source_id in _FEBC_CHANNELS:
+        elif source_id == "febc":
             response = await client.get(endpoint, params={"searchDate": day.isoformat()})
         elif source_id == "cpbc":
             response = await client.get(
@@ -318,6 +360,8 @@ class AdditionalStationAdapter:
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
             )
+        elif source_id == "regional-mbc":
+            response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
         response.raise_for_status()
@@ -336,6 +380,17 @@ class AdditionalStationAdapter:
                 ):
                     text = await self._request(client, day, url=url)
                     collected[channel].extend(_table(text, day, channel)[channel])
+            elif self.source.source_id == "febc":
+                for channel, url in _FEBC_REGIONS.values():
+                    text = await self._request(client, day, url=url)
+                    collected[channel].extend(_febc(text, day, channel)[channel])
+            elif self.source.source_id == "regional-mbc":
+                weekday = (day.weekday() + 1) % 7
+                for sfm_channel, fm4u_channel, base_url in _MBC_REGIONAL_STATIONS.values():
+                    for channel, band in ((sfm_channel, "am"), (fm4u_channel, "fm")):
+                        url = f"{base_url}?g={band}&d={weekday}&a=g"
+                        text = await self._request(client, day, url=url)
+                        collected[channel].extend(_mbc_regional_weekly(text, day, channel)[channel])
             else:
                 parsed = parse_station_schedule(
                     self.source.source_id, await self._request(client, day), expected_date=day
