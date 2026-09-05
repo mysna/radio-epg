@@ -7,8 +7,10 @@ import pytest
 
 from radio_epg.adapters.additional import (
     AdditionalStationAdapter,
+    _cbs_regional,
     _febc,
     _mbc_regional_weekly,
+    _sbs_affiliate_tbc,
     parse_station_schedule,
 )
 from radio_epg.adapters.base import CollectionWindow
@@ -16,6 +18,7 @@ from radio_epg.config import SourceConfig
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "additional"
 DAY = date(2026, 7, 14)
+REGIONAL_DAY = date(2026, 9, 5)
 
 
 @pytest.mark.parametrize(
@@ -158,6 +161,60 @@ def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
     channel_ids = {row.channel_id for row in result.schedules}
     assert channel_ids == {"mbc.sfm.gangneung", "mbc.fm4u.gangneung"}
     assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
+
+
+def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
+    text = (FIXTURES / "cbs-regional-busan.json").read_text()
+
+    rows = _cbs_regional(text, REGIONAL_DAY, "cbs.sfm.busan")
+
+    assert set(rows) == {"cbs.sfm.busan"}
+    assert rows["cbs.sfm.busan"][0].title == "최정원의 당신을 향한 노래 (재)"
+    assert rows["cbs.sfm.busan"][0].start == "00:00"
+
+
+def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
+    fixture = (FIXTURES / "cbs-regional-busan.json").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("regional-cbs", "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"),
+        client=Client(),
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert "cbs.sfm.busan" in channel_ids
+    assert "cbs.mfm.busan" in channel_ids
+    assert "cbs.sfm.ulsan" in channel_ids
+
+
+def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> None:
+    text = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
+
+    rows = _sbs_affiliate_tbc(text, REGIONAL_DAY, "sbs.powerfm.daegu")
+
+    assert set(rows) == {"sbs.powerfm.daegu"}
+    assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
+
+
+def test_regional_sbs_collects_tbc_daegu() -> None:
+    fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("regional-sbs", "https://tbc.co.kr/schedule/"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {"sbs.powerfm.daegu"}
 
 
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:

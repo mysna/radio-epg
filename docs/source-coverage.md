@@ -17,23 +17,23 @@
 | `bbs.main.main` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `befm.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
 | `cbs.joy4u.main` | enabled | cbs |  |
-| `cbs.mfm.busan` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.mfm.busan` | enabled | religious |  |
 | `cbs.mfm.daegu` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `cbs.mfm.gwangju` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `cbs.mfm.main` | enabled | cbs |  |
-| `cbs.sfm.busan` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.cheongju` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.busan` | enabled | religious |  |
+| `cbs.sfm.cheongju` | enabled | religious |  |
 | `cbs.sfm.chuncheon` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `cbs.sfm.daegu` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.daejeon` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.daejeon` | enabled | religious |  |
 | `cbs.sfm.gwangju` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.gyeongnam` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.jeju` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.jeonbuk` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.jeonnam` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.gyeongnam` | enabled | religious |  |
+| `cbs.sfm.jeju` | enabled | religious |  |
+| `cbs.sfm.jeonbuk` | enabled | religious |  |
+| `cbs.sfm.jeonnam` | enabled | religious |  |
 | `cbs.sfm.main` | enabled | cbs |  |
 | `cbs.sfm.pohang` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.ulsan` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.ulsan` | enabled | religious |  |
 | `cbs.sfm.youngdong` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `community.crfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
 | `community.daegufm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
@@ -172,7 +172,7 @@
 | `sbs.powerfm.busan` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.cheongju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.chuncheon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
-| `sbs.powerfm.daegu` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.daegu` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.daejeon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.gwangju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.jeju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |

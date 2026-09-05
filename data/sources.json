@@ -72,6 +72,24 @@
     "enabled": true
   },
   {
+    "source_id": "regional-cbs",
+    "name": "지역 CBS 편성표 (부산·전북·청주·대전·경남·제주·전남·울산)",
+    "source_kind": "official",
+    "source_url": "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
+    "source_id": "regional-sbs",
+    "name": "SBS 지역 제휴사 편성표 (TBC 대구)",
+    "source_kind": "official",
+    "source_url": "https://tbc.co.kr/schedule/",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
+  },
+  {
     "source_id": "sbs-affiliates",
     "name": "SBS 지역 제휴사 편성표",
     "source_kind": "official",

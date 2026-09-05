@@ -247,6 +247,51 @@ def _afn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     }
 
 
+# CBS 지역국은 자체 도메인을 쓰지만, 편성표 위젯은 전부 CBS 본사의 공유 API
+# (appradio.cbs.co.kr)를 station 번호로 구분해서 호출한다. FEBC와 마찬가지로
+# fixture로 실제 접속·구조를 확인한 지역국만 여기 추가한다.
+def _hmm_to_time(value: int) -> str:
+    hour, minute = divmod(value, 100)
+    return f"{hour:02d}:{minute:02d}"
+
+
+def _cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    payload = json.loads(text)
+    if payload.get("date") != int(day.strftime("%Y%m%d")):
+        raise ValueError("official schedule date does not match requested date")
+    items = [
+        (_hmm_to_time(entry["start"]), entry["pname"], _hmm_to_time(entry["end"]))
+        for entry in payload["ProgSchedule"]
+    ]
+    return {channel: _rows(channel, day, items)}
+
+
+# station: (표준FM channel_id, 음악FM channel_id 또는 None, appradio station 번호)
+_CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
+    "busan": ("cbs.sfm.busan", "cbs.mfm.busan", 2),
+    "jeonbuk": ("cbs.sfm.jeonbuk", None, 4),
+    "cheongju": ("cbs.sfm.cheongju", None, 5),
+    "daejeon": ("cbs.sfm.daejeon", None, 7),
+    "gyeongnam": ("cbs.sfm.gyeongnam", None, 9),
+    "jeju": ("cbs.sfm.jeju", None, 10),
+    "jeonnam": ("cbs.sfm.jeonnam", None, 12),
+    "ulsan": ("cbs.sfm.ulsan", None, 13),
+}
+
+
+# SBS 지역 제휴사는 CBS와 달리 회사마다 완전히 다른 사이트를 쓴다. 실제로 접속해서
+# 날짜별 편성 페이지 구조를 확인한 곳만 추가한다. TBC(대구)는 sYear/sMonth/sDate
+# 쿼리로 날짜별 서버 렌더링 HTML을 제공한다.
+def _sbs_affiliate_tbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    return _table(text, day, channel, selector="table.sch tr")
+
+
+_SBS_AFFILIATE_STATIONS: dict[str, tuple[str, str]] = {
+    # station: (channel_id, base_url)
+    "daegu": ("sbs.powerfm.daegu", "https://tbc.co.kr/schedule/"),
+}
+
+
 def parse_station_schedule(
     station: str, text: str, *, expected_date: date
 ) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -291,6 +336,13 @@ _CHANNELS = {
         for sfm_channel, fm4u_channel, _ in _MBC_REGIONAL_STATIONS.values()
         for channel in (sfm_channel, fm4u_channel)
     ),
+    "regional-cbs": tuple(
+        channel
+        for sfm_channel, mfm_channel, _ in _CBS_REGIONAL_STATIONS.values()
+        for channel in (sfm_channel, mfm_channel)
+        if channel is not None
+    ),
+    "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values()),
 }
 
 
@@ -360,7 +412,7 @@ class AdditionalStationAdapter:
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
             )
-        elif source_id == "regional-mbc":
+        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs"}:
             response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
@@ -391,6 +443,25 @@ class AdditionalStationAdapter:
                         url = f"{base_url}?g={band}&d={weekday}&a=g"
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_mbc_regional_weekly(text, day, channel)[channel])
+            elif self.source.source_id == "regional-cbs":
+                for sfm_channel, mfm_channel, station in _CBS_REGIONAL_STATIONS.values():
+                    for channel, ch_param in ((sfm_channel, 1), (mfm_channel, 0)):
+                        if channel is None:
+                            continue
+                        url = (
+                            "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"
+                            f"?station={station}&ch={ch_param}&fetchDate={day.isoformat()}"
+                        )
+                        text = await self._request(client, day, url=url)
+                        collected[channel].extend(_cbs_regional(text, day, channel)[channel])
+            elif self.source.source_id == "regional-sbs":
+                for channel, base_url in _SBS_AFFILIATE_STATIONS.values():
+                    url = (
+                        f"{base_url}?mid=7_181&sYear={day.strftime('%Y')}"
+                        f"&sMonth={day.strftime('%m')}&sDate={day.strftime('%d')}"
+                    )
+                    text = await self._request(client, day, url=url)
+                    collected[channel].extend(_sbs_affiliate_tbc(text, day, channel)[channel])
             else:
                 parsed = parse_station_schedule(
                     self.source.source_id, await self._request(client, day), expected_date=day
