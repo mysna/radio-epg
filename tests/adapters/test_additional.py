@@ -11,6 +11,7 @@ from radio_epg.adapters.additional import (
     _febc,
     _knn_busan,
     _mbc_regional_weekly,
+    _mbc_shared_cms,
     _sbs_affiliate_tbc,
     _tjb_daejeon,
     _ubc_ulsan,
@@ -150,20 +151,42 @@ def test_mbc_regional_weekly_parser_marks_rows_with_reduced_confidence(
 def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
     am_fixture = (FIXTURES / "mbc-gangneung-am.html").read_text()
     fm_fixture = (FIXTURES / "mbc-gangneung-fm.html").read_text()
+    shared_cms_fixture = (FIXTURES / "mbc-daegu.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            fixture = am_fixture if "g=am" in url else fm_fixture
+            if "FMTimetable" in url:
+                fixture = shared_cms_fixture
+            else:
+                fixture = am_fixture if "g=am" in url else fm_fixture
             return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
         _source("regional-mbc", "https://www.mbceg.co.kr/schedule/cp_depart"), client=Client()
     )
-    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
 
     channel_ids = {row.channel_id for row in result.schedules}
-    assert channel_ids == {"mbc.sfm.gangneung", "mbc.fm4u.gangneung"}
-    assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
+    assert channel_ids == {
+        "mbc.sfm.gangneung",
+        "mbc.fm4u.gangneung",
+        "mbc.sfm.daegu",
+        "mbc.fm4u.daegu",
+        "mbc.sfm.jeju",
+        "mbc.fm4u.jeju",
+        "mbc.sfm.yeosu",
+        "mbc.fm4u.yeosu",
+    }
+
+
+def test_mbc_shared_cms_parser_reads_the_date_specific_schedule_page() -> None:
+    text = (FIXTURES / "mbc-daegu.html").read_text()
+
+    rows = _mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
+
+    assert set(rows) == {"mbc.sfm.daegu"}
+    assert rows["mbc.sfm.daegu"][0].title == "오늘의 대구문화방송"
+    assert all(row.confidence == pytest.approx(1.0) for row in rows["mbc.sfm.daegu"])
 
 
 def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:

@@ -136,35 +136,35 @@
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.daegu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.daegu` | enabled | regional_mbc |  |
 | `mbc.fm4u.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.gangneung` | enabled | regional_mbc |  |
 | `mbc.fm4u.gwangju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.jeju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.jeju` | enabled | regional_mbc |  |
 | `mbc.fm4u.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.main` | enabled | mbc |  |
 | `mbc.fm4u.mokpo` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.yeosu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
 | `mbc.sfm.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.busan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.daegu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.daegu` | enabled | regional_mbc |  |
 | `mbc.sfm.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.gangneung` | enabled | regional_mbc |  |
 | `mbc.sfm.gwangju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.jeju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.jeju` | enabled | regional_mbc |  |
 | `mbc.sfm.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.main` | enabled | mbc |  |
 | `mbc.sfm.mokpo` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.yeosu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.yeosu` | enabled | regional_mbc |  |
 | `obs.main.main` | enabled | independent |  |
 | `sbs.dmb.main` | enabled | sbs |  |
 | `sbs.lovefm.busan` | enabled | sbs_affiliates |  |

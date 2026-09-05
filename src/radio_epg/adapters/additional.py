@@ -119,6 +119,30 @@ _MBC_REGIONAL_STATIONS: dict[str, tuple[str, str, str]] = {
 }
 
 
+# 대구·제주·여수 MBC는 별도 CMS 업체가 공통으로 만들어준 것으로 보이는 같은 템플릿을
+# 쓴다: /FMTimetable/FM|FM4U/YYYY-MM-DD 로 날짜별 실제 편성(주간 템플릿이 아니다)을
+# 서버 렌더링해서 준다. 실제로 접속·구조를 확인한 방송국만 여기 추가한다.
+def _mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    _require_date(text, day)
+    soup = BeautifulSoup(text, "html.parser")
+    items: list[tuple[str, str, str | None]] = []
+    for node in soup.select(".broadcast-list li"):
+        time_node, title_node = node.select_one("strong"), node.select_one("p")
+        if time_node and title_node:
+            items.append(
+                (time_node.get_text(strip=True), title_node.get_text(" ", strip=True), None)
+            )
+    return {channel: _rows(channel, day, items)}
+
+
+_MBC_SHARED_CMS_STATIONS: dict[str, tuple[str, str, str]] = {
+    # station: (표준FM channel_id, FM4U channel_id, domain)
+    "daegu": ("mbc.sfm.daegu", "mbc.fm4u.daegu", "dgmbc.com"),
+    "jeju": ("mbc.sfm.jeju", "mbc.fm4u.jeju", "jejumbc.com"),
+    "yeosu": ("mbc.sfm.yeosu", "mbc.fm4u.yeosu", "ysmbc.co.kr"),
+}
+
+
 def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
@@ -439,6 +463,11 @@ _CHANNELS = {
         channel
         for sfm_channel, fm4u_channel, _ in _MBC_REGIONAL_STATIONS.values()
         for channel in (sfm_channel, fm4u_channel)
+    )
+    + tuple(
+        channel
+        for sfm_channel, fm4u_channel, _ in _MBC_SHARED_CMS_STATIONS.values()
+        for channel in (sfm_channel, fm4u_channel)
     ),
     "regional-cbs": tuple(
         channel
@@ -555,6 +584,11 @@ class AdditionalStationAdapter:
                         url = f"{base_url}?g={band}&d={weekday}&a=g"
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_mbc_regional_weekly(text, day, channel)[channel])
+                for sfm_channel, fm4u_channel, domain in _MBC_SHARED_CMS_STATIONS.values():
+                    for channel, band in ((sfm_channel, "FM"), (fm4u_channel, "FM4U")):
+                        url = f"https://{domain}/FMTimetable/{band}/{day.isoformat()}"
+                        text = await self._request(client, day, url=url)
+                        collected[channel].extend(_mbc_shared_cms(text, day, channel)[channel])
             elif self.source.source_id == "regional-cbs":
                 for sfm_channel, mfm_channel, station in _CBS_REGIONAL_STATIONS.values():
                     for channel, ch_param in ((sfm_channel, 1), (mfm_channel, 0)):
