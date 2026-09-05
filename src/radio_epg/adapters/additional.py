@@ -97,7 +97,25 @@ def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     return {channel: _rows(channel, day, items)}
 
 
-def _febc(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
+# FEBC 지역국은 서울과 동일한 CMS를 지역별 subdomain으로 그대로 미러링한다.
+_FEBC_CHANNELS = {
+    "febc-seoul": "febc.main.main",
+    "febc-busan": "febc.main.busan",
+    "febc-changwon": "febc.main.changwon",
+    "febc-daegu": "febc.main.daegu",
+    "febc-daejeon": "febc.main.daejeon",
+    "febc-gangwon": "febc.main.gangwon",
+    "febc-gwangju": "febc.main.gwangju",
+    "febc-jeju": "febc.main.jeju",
+    "febc-jeonbuk": "febc.main.jeonbuk",
+    "febc-jeonnam": "febc.main.jeonnam",
+    "febc-mokpo": "febc.main.mokpo",
+    "febc-pohang": "febc.main.pohang",
+    "febc-ulsan": "febc.main.ulsan",
+}
+
+
+def _febc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
     items = []
@@ -107,7 +125,6 @@ def _febc(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
             items.append(
                 (time_node.get_text(strip=True), title_node.get_text(" ", strip=True), None)
             )
-    channel = "febc.main.main"
     return {channel: _rows(channel, day, items)}
 
 
@@ -206,9 +223,10 @@ def parse_station_schedule(
                 "wbs": "wbs.main.main",
             }[station],
         )
+    if station in _FEBC_CHANNELS:
+        return _febc(text, expected_date, _FEBC_CHANNELS[station])
     parsers = {
         "ytn": _ytn,
-        "febc": _febc,
         "bbs": _bbs,
         "cpbc": _cpbc,
         "kfn": _kfn,
@@ -226,11 +244,11 @@ _CHANNELS = {
     "ifm": ("ifm.main.main",),
     "ytn": ("ytn.main.main",),
     "tbs": ("tbs.fm.main", "tbs.efm.main"),
-    "febc-seoul": ("febc.main.main",),
     "cpbc": ("cpbc.main.main",),
     "wbs": ("wbs.main.main",),
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
+    **{source_id: (channel,) for source_id, channel in _FEBC_CHANNELS.items()},
 }
 
 
@@ -276,7 +294,7 @@ class AdditionalStationAdapter:
             response = await client.get(endpoint, params={"ymd": day.strftime("%Y%m%d")})
         elif source_id == "tbs":
             response = await client.post(endpoint, data={"onDate": day.strftime("%Y%m%d")})
-        elif source_id == "febc-seoul":
+        elif source_id in _FEBC_CHANNELS:
             response = await client.get(endpoint, params={"searchDate": day.isoformat()})
         elif source_id == "cpbc":
             response = await client.get(
@@ -319,11 +337,8 @@ class AdditionalStationAdapter:
                     text = await self._request(client, day, url=url)
                     collected[channel].extend(_table(text, day, channel)[channel])
             else:
-                parser_name = {"febc-seoul": "febc"}.get(
-                    self.source.source_id, self.source.source_id
-                )
                 parsed = parse_station_schedule(
-                    parser_name, await self._request(client, day), expected_date=day
+                    self.source.source_id, await self._request(client, day), expected_date=day
                 )
                 for channel, rows in parsed.items():
                     collected[channel].extend(rows)

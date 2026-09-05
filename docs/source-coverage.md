@@ -61,24 +61,24 @@
 | `cpbc.main.busan` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
 | `cpbc.main.daegu` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
 | `cpbc.main.gwangju` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
-| `cpbc.main.main` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
+| `cpbc.main.main` | enabled | religious |  |
 | `ebs.bandi.main` | enabled | ebs |  |
 | `ebs.fm.main` | enabled | ebs |  |
-| `febc.main.busan` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.changwon` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.daegu` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.daejeon` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.gangwon` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.gwangju` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.jeju` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.jeonbuk` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.jeonnam` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.main` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.mokpo` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.pohang` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
-| `febc.main.ulsan` | unsupported | febc | 공식 FEBC CMS 편성 selector와 fixture 미검증 |
+| `febc.main.busan` | enabled | febc |  |
+| `febc.main.changwon` | enabled | febc |  |
+| `febc.main.daegu` | enabled | febc |  |
+| `febc.main.daejeon` | enabled | febc |  |
+| `febc.main.gangwon` | enabled | febc |  |
+| `febc.main.gwangju` | enabled | febc |  |
+| `febc.main.jeju` | enabled | febc |  |
+| `febc.main.jeonbuk` | enabled | febc |  |
+| `febc.main.jeonnam` | enabled | febc |  |
+| `febc.main.main` | enabled | febc |  |
+| `febc.main.mokpo` | enabled | febc |  |
+| `febc.main.pohang` | enabled | febc |  |
+| `febc.main.ulsan` | enabled | febc |  |
 | `ggn.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
-| `ifm.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
+| `ifm.main.main` | enabled | independent |  |
 | `kbs.1fm.busan` | enabled | kbs |  |
 | `kbs.1fm.changwon` | enabled | kbs |  |
 | `kbs.1fm.cheongju` | enabled | kbs |  |
@@ -125,10 +125,10 @@
 | `kbs.2radio.main` | enabled | kbs |  |
 | `kbs.3radio.main` | enabled | kbs |  |
 | `kbs.hanminjok.main` | enabled | kbs |  |
-| `kookbang.main.main` | unsupported | independent | 공식 KFN 편성 fixture 미검증 |
-| `kugak.main.daejeon` | unsupported | independent | 국악방송 지역별 편성 fixture 미검증 |
-| `kugak.main.gwangju` | unsupported | independent | 국악방송 지역별 편성 fixture 미검증 |
-| `kugak.main.main` | unsupported | independent | 국악방송 지역별 편성 fixture 미검증 |
+| `kookbang.main.main` | unsupported | independent | 공식 페이지 parser fixture는 검증했지만 현재 JSON endpoint가 404를 반환함 |
+| `kugak.main.daejeon` | enabled | independent |  |
+| `kugak.main.gwangju` | enabled | independent |  |
+| `kugak.main.main` | enabled | independent |  |
 | `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
 | `mbc.chm.main` | enabled | mbc |  |
 | `mbc.fm4u.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -165,7 +165,7 @@
 | `mbc.sfm.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.yeosu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `obs.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
+| `obs.main.main` | enabled | independent |  |
 | `sbs.dmb.main` | enabled | sbs |  |
 | `sbs.lovefm.busan` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.lovefm.main` | enabled | sbs |  |
@@ -192,11 +192,11 @@
 | `tbn.main.jeonbuk` | enabled | tbn |  |
 | `tbn.main.main` | enabled | tbn |  |
 | `tbn.main.ulsan` | enabled | tbn |  |
-| `tbs.efm.main` | unsupported | independent | TBS eFM 공식 편성 selector fixture 미검증 |
-| `tbs.fm.main` | unsupported | independent | TBS 공식 편성 selector fixture 미검증 |
+| `tbs.efm.main` | enabled | independent |  |
+| `tbs.fm.main` | enabled | independent |  |
 | `wbs.main.busan` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
 | `wbs.main.daegu` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
 | `wbs.main.gwangju` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
 | `wbs.main.jeonbuk` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
-| `wbs.main.main` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
-| `ytn.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
+| `wbs.main.main` | enabled | religious |  |
+| `ytn.main.main` | enabled | independent |  |

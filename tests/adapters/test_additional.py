@@ -20,7 +20,8 @@ DAY = date(2026, 7, 14)
         ("ifm", "html", {"ifm.main.main"}, "당신의 BGM"),
         ("ytn", "html", {"ytn.main.main"}, "YTN24"),
         ("tbs", "html", {"tbs.fm.main"}, "권순우의 새벽공감 1부"),
-        ("febc", "html", {"febc.main.main"}, "별처럼 빛나는 그대에게"),
+        ("febc-seoul", "html", {"febc.main.main"}, "별처럼 빛나는 그대에게"),
+        ("febc-busan", "html", {"febc.main.busan"}, "별처럼 빛나는 그대에게"),
         ("bbs", "html", {"bbs.main.main"}, "경전공부"),
         ("cpbc", "json", {"cpbc.main.main"}, "라디오 고해소 비밀번호 1053"),
         ("wbs", "html", {"wbs.main.main"}, "법문이 있는 음악카페"),
@@ -82,6 +83,22 @@ def test_tbs_fm_and_efm_have_channel_specific_source_event_ids() -> None:
 
     assert all(event_ids.values())
     assert event_ids["tbs.fm.main"].isdisjoint(event_ids["tbs.efm.main"])
+
+
+def test_febc_regions_collect_into_their_own_channel() -> None:
+    fixture = (FIXTURES / "febc-busan.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("febc-busan", "https://busan.febc.net/radio/schedule"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert result.schedules
+    assert {row.channel_id for row in result.schedules} == {"febc.main.busan"}
 
 
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:
