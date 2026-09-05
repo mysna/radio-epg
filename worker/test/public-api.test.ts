@@ -345,6 +345,37 @@ describe("current schedule API", () => {
     }
   });
 
+  it("serves large playlists without exceeding the per-request subrequest budget", async () => {
+    // 채널마다 cache.match/put을 하나씩 날리면 채널 수만큼 subrequest가 생겨서,
+    // 즐겨찾기를 전체 채널처럼 많이 선택한 요청은 Cloudflare Workers의 subrequest
+    // 상한을 넘겨 500으로 죽는다. PER_CHANNEL_CACHE_LIMIT(30)보다 많은 채널을
+    // 한 번에 조회해도 정상적으로 응답하는지 검증한다.
+    const bulkChannelIds = Array.from({ length: 35 }, (_, index) => `bulk.channel.${index}`);
+    await db.batch(
+      bulkChannelIds.map((channelId, index) =>
+        db.prepare(
+          "INSERT INTO channels (id, broadcaster_id, name, region_id, stn, ch) VALUES (?, ?, ?, ?, ?, ?)",
+        ).bind(channelId, "kbs", `벌크 채널 ${index}`, "seoul", "bulk", `ch${index}`),
+      ),
+    );
+
+    try {
+      const response = await request(`/v1/now?radio_ids=${bulkChannelIds.join(",")}`);
+      const body = (await response.json()) as { results: Array<{ channel_id: string | null; status: string }> };
+
+      expect(response.status).toBe(200);
+      expect(body.results).toHaveLength(bulkChannelIds.length);
+      expect(body.results.every((result) => result.status === "unavailable")).toBe(true);
+      expect(body.results.map((result) => result.channel_id)).toEqual(bulkChannelIds);
+    } finally {
+      await db.batch(
+        bulkChannelIds.map((channelId) =>
+          db.prepare("DELETE FROM channels WHERE id = ?").bind(channelId),
+        ),
+      );
+    }
+  });
+
   it("limits radio ID batches to 100", async () => {
     const ids = Array.from({ length: 101 }, (_, index) => `radio-${index}`).join(",");
     const response = await request(`/v1/now?radio_ids=${ids}`);

@@ -11,6 +11,13 @@ const nowRoute = new Hono<AppEnv>();
 const CACHE_NAMESPACE = "now/channel";
 const MIN_CACHE_AGE_SECONDS = 30;
 const MAX_CACHE_AGE_SECONDS = 300;
+/**
+ * 채널마다 cache.match/put을 하나씩 날리면 채널 수만큼 subrequest가 생긴다.
+ * Cloudflare Workers는 요청 하나당 subrequest 수에 상한이 있어서, 즐겨찾기를
+ * 전체 채널처럼 많이 선택한 요청은 이 한도를 넘겨 500으로 죽는다. 그 상한보다
+ * 넉넉히 낮은 채널 수부터는 채널별 캐시를 건너뛰고 DB를 한 번에 배치 조회한다.
+ */
+const PER_CHANNEL_CACHE_LIMIT = 30;
 
 /**
  * 캐시 수명을 현재 편성이 끝나는 시각까지로 잡는다. 고정 30초로 캐시하면 한
@@ -36,6 +43,13 @@ async function currentAndNextCached(
   channelIds: string[],
   now: Date,
 ): Promise<Map<string, CurrentAndNext>> {
+  if (channelIds.length > PER_CHANNEL_CACHE_LIMIT) {
+    const fresh = await currentAndNextForChannels(database, channelIds, now);
+    return new Map(
+      channelIds.map((channelId) => [channelId, fresh.get(channelId) ?? { current: null, next: null }]),
+    );
+  }
+
   const cache = edgeCache();
   const schedules = new Map<string, CurrentAndNext>();
   const misses: string[] = [];
