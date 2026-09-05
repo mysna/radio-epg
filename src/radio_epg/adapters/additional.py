@@ -399,6 +399,19 @@ def _tjb_daejeon(text: str, day: date, channel: str) -> dict[str, tuple[Schedule
 _TJB_DAEJEON_CHANNEL = "sbs.powerfm.daejeon"
 
 
+# ubc(울산)는 /api/broadcast/schedule/?type=RADIO&date=YYYYMMDD로 깔끔한 JSON을
+# 준다. 항목마다 start_time/end_time이 명시돼 있어 자정-넘김 정규화가 필요 없다.
+def _ubc_ulsan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    payload = json.loads(text)
+    if payload.get("date") != day.isoformat():
+        raise ValueError("official schedule date does not match requested date")
+    items = [(item["start_time"], item["title"], item["end_time"]) for item in payload["items"]]
+    return {channel: _rows(channel, day, items)}
+
+
+_UBC_ULSAN_CHANNEL = "sbs.powerfm.ulsan"
+
+
 def parse_station_schedule(
     station: str, text: str, *, expected_date: date
 ) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -452,7 +465,7 @@ _CHANNELS = {
     + tuple(channel for channel, _ in _CBS_WEEKLY_STATIONS.values()),
     "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values())
     + _KNN_BUSAN_CHANNELS
-    + (_TJB_DAEJEON_CHANNEL,),
+    + (_TJB_DAEJEON_CHANNEL, _UBC_ULSAN_CHANNEL),
 }
 
 
@@ -586,6 +599,14 @@ class AdditionalStationAdapter:
                 tjb_text = await self._request(client, day, url=tjb_url)
                 collected[_TJB_DAEJEON_CHANNEL].extend(
                     _tjb_daejeon(tjb_text, day, _TJB_DAEJEON_CHANNEL)[_TJB_DAEJEON_CHANNEL]
+                )
+                ubc_url = (
+                    "https://www.ubc.co.kr/api/broadcast/schedule/"
+                    f"?type=RADIO&date={day.strftime('%Y%m%d')}"
+                )
+                ubc_text = await self._request(client, day, url=ubc_url)
+                collected[_UBC_ULSAN_CHANNEL].extend(
+                    _ubc_ulsan(ubc_text, day, _UBC_ULSAN_CHANNEL)[_UBC_ULSAN_CHANNEL]
                 )
             else:
                 parsed = parse_station_schedule(

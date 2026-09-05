@@ -178,7 +178,7 @@
 | `sbs.powerfm.jeju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.jeonju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.main` | enabled | sbs |  |
-| `sbs.powerfm.ulsan` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.ulsan` | enabled | sbs_affiliates |  |
 | `tbn.main.busan` | enabled | tbn |  |
 | `tbn.main.chungbuk` | enabled | tbn |  |
 | `tbn.main.chungnam` | enabled | tbn |  |

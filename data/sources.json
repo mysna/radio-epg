@@ -82,7 +82,7 @@
   },
   {
     "source_id": "regional-sbs",
-    "name": "SBS 지역 제휴사 편성표 (TBC 대구, KNN 부산, TJB 대전)",
+    "name": "SBS 지역 제휴사 편성표 (TBC 대구, KNN 부산, TJB 대전, ubc 울산)",
     "source_kind": "official",
     "source_url": "https://tbc.co.kr/schedule/",
     "priority": 100,

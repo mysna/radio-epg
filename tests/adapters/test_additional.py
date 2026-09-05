@@ -14,6 +14,7 @@ from radio_epg.adapters.additional import (
     _mbc_regional_weekly,
     _sbs_affiliate_tbc,
     _tjb_daejeon,
+    _ubc_ulsan,
     parse_station_schedule,
 )
 from radio_epg.adapters.base import CollectionWindow
@@ -245,10 +246,11 @@ def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> Non
     assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
 
 
-def test_regional_sbs_collects_tbc_knn_and_tjb() -> None:
+def test_regional_sbs_collects_tbc_knn_tjb_and_ubc() -> None:
     tbc_fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
     knn_fixture = (FIXTURES / "sbs-knn-busan.html").read_text()
     tjb_fixture = (FIXTURES / "sbs-tjb-daejeon.html").read_text()
+    ubc_fixture = (FIXTURES / "sbs-ubc-ulsan.json").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
@@ -256,6 +258,8 @@ def test_regional_sbs_collects_tbc_knn_and_tjb() -> None:
                 body = knn_fixture
             elif "tjb.co.kr" in url:
                 body = tjb_fixture
+            elif "ubc.co.kr" in url:
+                body = ubc_fixture
             else:
                 body = tbc_fixture
             return httpx.Response(200, text=body, request=httpx.Request("GET", url))
@@ -271,7 +275,19 @@ def test_regional_sbs_collects_tbc_knn_and_tjb() -> None:
         "sbs.powerfm.busan",
         "sbs.lovefm.busan",
         "sbs.powerfm.daejeon",
+        "sbs.powerfm.ulsan",
     }
+
+
+def test_ubc_ulsan_parser_uses_explicit_start_and_end_times() -> None:
+    text = (FIXTURES / "sbs-ubc-ulsan.json").read_text()
+
+    rows = _ubc_ulsan(text, REGIONAL_DAY, "sbs.powerfm.ulsan")
+
+    assert set(rows) == {"sbs.powerfm.ulsan"}
+    assert rows["sbs.powerfm.ulsan"][0].title == "뮤직하이"
+    assert rows["sbs.powerfm.ulsan"][0].start == "00:00"
+    assert rows["sbs.powerfm.ulsan"][0].end == "01:00"
 
 
 def test_tjb_daejeon_parser_normalizes_the_midnight_crossing() -> None:
