@@ -196,6 +196,16 @@ def test_mbc_shared_cms_parser_reads_the_date_specific_schedule_page() -> None:
     assert all(row.confidence == pytest.approx(1.0) for row in rows["mbc.sfm.daegu"])
 
 
+def test_mbc_shared_cms_normalizes_times_that_wrap_past_midnight() -> None:
+    text = (FIXTURES / "mbc-daegu-midnight-wrap.html").read_text()
+
+    rows = _mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
+
+    starts = [row.start for row in rows["mbc.sfm.daegu"]]
+    assert starts == ["23:05", "24:00", "25:00"]
+    assert rows["mbc.sfm.daegu"][-1].end == "30:00"
+
+
 def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
     text = (FIXTURES / "cbs-regional-busan.json").read_text()
 

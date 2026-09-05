@@ -125,14 +125,12 @@ _MBC_REGIONAL_STATIONS: dict[str, tuple[str, str, str]] = {
 def _mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
-    items: list[tuple[str, str, str | None]] = []
+    entries: list[tuple[str, str]] = []
     for node in soup.select(".broadcast-list li"):
         time_node, title_node = node.select_one("strong"), node.select_one("p")
         if time_node and title_node:
-            items.append(
-                (time_node.get_text(strip=True), title_node.get_text(" ", strip=True), None)
-            )
-    return {channel: _rows(channel, day, items)}
+            entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
 _MBC_SHARED_CMS_STATIONS: dict[str, tuple[str, str, str, str]] = {
@@ -567,6 +565,9 @@ class AdditionalStationAdapter:
         }
         day = window.start
         while day <= window.end:
+            # 일부 지역국 CMS(TBS eFM, 광주MBC, 울산 ubc 등)는 당일치까지만 실제 편성을
+            # 채워주고, 다음 날은 아직 발행되지 않아 시간 없는 빈 응답을 돌려준다. 날짜
+            # 자체는 정상 응답이므로 "no rows"만 그 채널·날짜에 한해 빈 결과로 건너뛴다.
             if self.source.source_id == "tbs":
                 for channel, url in (
                     ("tbs.fm.main", "https://tbs.seoul.kr/fm/schedule.do"),
@@ -576,8 +577,6 @@ class AdditionalStationAdapter:
                     try:
                         collected[channel].extend(_table(text, day, channel)[channel])
                     except ValueError as error:
-                        # eFM은 당일치만 실제 편성을 채워주고, 내일 이후 날짜는 시간이
-                        # 없는 빈 뼈대 표만 돌려준다(구조적 한계, 재시도로 해결되지 않음).
                         if "no rows" not in str(error):
                             raise
             elif self.source.source_id == "febc":
@@ -595,7 +594,11 @@ class AdditionalStationAdapter:
                     for channel, band in ((sfm_channel, "FM"), (fm4u_channel, "FM4U")):
                         url = f"https://{domain}/{path}/{band}/{day.isoformat()}"
                         text = await self._request(client, day, url=url)
-                        collected[channel].extend(_mbc_shared_cms(text, day, channel)[channel])
+                        try:
+                            collected[channel].extend(_mbc_shared_cms(text, day, channel)[channel])
+                        except ValueError as error:
+                            if "no rows" not in str(error):
+                                raise
             elif self.source.source_id == "regional-cbs":
                 for sfm_channel, mfm_channel, station in _CBS_REGIONAL_STATIONS.values():
                     for channel, ch_param in ((sfm_channel, 1), (mfm_channel, 0)):
@@ -632,9 +635,13 @@ class AdditionalStationAdapter:
                     f"?type=RADIO&date={day.strftime('%Y%m%d')}"
                 )
                 ubc_text = await self._request(client, day, url=ubc_url)
-                collected[_UBC_ULSAN_CHANNEL].extend(
-                    _ubc_ulsan(ubc_text, day, _UBC_ULSAN_CHANNEL)[_UBC_ULSAN_CHANNEL]
-                )
+                try:
+                    collected[_UBC_ULSAN_CHANNEL].extend(
+                        _ubc_ulsan(ubc_text, day, _UBC_ULSAN_CHANNEL)[_UBC_ULSAN_CHANNEL]
+                    )
+                except ValueError as error:
+                    if "no rows" not in str(error):
+                        raise
             elif self.source.source_id == "ggn":
                 weekday = day.weekday() + 1
                 url = f"https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94&day={weekday}"
