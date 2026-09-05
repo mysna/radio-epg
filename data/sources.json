@@ -64,7 +64,7 @@
   },
   {
     "source_id": "regional-mbc",
-    "name": "지역 MBC 편성표 (강릉 주간 템플릿, 대구·제주·여수 날짜별)",
+    "name": "지역 MBC 편성표 (강릉 주간 템플릿, 대구·제주·여수·목포·광주 날짜별)",
     "source_kind": "official",
     "source_url": "https://www.mbceg.co.kr/schedule/cp_depart",
     "priority": 100,

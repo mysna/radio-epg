@@ -135,11 +135,14 @@ def _mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[Sched
     return {channel: _rows(channel, day, items)}
 
 
-_MBC_SHARED_CMS_STATIONS: dict[str, tuple[str, str, str]] = {
-    # station: (표준FM channel_id, FM4U channel_id, domain)
-    "daegu": ("mbc.sfm.daegu", "mbc.fm4u.daegu", "dgmbc.com"),
-    "jeju": ("mbc.sfm.jeju", "mbc.fm4u.jeju", "jejumbc.com"),
-    "yeosu": ("mbc.sfm.yeosu", "mbc.fm4u.yeosu", "ysmbc.co.kr"),
+_MBC_SHARED_CMS_STATIONS: dict[str, tuple[str, str, str, str]] = {
+    # station: (표준FM channel_id, FM4U channel_id, domain, timetable path 이름)
+    # 같은 CMS를 쓰지만 방송국마다 이 path 이름을 다르게 붙였다.
+    "daegu": ("mbc.sfm.daegu", "mbc.fm4u.daegu", "dgmbc.com", "FMTimetable"),
+    "jeju": ("mbc.sfm.jeju", "mbc.fm4u.jeju", "jejumbc.com", "FMTimetable"),
+    "yeosu": ("mbc.sfm.yeosu", "mbc.fm4u.yeosu", "ysmbc.co.kr", "FMTimetable"),
+    "mokpo": ("mbc.sfm.mokpo", "mbc.fm4u.mokpo", "www.mpmbc.co.kr", "TVTimetable"),
+    "gwangju": ("mbc.sfm.gwangju", "mbc.fm4u.gwangju", "kjmbc.co.kr", "Timetable"),
 }
 
 
@@ -466,7 +469,7 @@ _CHANNELS = {
     )
     + tuple(
         channel
-        for sfm_channel, fm4u_channel, _ in _MBC_SHARED_CMS_STATIONS.values()
+        for sfm_channel, fm4u_channel, _, _ in _MBC_SHARED_CMS_STATIONS.values()
         for channel in (sfm_channel, fm4u_channel)
     ),
     "regional-cbs": tuple(
@@ -584,9 +587,9 @@ class AdditionalStationAdapter:
                         url = f"{base_url}?g={band}&d={weekday}&a=g"
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_mbc_regional_weekly(text, day, channel)[channel])
-                for sfm_channel, fm4u_channel, domain in _MBC_SHARED_CMS_STATIONS.values():
+                for sfm_channel, fm4u_channel, domain, path in _MBC_SHARED_CMS_STATIONS.values():
                     for channel, band in ((sfm_channel, "FM"), (fm4u_channel, "FM4U")):
-                        url = f"https://{domain}/FMTimetable/{band}/{day.isoformat()}"
+                        url = f"https://{domain}/{path}/{band}/{day.isoformat()}"
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_mbc_shared_cms(text, day, channel)[channel])
             elif self.source.source_id == "regional-cbs":

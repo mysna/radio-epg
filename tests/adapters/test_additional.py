@@ -155,10 +155,12 @@ def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            if "FMTimetable" in url:
-                fixture = shared_cms_fixture
+            if "g=am" in url:
+                fixture = am_fixture
+            elif "g=fm" in url:
+                fixture = fm_fixture
             else:
-                fixture = am_fixture if "g=am" in url else fm_fixture
+                fixture = shared_cms_fixture
             return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
@@ -176,6 +178,10 @@ def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
         "mbc.fm4u.jeju",
         "mbc.sfm.yeosu",
         "mbc.fm4u.yeosu",
+        "mbc.sfm.mokpo",
+        "mbc.fm4u.mokpo",
+        "mbc.sfm.gwangju",
+        "mbc.fm4u.gwangju",
     }
 
 

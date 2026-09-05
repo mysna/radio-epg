@@ -139,11 +139,11 @@
 | `mbc.fm4u.daegu` | enabled | regional_mbc |  |
 | `mbc.fm4u.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.gangneung` | enabled | regional_mbc |  |
-| `mbc.fm4u.gwangju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.gwangju` | enabled | regional_mbc |  |
 | `mbc.fm4u.jeju` | enabled | regional_mbc |  |
 | `mbc.fm4u.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.main` | enabled | mbc |  |
-| `mbc.fm4u.mokpo` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.mokpo` | enabled | regional_mbc |  |
 | `mbc.fm4u.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -156,11 +156,11 @@
 | `mbc.sfm.daegu` | enabled | regional_mbc |  |
 | `mbc.sfm.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.gangneung` | enabled | regional_mbc |  |
-| `mbc.sfm.gwangju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.gwangju` | enabled | regional_mbc |  |
 | `mbc.sfm.jeju` | enabled | regional_mbc |  |
 | `mbc.sfm.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.main` | enabled | mbc |  |
-| `mbc.sfm.mokpo` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.mokpo` | enabled | regional_mbc |  |
 | `mbc.sfm.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
