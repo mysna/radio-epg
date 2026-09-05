@@ -32,7 +32,7 @@
 | `cbs.sfm.jeonbuk` | enabled | religious |  |
 | `cbs.sfm.jeonnam` | enabled | religious |  |
 | `cbs.sfm.main` | enabled | cbs |  |
-| `cbs.sfm.pohang` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.pohang` | enabled | religious |  |
 | `cbs.sfm.ulsan` | enabled | religious |  |
 | `cbs.sfm.youngdong` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
 | `community.crfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |

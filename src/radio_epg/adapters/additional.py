@@ -279,6 +279,33 @@ _CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
 }
 
 
+# 포항CBS는 공유 API 대신 자체 페이지에 평일/토/일 3종 고정 주간표를 각각
+# <div id="Mon|Sat|Sun">로 서버 렌더링해서 하나의 응답에 전부 담아 보낸다.
+# 날짜별 결방·특보는 반영되지 않으므로 MBC 지역국과 같은 낮은 confidence를 쓴다.
+_CBS_WEEKDAY_BUCKETS = {0: "Mon", 1: "Mon", 2: "Mon", 3: "Mon", 4: "Mon", 5: "Sat", 6: "Sun"}
+
+
+def _cbs_pohang_weekly(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    bucket = _CBS_WEEKDAY_BUCKETS[day.weekday()]
+    soup = BeautifulSoup(text, "html.parser")
+    container = soup.find(id=bucket)
+    if container is None:
+        raise ValueError("official schedule weekday section missing")
+    items: list[tuple[str, str, str | None]] = []
+    for row in container.select(".pairingCon"):
+        time_node = row.select_one(".time")
+        title_node = row.select_one(".proyiynph .title")
+        if time_node and title_node:
+            items.append((time_node.get_text(strip=True), title_node.get_text(strip=True), None))
+    return {channel: _rows(channel, day, items, confidence=_MBC_TEMPLATE_CONFIDENCE)}
+
+
+_CBS_WEEKLY_STATIONS: dict[str, tuple[str, str]] = {
+    # station: (channel_id, url)
+    "pohang": ("cbs.sfm.pohang", "https://phcbs.co.kr/pairing_standardFm"),
+}
+
+
 # SBS 지역 제휴사는 CBS와 달리 회사마다 완전히 다른 사이트를 쓴다. 실제로 접속해서
 # 날짜별 편성 페이지 구조를 확인한 곳만 추가한다. TBC(대구)는 sYear/sMonth/sDate
 # 쿼리로 날짜별 서버 렌더링 HTML을 제공한다.
@@ -341,7 +368,8 @@ _CHANNELS = {
         for sfm_channel, mfm_channel, _ in _CBS_REGIONAL_STATIONS.values()
         for channel in (sfm_channel, mfm_channel)
         if channel is not None
-    ),
+    )
+    + tuple(channel for channel, _ in _CBS_WEEKLY_STATIONS.values()),
     "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values()),
 }
 
@@ -454,6 +482,9 @@ class AdditionalStationAdapter:
                         )
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_cbs_regional(text, day, channel)[channel])
+                for channel, url in _CBS_WEEKLY_STATIONS.values():
+                    text = await self._request(client, day, url=url)
+                    collected[channel].extend(_cbs_pohang_weekly(text, day, channel)[channel])
             elif self.source.source_id == "regional-sbs":
                 for channel, base_url in _SBS_AFFILIATE_STATIONS.values():
                     url = (
