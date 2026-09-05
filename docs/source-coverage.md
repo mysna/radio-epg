@@ -167,9 +167,9 @@
 | `mbc.sfm.yeosu` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `obs.main.main` | enabled | independent |  |
 | `sbs.dmb.main` | enabled | sbs |  |
-| `sbs.lovefm.busan` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.lovefm.busan` | enabled | sbs_affiliates |  |
 | `sbs.lovefm.main` | enabled | sbs |  |
-| `sbs.powerfm.busan` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.busan` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.cheongju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.chuncheon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.daegu` | enabled | sbs_affiliates |  |

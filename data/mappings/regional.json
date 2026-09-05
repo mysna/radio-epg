@@ -34,8 +34,8 @@
     {"channel_id":"mbc.sfm.wonju","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"mbc.sfm.yeosu","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
 
-    {"channel_id":"sbs.lovefm.busan","family":"sbs_affiliates","status":"unsupported","source_url":"https://www.sbs.co.kr/radio","parser":"shared-html","reason":"지역 제휴사 공식 편성 endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
-    {"channel_id":"sbs.powerfm.busan","family":"sbs_affiliates","status":"unsupported","source_url":"https://www.sbs.co.kr/radio","parser":"shared-html","reason":"지역 제휴사 공식 편성 endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
+    {"channel_id":"sbs.lovefm.busan","family":"sbs_affiliates","status":"enabled","source_url":"https://www.knn.co.kr/schedule/schedule.do?date={date_compact}&channel=rd2","parser":"additional-official","last_investigated":"2026-09-05"},
+    {"channel_id":"sbs.powerfm.busan","family":"sbs_affiliates","status":"enabled","source_url":"https://www.knn.co.kr/schedule/schedule.do?date={date_compact}&channel=rd1","parser":"additional-official","last_investigated":"2026-09-05"},
     {"channel_id":"sbs.powerfm.cheongju","family":"sbs_affiliates","status":"unsupported","source_url":"https://www.sbs.co.kr/radio","parser":"shared-html","reason":"지역 제휴사 공식 편성 endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"sbs.powerfm.chuncheon","family":"sbs_affiliates","status":"unsupported","source_url":"https://www.sbs.co.kr/radio","parser":"shared-html","reason":"지역 제휴사 공식 편성 endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"sbs.powerfm.daegu","family":"sbs_affiliates","status":"enabled","source_url":"https://tbc.co.kr/schedule/?mid=7_181&sYear={year}&sMonth={month}&sDate={day}","parser":"additional-official","last_investigated":"2026-09-05"},

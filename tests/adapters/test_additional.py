@@ -10,6 +10,7 @@ from radio_epg.adapters.additional import (
     _cbs_pohang_weekly,
     _cbs_regional,
     _febc,
+    _knn_busan,
     _mbc_regional_weekly,
     _sbs_affiliate_tbc,
     parse_station_schedule,
@@ -243,12 +244,14 @@ def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> Non
     assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
 
 
-def test_regional_sbs_collects_tbc_daegu() -> None:
-    fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
+def test_regional_sbs_collects_tbc_daegu_and_knn_busan() -> None:
+    tbc_fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
+    knn_fixture = (FIXTURES / "sbs-knn-busan.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+            body = knn_fixture if "knn.co.kr" in url else tbc_fixture
+            return httpx.Response(200, text=body, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
         _source("regional-sbs", "https://tbc.co.kr/schedule/"), client=Client()
@@ -256,7 +259,25 @@ def test_regional_sbs_collects_tbc_daegu() -> None:
     result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
 
     channel_ids = {row.channel_id for row in result.schedules}
-    assert channel_ids == {"sbs.powerfm.daegu"}
+    assert channel_ids == {"sbs.powerfm.daegu", "sbs.powerfm.busan", "sbs.lovefm.busan"}
+
+
+@pytest.mark.parametrize(
+    ("channel", "first_title"),
+    [
+        ("sbs.powerfm.busan", "펀펀투데이 1부"),
+        ("sbs.lovefm.busan", "OLDIES 20 2부"),
+    ],
+)
+def test_knn_busan_parser_reads_the_matching_channel_section(
+    channel: str, first_title: str
+) -> None:
+    text = (FIXTURES / "sbs-knn-busan.html").read_text()
+
+    rows = _knn_busan(text, REGIONAL_DAY, channel)
+
+    assert set(rows) == {channel}
+    assert rows[channel][0].title == first_title
 
 
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:
