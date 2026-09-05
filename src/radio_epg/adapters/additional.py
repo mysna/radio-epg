@@ -573,7 +573,13 @@ class AdditionalStationAdapter:
                     ("tbs.efm.main", "https://tbs.seoul.kr/eFm/schedule.do"),
                 ):
                     text = await self._request(client, day, url=url)
-                    collected[channel].extend(_table(text, day, channel)[channel])
+                    try:
+                        collected[channel].extend(_table(text, day, channel)[channel])
+                    except ValueError as error:
+                        # eFM은 당일치만 실제 편성을 채워주고, 내일 이후 날짜는 시간이
+                        # 없는 빈 뼈대 표만 돌려준다(구조적 한계, 재시도로 해결되지 않음).
+                        if "no rows" not in str(error):
+                            raise
             elif self.source.source_id == "febc":
                 for channel, url in _FEBC_REGIONS.values():
                     text = await self._request(client, day, url=url)
