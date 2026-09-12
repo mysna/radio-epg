@@ -86,6 +86,20 @@ def _table(
     return {channel: _rows(channel, day, items)}
 
 
+# WBS 지역국은 본사와 같은 schedule_radio.php를 쓰되 "r" 파라미터만 지역명으로
+# 바꿔서 요청한다(사이트의 지역 탭 링크 onclick에 그대로 노출되어 있음).
+_WBS_REGIONAL_STATIONS: dict[str, tuple[str, str]] = {
+    "busan": ("wbs.main.busan", "부산"),
+    "daegu": ("wbs.main.daegu", "대구"),
+    "gwangju": ("wbs.main.gwangju", "광주"),
+    "jeonbuk": ("wbs.main.jeonbuk", "전북"),
+}
+
+
+def _wbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    return _table(text, day, channel)
+
+
 # 일부 방송사는 날짜를 바꿔 요청해도 요일별로 고정된 주간 편성 템플릿만 돌려주고,
 # 그날그날의 실제 특보·결방 여부는 반영하지 않는다. 그래도 방송사가 직접 공개한 정규
 # 편성이므로 낮은 confidence로 신뢰도를 낮춰서 싣는다.
@@ -625,7 +639,10 @@ _CHANNELS = {
         *(channel for channel, _ in _CPBC_REGIONAL_STATIONS.values()),
     ),
     "bbs": ("bbs.main.main",),
-    "wbs": ("wbs.main.main",),
+    "wbs": (
+        "wbs.main.main",
+        *(channel for channel, _ in _WBS_REGIONAL_STATIONS.values()),
+    ),
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
     "befm": ("befm.main.main",),
@@ -678,7 +695,9 @@ class AdditionalStationAdapter:
         async with httpx.AsyncClient(follow_redirects=True, timeout=30, verify=verify) as client:
             return await self._collect_with(client, window)
 
-    async def _request(self, client: Any, day: date, *, url: str | None = None) -> str:
+    async def _request(
+        self, client: Any, day: date, *, url: str | None = None, region: str = "서울"
+    ) -> str:
         source_id = self.source.source_id
         endpoint = url or self.source.source_url
         if source_id == "obs":
@@ -711,7 +730,7 @@ class AdditionalStationAdapter:
         elif source_id == "wbs":
             for attempt in range(5):
                 response = await client.get(
-                    endpoint, params={"r": "서울", "w": (day.weekday() + 1) % 7}
+                    endpoint, params={"r": region, "w": (day.weekday() + 1) % 7}
                 )
                 if response.status_code not in _TRANSIENT_STATUSES or attempt == 4:
                     break
@@ -895,6 +914,14 @@ class AdditionalStationAdapter:
                     url = f"https://apis.cpbc.co.kr/radio-api/schedule/{station}/{day.strftime('%Y%m%d')}"
                     text = await self._request(client, day, url=url)
                     collected[channel].extend(_cpbc_regional(text, day, channel)[channel])
+            elif self.source.source_id == "wbs":
+                text = await self._request(client, day)
+                parsed = parse_station_schedule("wbs", text, expected_date=day)
+                for channel, rows in parsed.items():
+                    collected[channel].extend(rows)
+                for channel, region in _WBS_REGIONAL_STATIONS.values():
+                    text = await self._request(client, day, region=region)
+                    collected[channel].extend(_wbs_regional(text, day, channel)[channel])
             else:
                 parsed = parse_station_schedule(
                     self.source.source_id, await self._request(client, day), expected_date=day

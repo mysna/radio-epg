@@ -194,9 +194,9 @@
 | `tbn.main.ulsan` | enabled | tbn |  |
 | `tbs.efm.main` | enabled | independent |  |
 | `tbs.fm.main` | enabled | independent |  |
-| `wbs.main.busan` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
-| `wbs.main.daegu` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
-| `wbs.main.gwangju` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
-| `wbs.main.jeonbuk` | unsupported | religious | WBS 지역별 공식 편성 fixture 미검증 |
+| `wbs.main.busan` | enabled | religious |  |
+| `wbs.main.daegu` | enabled | religious |  |
+| `wbs.main.gwangju` | enabled | religious |  |
+| `wbs.main.jeonbuk` | enabled | religious |  |
 | `wbs.main.main` | enabled | religious |  |
 | `ytn.main.main` | enabled | independent |  |

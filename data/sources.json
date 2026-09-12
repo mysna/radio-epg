@@ -208,12 +208,12 @@
   },
   {
     "source_id": "wbs",
-    "name": "WBS 라디오 편성표",
+    "name": "WBS 라디오 편성표 (본사 서울 및 부산·대구·광주·전북 지역국)",
     "source_kind": "official",
     "source_url": "https://wbsi.kr/schedule_radio.php",
     "priority": 100,
     "adapter": "additional",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "kfn",

@@ -21,6 +21,7 @@ from radio_epg.adapters.additional import (
     _sbs_affiliate_tbc,
     _tjb_daejeon,
     _ubc_ulsan,
+    _wbs_regional,
     _wonju_mbc,
     parse_station_schedule,
 )
@@ -467,6 +468,67 @@ def test_ggn_collects_the_weekday_matching_template() -> None:
     assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "channel", "first_title"),
+    [
+        ("wbs-busan", "wbs.main.busan", "법문이 있는 음악카페"),
+        ("wbs-daegu", "wbs.main.daegu", "법문이 있는 음악카페"),
+    ],
+)
+def test_wbs_regional_parser_reads_the_region_specific_page(
+    fixture_name: str, channel: str, first_title: str
+) -> None:
+    text = (FIXTURES / f"{fixture_name}.html").read_text()
+
+    rows = _wbs_regional(text, DAY, channel)
+
+    assert set(rows) == {channel}
+    assert rows[channel][0].title == first_title
+
+
+def test_wbs_regional_pages_carry_a_distinct_local_program_by_region() -> None:
+    daegu_rows = _wbs_regional((FIXTURES / "wbs-daegu.html").read_text(), DAY, "wbs.main.daegu")
+    gwangju_rows = _wbs_regional(
+        (FIXTURES / "wbs-gwangju.html").read_text(), DAY, "wbs.main.gwangju"
+    )
+
+    daegu_titles = [row.title for row in daegu_rows["wbs.main.daegu"]]
+    gwangju_titles = [row.title for row in gwangju_rows["wbs.main.gwangju"]]
+    assert "마음의 쉼터_대구" in daegu_titles
+    assert "행복한 오후_광주" in gwangju_titles
+
+
+def test_wbs_collects_main_and_all_regional_stations_as_one_source() -> None:
+    main_fixture = (FIXTURES / "wbs.html").read_text()
+    region_fixtures = {
+        "부산": (FIXTURES / "wbs-busan.html").read_text(),
+        "대구": (FIXTURES / "wbs-daegu.html").read_text(),
+        "광주": (FIXTURES / "wbs-gwangju.html").read_text(),
+        "전북": (FIXTURES / "wbs-jeonbuk.html").read_text(),
+    }
+
+    class Client:
+        async def get(self, url: str, **kwargs: object) -> httpx.Response:
+            params = kwargs.get("params", {})
+            region = params.get("r") if isinstance(params, dict) else None
+            fixture = region_fixtures.get(region, main_fixture)
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("wbs", "https://wbsi.kr/schedule_radio.php"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {
+        "wbs.main.main",
+        "wbs.main.busan",
+        "wbs.main.daegu",
+        "wbs.main.gwangju",
+        "wbs.main.jeonbuk",
+    }
+
+
 def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> None:
     fixture = (FIXTURES / "wbs.html").read_text()
 
@@ -489,5 +551,7 @@ def test_wbs_survives_a_short_burst_of_transient_http_failures(monkeypatch) -> N
     )
     result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
 
+    # 본사 요청이 503을 3번 겪고 4번째에 성공한 뒤, 지역국 4곳은 그 시점부터
+    # 이미 attempts > 3이라 각각 첫 시도에 바로 성공한다(4 + 4 = 8).
     assert result.schedules
-    assert client.attempts == 4
+    assert client.attempts == 8
