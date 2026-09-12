@@ -385,21 +385,6 @@ def _befm(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     return {channel: _rows(channel, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE)}
 
 
-def _afn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
-    match = re.fullmatch(r"\s*\$afn\.ProcessRadioSchedule\((.*)\)\s*;?\s*", text, re.DOTALL)
-    if match is None:
-        raise ValueError("AFN schedule JSONP contract changed")
-    payload = json.loads(match.group(1))
-    if payload.get("station") != "Humphreys" or payload.get("date") != day.isoformat():
-        raise ValueError("official schedule date or station does not match requested value")
-    channel = "afn.main.humphreys"
-    return {
-        channel: _rows(
-            channel, day, ((raw["start"], raw["title"], raw["end"]) for raw in payload["events"])
-        )
-    }
-
-
 # CBS 지역국은 자체 도메인을 쓰지만, 편성표 위젯은 전부 CBS 본사의 공유 API
 # (appradio.cbs.co.kr)를 station 번호로 구분해서 호출한다. FEBC와 마찬가지로
 # fixture로 실제 접속·구조를 확인한 지역국만 여기 추가한다.
@@ -711,7 +696,6 @@ def parse_station_schedule(
         "gugak": _gugak,
         "befm": _befm,
         "arirang": _arirang,
-        "afn-humphreys": _afn,
     }
     try:
         return parsers[station](text, expected_date)

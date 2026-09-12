@@ -53,7 +53,6 @@ REGIONAL_DAY = date(2026, 9, 5)
         ),
         ("befm", "html", {"befm.main.main"}, "[ L ] 4 My Busan (RE)"),
         ("arirang", "json", {"arirang.main.main"}, "K-POP Mix. 120"),
-        ("afn-humphreys", "jsonp", {"afn.main.humphreys"}, "AFN Eagle Overnight"),
     ],
 )
 def test_each_official_source_has_a_fixture_verified_parser(

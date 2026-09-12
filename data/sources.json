@@ -126,15 +126,6 @@
     "enabled": true
   },
   {
-    "source_id": "afn",
-    "name": "AFN Eagle 편성표",
-    "source_kind": "official-with-local-inserts",
-    "source_url": "https://www.afnpacific.net/afn-360/",
-    "priority": 70,
-    "adapter": "afn",
-    "enabled": false
-  },
-  {
     "source_id": "obs",
     "name": "OBS 라디오 편성표",
     "source_kind": "official",
@@ -223,15 +214,6 @@
     "priority": 100,
     "adapter": "additional",
     "enabled": true
-  },
-  {
-    "source_id": "afn-humphreys",
-    "name": "AFN FM Humphreys 편성표",
-    "source_kind": "official",
-    "source_url": "https://myafn.dodmedia.osd.mil/Radio.aspx",
-    "priority": 100,
-    "adapter": "afn",
-    "enabled": false
   },
   {
     "source_id": "befm",

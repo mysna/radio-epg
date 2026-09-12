@@ -1,8 +1,0 @@
-{
-  "schema_version": 1,
-  "channels": [
-    {"channel_id":"afn.main.daegu","family":"afn","status":"unsupported","official_site":"https://myafn.dodmedia.osd.mil/Radio.aspx","schedule_format":"common-eagle-with-local-inserts","primary_source":"https://myafn.dodmedia.osd.mil/Radio.aspx","fallback_source":null,"confidence":0,"last_verified":"2026-09-12","reason":"Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가"},
-    {"channel_id":"afn.main.humphreys","family":"afn","status":"unsupported","official_site":"https://myafn.dodmedia.osd.mil/Radio.aspx","schedule_format":"common-eagle-with-local-inserts","primary_source":"https://myafn.dodmedia.osd.mil/Radio.aspx","fallback_source":null,"confidence":0,"last_verified":"2026-09-12","reason":"Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가"},
-    {"channel_id":"afn.main.kunsan","family":"afn","status":"unsupported","official_site":"https://myafn.dodmedia.osd.mil/Radio.aspx","schedule_format":"common-eagle-with-local-inserts","primary_source":"https://myafn.dodmedia.osd.mil/Radio.aspx","fallback_source":null,"confidence":0,"last_verified":"2026-09-12","reason":"Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가"}
-  ]
-}

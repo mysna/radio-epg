@@ -240,14 +240,6 @@
     "city": null
   },
   {
-    "id": "seoul-031-afn-main-humphreys",
-    "regionId": "seoul",
-    "name": "AFN FM Humphreys",
-    "stn": "afn",
-    "ch": null,
-    "city": "humphreys"
-  },
-  {
     "id": "busan-039-kbs-1radio-busan",
     "regionId": "busan",
     "name": "KBS부산 1라디오",
@@ -736,14 +728,6 @@
     "city": null
   },
   {
-    "id": "daegu-102-afn-main-daegu",
-    "regionId": "daegu",
-    "name": "AFN FM Daegu",
-    "stn": "afn",
-    "ch": null,
-    "city": "daegu"
-  },
-  {
     "id": "gwangju-108-kbs-1radio-gwangju",
     "regionId": "gwangju",
     "name": "KBS광주 1라디오",
@@ -1086,14 +1070,6 @@
     "stn": "kookbang",
     "ch": null,
     "city": null
-  },
-  {
-    "id": "jeonbuk-154-afn-main-kunsan",
-    "regionId": "jeonbuk",
-    "name": "AFN FM Kunsan",
-    "stn": "afn",
-    "ch": null,
-    "city": "kunsan"
   },
   {
     "id": "daejeon-156-kbs-1radio-daejeon",
