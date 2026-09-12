@@ -1,0 +1,30 @@
+{
+  "resultCode": {"code": 200000, "http_status": 200, "message": null},
+  "responseBody": {
+    "dsSchWeek": [
+      {
+        "chanId": "CH_R",
+        "broadYmd": "20260714",
+        "broadHm": "0000",
+        "broadRun": 120,
+        "displayNm": "K-POP Mix. 120"
+      },
+      {
+        "chanId": "CH_R",
+        "broadYmd": "20260714",
+        "broadHm": "0200",
+        "broadRun": 60,
+        "displayNm": "Culture Crunch"
+      },
+      {
+        "chanId": "CH_R",
+        "broadYmd": "20260714",
+        "broadHm": "2200",
+        "broadRun": 120,
+        "displayNm": "WONDERS OF JEJU"
+      }
+    ],
+    "dmResult": {"resultCode": "0", "resultMsg": "success"}
+  },
+  "responseXML": null
+}

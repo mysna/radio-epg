@@ -250,5 +250,14 @@
     "priority": 100,
     "adapter": "additional",
     "enabled": true
+  },
+  {
+    "source_id": "arirang",
+    "name": "아리랑 라디오 편성표 (요일별 고정 템플릿, 내부 API)",
+    "source_kind": "official",
+    "source_url": "https://www.arirang.com/v1.0/open/external/proxy",
+    "priority": 100,
+    "adapter": "additional",
+    "enabled": true
   }
 ]

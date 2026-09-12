@@ -99,7 +99,7 @@
     {"channel_id":"ifm.main.main","family":"independent","status":"enabled","source_url":"https://www.ifm.kr/schedule","parser":"additional-official","last_investigated":"2026-07-14"},
     {"channel_id":"ytn.main.main","family":"independent","status":"enabled","source_url":"https://radio.ytn.co.kr/schedule/daily.php","parser":"additional-official","last_investigated":"2026-07-14"},
     {"channel_id":"obs.main.main","family":"independent","status":"enabled","source_url":"https://www.obs.co.kr/schedule/?type=radio","parser":"additional-official","last_investigated":"2026-07-14"},
-    {"channel_id":"arirang.main.main","family":"independent","status":"unsupported","source_url":"https://www.arirang.com/schedule?lang=en-US%2F","parser":"shared-html","reason":"공식 편성 fixture 미검증","last_investigated":"2026-07-13"},
+    {"channel_id":"arirang.main.main","family":"independent","status":"enabled","source_url":"https://www.arirang.com/v1.0/open/external/proxy","parser":"additional-official","last_investigated":"2026-09-12"},
     {"channel_id":"befm.main.main","family":"independent","status":"enabled","source_url":"https://www.befm.or.kr/sub/template.php?midx=37&lang=ko","parser":"additional-official","last_investigated":"2026-09-12"},
     {"channel_id":"ggn.main.main","family":"independent","status":"enabled","source_url":"https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94&day={weekday}","parser":"additional-official","last_investigated":"2026-09-05"}
   ]

@@ -7,6 +7,7 @@ import pytest
 
 from radio_epg.adapters.additional import (
     AdditionalStationAdapter,
+    _arirang,
     _bbs,
     _befm,
     _cbs_regional,
@@ -48,6 +49,7 @@ REGIONAL_DAY = date(2026, 9, 5)
             "송지원의 국악산책(재)",
         ),
         ("befm", "html", {"befm.main.main"}, "[ L ] 4 My Busan (RE)"),
+        ("arirang", "json", {"arirang.main.main"}, "K-POP Mix. 120"),
         ("afn-humphreys", "jsonp", {"afn.main.humphreys"}, "AFN Eagle Overnight"),
     ],
 )
@@ -386,6 +388,19 @@ def test_befm_parser_picks_the_div_matching_the_requested_weekday() -> None:
     assert mon_rows["befm.main.main"][0].title == "[ L ] World Classics (RE)"
     assert tue_rows["befm.main.main"][0].title == "[ L ] 4 My Busan (RE)"
     assert all(row.confidence == pytest.approx(0.7) for row in mon_rows["befm.main.main"])
+
+
+def test_arirang_parser_computes_end_time_from_duration() -> None:
+    text = (FIXTURES / "arirang.json").read_text()
+
+    rows = _arirang(text, DAY)
+
+    assert set(rows) == {"arirang.main.main"}
+    # 중간 항목의 종료 시각은 _rows()가 다음 항목의 시작 시각으로 덮어써서 실제
+    # duration과 다를 수 있다(정상 동작). 마지막 항목만 duration으로 계산한 값이 쓰인다.
+    starts = [(row.start, row.end) for row in rows["arirang.main.main"]]
+    assert starts == [("00:00", "02:00"), ("02:00", "22:00"), ("22:00", "24:00")]
+    assert all(row.confidence == pytest.approx(0.7) for row in rows["arirang.main.main"])
 
 
 def test_bbs_normalizes_times_that_wrap_past_midnight() -> None:

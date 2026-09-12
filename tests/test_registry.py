@@ -103,6 +103,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "kfn",
         "gugak",
         "befm",
+        "arirang",
     ]
 
 
@@ -123,6 +124,7 @@ def test_additional_official_schedule_sources_are_registered_but_not_enabled_wit
         "kfn": "https://radio.dema.mil.kr/web/radio/timetable.do",
         "gugak": "https://www.igbf.kr/gugak_web/?sub_num=786",
         "befm": "https://www.befm.or.kr/sub/template.php?midx=37&lang=ko",
+        "arirang": "https://www.arirang.com/v1.0/open/external/proxy",
         "afn-humphreys": "https://myafn.dodmedia.osd.mil/Radio.aspx",
     }
 

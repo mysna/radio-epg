@@ -279,6 +279,26 @@ def _kfn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     return {channel: _rows(channel, day, items)}
 
 
+# 아리랑 라디오는 리액트 SPA라 서버 렌더링된 편성표가 없지만, 브라우저 개발자도구로
+# 확인한 내부 API(같은 도메인의 프록시를 거쳐 script.arirang.com을 호출)로 진짜
+# JSON 편성을 준다. 같은 요일(화-화, 토-토 등)끼리는 완전히 똑같은 편성이 나와서
+# (직접 여러 주 확인) 요일별 고정 템플릿으로 보고 confidence를 낮춘다.
+def _arirang(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
+    payload = json.loads(text)
+    items: list[tuple[str, str, str | None]] = []
+    for raw in payload.get("responseBody", {}).get("dsSchWeek", []):
+        if raw.get("broadYmd") != day.strftime("%Y%m%d"):
+            raise ValueError("official schedule date does not match requested date")
+        start = raw["broadHm"]
+        start_minutes = int(start[:2]) * 60 + int(start[2:])
+        end_minutes = start_minutes + int(raw["broadRun"])
+        start_fmt = f"{start_minutes // 60:02d}:{start_minutes % 60:02d}"
+        end_fmt = f"{end_minutes // 60:02d}:{end_minutes % 60:02d}"
+        items.append((start_fmt, raw["displayNm"], end_fmt))
+    channel = "arirang.main.main"
+    return {channel: _rows(channel, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE)}
+
+
 def _gugak(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
@@ -559,6 +579,7 @@ def parse_station_schedule(
         "kfn": _kfn,
         "gugak": _gugak,
         "befm": _befm,
+        "arirang": _arirang,
         "afn-humphreys": _afn,
     }
     try:
@@ -578,6 +599,7 @@ _CHANNELS = {
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
     "befm": ("befm.main.main",),
+    "arirang": ("arirang.main.main",),
     "febc": tuple(channel for channel, _ in _FEBC_REGIONS.values()),
     "regional-mbc": tuple(
         channel
@@ -676,6 +698,24 @@ class AdditionalStationAdapter:
         elif source_id == "gugak":
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
+            )
+        elif source_id == "arirang":
+            response = await client.post(
+                "https://www.arirang.com/v1.0/open/external/proxy",
+                json={
+                    "address": "https://script.arirang.com/api/v1/bis/listScheduleV3.do",
+                    "method": "POST",
+                    "headers": {},
+                    "body": {
+                        "data": {
+                            "dmParam": {
+                                "chanId": "CH_R",
+                                "broadYmd": day.strftime("%Y%m%d"),
+                                "planNo": "1",
+                            }
+                        }
+                    },
+                },
             )
         elif source_id == "befm":
             # befm.or.kr는 접속 자체가 간헐적으로 거부되는 일이 잦아(호스팅 쪽 문제로
