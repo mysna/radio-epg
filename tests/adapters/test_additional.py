@@ -468,6 +468,33 @@ def test_ggn_collects_the_weekday_matching_template() -> None:
     assert all(row.confidence == pytest.approx(0.7) for row in result.schedules)
 
 
+def test_ggn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
+    fixture = (FIXTURES / "ggn.html").read_text()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", skip_sleep)
+
+    class Client:
+        attempts = 0
+
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            if self.attempts <= 2:
+                raise httpx.ConnectError("connection failed", request=httpx.Request("GET", url))
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    client = Client()
+    adapter = AdditionalStationAdapter(
+        _source("ggn", "https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94"), client=client
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
+
+    assert result.schedules
+    assert client.attempts == 3
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "channel", "first_title"),
     [

@@ -779,7 +779,20 @@ class AdditionalStationAdapter:
                     if attempt == 5:
                         raise
                     await asyncio.sleep(1.0 * (2**attempt))
-        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn"}:
+        elif source_id == "ggn":
+            # ggn.or.kr은 간헐적으로 DNS 조회/연결이 실패한다(약 10초 만에
+            # ConnectError로 끝나는 패턴이 반복 관찰됨). 짧게 재시도한다.
+            import httpx
+
+            for attempt in range(3):
+                try:
+                    response = await client.get(endpoint)
+                    break
+                except (httpx.ConnectError, httpx.ConnectTimeout):
+                    if attempt == 2:
+                        raise
+                    await asyncio.sleep(1.0 * (2**attempt))
+        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs"}:
             response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
