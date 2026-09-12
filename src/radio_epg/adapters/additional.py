@@ -682,14 +682,14 @@ class AdditionalStationAdapter:
             # 보임) 연결 실패만 몇 차례 재시도한다.
             import httpx
 
-            for attempt in range(4):
+            for attempt in range(6):
                 try:
                     response = await client.get(endpoint)
                     break
                 except httpx.ConnectError:
-                    if attempt == 3:
+                    if attempt == 5:
                         raise
-                    await asyncio.sleep(0.5 * (2**attempt))
+                    await asyncio.sleep(1.0 * (2**attempt))
         elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn"}:
             response = await client.get(endpoint)
         else:
