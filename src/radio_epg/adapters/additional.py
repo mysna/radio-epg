@@ -677,7 +677,20 @@ class AdditionalStationAdapter:
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
             )
-        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn", "befm"}:
+        elif source_id == "befm":
+            # befm.or.kr는 접속 자체가 간헐적으로 거부되는 일이 잦아(호스팅 쪽 문제로
+            # 보임) 연결 실패만 몇 차례 재시도한다.
+            import httpx
+
+            for attempt in range(4):
+                try:
+                    response = await client.get(endpoint)
+                    break
+                except httpx.ConnectError:
+                    if attempt == 3:
+                        raise
+                    await asyncio.sleep(0.5 * (2**attempt))
+        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn"}:
             response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
