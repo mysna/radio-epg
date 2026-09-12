@@ -1,1 +1,27 @@
-{"map":{"resultList":[{"program_date":"20260714","program_start_time":"0000","program_end_time":"0100","program_name":"KFN 새벽 음악","program_seq":"1001"},{"program_date":"20260714","program_start_time":"0100","program_end_time":"0200","program_name":"국방광장","program_seq":"1002"}]}}
+{
+    "map": {
+        "resultList": [
+            {
+                "program_date": "20260714",
+                "program_time": "0000",
+                "program_end_time": "0100",
+                "program_title": "KFN 논스톱 뮤직 1부",
+                "program_seq": "686158"
+            },
+            {
+                "program_date": "20260714",
+                "program_time": "0100",
+                "program_end_time": "0200",
+                "program_title": "KFN 논스톱 뮤직 2부",
+                "program_seq": "686159"
+            },
+            {
+                "program_date": "20260714",
+                "program_time": "0600",
+                "program_end_time": "0657",
+                "program_title": "처음듣는 라디오 이다경입니다",
+                "program_seq": "686164"
+            }
+        ]
+    }
+}

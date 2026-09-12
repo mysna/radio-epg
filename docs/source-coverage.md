@@ -125,7 +125,7 @@
 | `kbs.2radio.main` | enabled | kbs |  |
 | `kbs.3radio.main` | enabled | kbs |  |
 | `kbs.hanminjok.main` | enabled | kbs |  |
-| `kookbang.main.main` | unsupported | independent | 공식 페이지 parser fixture는 검증했지만 현재 JSON endpoint가 404를 반환함 |
+| `kookbang.main.main` | enabled | independent |  |
 | `kugak.main.daejeon` | enabled | independent |  |
 | `kugak.main.gwangju` | enabled | independent |  |
 | `kugak.main.main` | enabled | independent |  |

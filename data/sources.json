@@ -222,7 +222,7 @@
     "source_url": "https://radio.dema.mil.kr/web/radio/timetable.do",
     "priority": 100,
     "adapter": "additional",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "gugak",

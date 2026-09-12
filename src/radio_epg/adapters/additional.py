@@ -224,8 +224,8 @@ def _kfn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     for raw in payload.get("map", {}).get("resultList", []):
         if raw.get("program_date") != day.strftime("%Y%m%d"):
             raise ValueError("official schedule date does not match requested date")
-        start, end = raw["program_start_time"], raw["program_end_time"]
-        items.append((f"{start[:2]}:{start[2:]}", raw["program_name"], f"{end[:2]}:{end[2:]}"))
+        start, end = raw["program_time"], raw["program_end_time"]
+        items.append((f"{start[:2]}:{start[2:]}", raw["program_title"], f"{end[:2]}:{end[2:]}"))
     channel = "kookbang.main.main"
     return {channel: _rows(channel, day, items)}
 
@@ -544,9 +544,12 @@ class AdditionalStationAdapter:
                 await asyncio.sleep(0.25 * (2**attempt))
         elif source_id == "kfn":
             response = await client.post(
-                "https://radio.dema.mil.kr/api/v1/media/radio/fmTimeTableListAjax.do",
+                "https://radio.dema.mil.kr/web/api/v1/media/radio/fmTimeTableListAjax.do",
                 json={"program_date": day.strftime("%Y%m%d")},
-                headers={"Referer": self.source.source_url},
+                headers={
+                    "Referer": self.source.source_url,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
             )
         elif source_id == "gugak":
             response = await client.get(

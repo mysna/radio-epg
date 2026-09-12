@@ -36,7 +36,7 @@ REGIONAL_DAY = date(2026, 9, 5)
         ("bbs", "html", {"bbs.main.main"}, "경전공부"),
         ("cpbc", "json", {"cpbc.main.main"}, "라디오 고해소 비밀번호 1053"),
         ("wbs", "html", {"wbs.main.main"}, "법문이 있는 음악카페"),
-        ("kfn", "json", {"kookbang.main.main"}, "KFN 새벽 음악"),
+        ("kfn", "json", {"kookbang.main.main"}, "KFN 논스톱 뮤직 1부"),
         (
             "gugak",
             "html",

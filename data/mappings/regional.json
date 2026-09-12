@@ -90,7 +90,7 @@
     {"channel_id":"wbs.main.gwangju","family":"religious","status":"unsupported","source_url":"https://www.wbsi.kr/","parser":"shared-html","reason":"WBS 지역별 공식 편성 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"wbs.main.jeonbuk","family":"religious","status":"unsupported","source_url":"https://www.wbsi.kr/","parser":"shared-html","reason":"WBS 지역별 공식 편성 fixture 미검증","last_investigated":"2026-07-13"},
 
-    {"channel_id":"kookbang.main.main","family":"independent","status":"unsupported","source_url":"https://radio.dema.mil.kr/web/radio/timetable.do","parser":"additional-official","reason":"공식 페이지 parser fixture는 검증했지만 현재 JSON endpoint가 404를 반환함","last_investigated":"2026-07-14"},
+    {"channel_id":"kookbang.main.main","family":"independent","status":"enabled","source_url":"https://radio.dema.mil.kr/web/api/v1/media/radio/fmTimeTableListAjax.do","parser":"additional-official","last_investigated":"2026-09-12"},
     {"channel_id":"kugak.main.main","family":"independent","status":"enabled","source_url":"https://www.igbf.kr/gugak_web/?sub_num=786","parser":"additional-official","last_investigated":"2026-07-14"},
     {"channel_id":"kugak.main.daejeon","family":"independent","status":"enabled","source_url":"https://www.igbf.kr/gugak_web/?sub_num=786","parser":"additional-official","last_investigated":"2026-07-14"},
     {"channel_id":"kugak.main.gwangju","family":"independent","status":"enabled","source_url":"https://www.igbf.kr/gugak_web/?sub_num=786","parser":"additional-official","last_investigated":"2026-07-14"},
