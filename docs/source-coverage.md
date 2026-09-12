@@ -23,8 +23,8 @@
 | `cbs.mfm.main` | enabled | cbs |  |
 | `cbs.sfm.busan` | enabled | religious |  |
 | `cbs.sfm.cheongju` | enabled | religious |  |
-| `cbs.sfm.chuncheon` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
-| `cbs.sfm.daegu` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |
+| `cbs.sfm.chuncheon` | enabled | religious |  |
+| `cbs.sfm.daegu` | enabled | religious |  |
 | `cbs.sfm.daejeon` | enabled | religious |  |
 | `cbs.sfm.gwangju` | enabled | religious |  |
 | `cbs.sfm.gyeongnam` | enabled | religious |  |

@@ -390,10 +390,16 @@ _CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
     "gwangju": ("cbs.sfm.gwangju", None, 3),
     "jeonbuk": ("cbs.sfm.jeonbuk", None, 4),
     "cheongju": ("cbs.sfm.cheongju", None, 5),
+    # station=6과 11은 편성표에 지역명이 직접 나오지 않아, 서로 다른 날짜에
+    # 국지적으로만 편성되는 프로그램명을 웹 검색으로 교차 확인해서 구분했다.
+    # station=11: "반가운 오늘"(강원CBS 93.7MHz, 토요일 12:05 편성과 정확히 일치)
+    # → 춘천. station=6은 남은 유일한 후보로 배제법에 의해 대구로 확정.
+    "daegu": ("cbs.sfm.daegu", None, 6),
     "daejeon": ("cbs.sfm.daejeon", None, 7),
     "pohang": ("cbs.sfm.pohang", None, 8),
     "gyeongnam": ("cbs.sfm.gyeongnam", None, 9),
     "jeju": ("cbs.sfm.jeju", None, 10),
+    "chuncheon": ("cbs.sfm.chuncheon", None, 11),
     "jeonnam": ("cbs.sfm.jeonnam", None, 12),
     "ulsan": ("cbs.sfm.ulsan", None, 13),
 }

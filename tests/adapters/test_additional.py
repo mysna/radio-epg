@@ -247,6 +247,8 @@ def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     assert "cbs.sfm.gwangju" in channel_ids
     assert "cbs.sfm.pohang" in channel_ids
     assert "cbs.sfm.ulsan" in channel_ids
+    assert "cbs.sfm.daegu" in channel_ids
+    assert "cbs.sfm.chuncheon" in channel_ids
 
 
 def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> None:
