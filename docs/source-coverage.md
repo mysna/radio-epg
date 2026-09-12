@@ -6,9 +6,9 @@
 
 | Channel | Status | Owner | Reason |
 | --- | --- | --- | --- |
-| `afn.main.daegu` | unsupported | afn | Daegu local insert 편성 근거 미검증 |
-| `afn.main.humphreys` | unsupported | afn | Humphreys local insert 편성 근거 미검증 |
-| `afn.main.kunsan` | unsupported | afn | Kunsan local insert 편성 근거 미검증 |
+| `afn.main.daegu` | unsupported | afn | Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가 |
+| `afn.main.humphreys` | unsupported | afn | Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가 |
+| `afn.main.kunsan` | unsupported | afn | Eagle FM은 24시간 음악과 매 정각 뉴스/사령부 공지 위주로 편성되어 고정된 상세 시간표 자체가 공개되지 않음(RssFeeds.aspx의 RSS는 AFN News/Sports 등 TV 채널 편성이며 Eagle 라디오와 무관); myafn.dodmedia.osd.mil 자체도 엣지 차단(403)으로 접근 불가 |
 | `arirang.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
 | `bbs.main.busan` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `bbs.main.daegu` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
