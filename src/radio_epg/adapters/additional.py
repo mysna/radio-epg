@@ -565,9 +565,10 @@ class AdditionalStationAdapter:
         }
         day = window.start
         while day <= window.end:
-            # 일부 지역국 CMS(TBS eFM, 광주MBC, 울산 ubc 등)는 당일치까지만 실제 편성을
-            # 채워주고, 다음 날은 아직 발행되지 않아 시간 없는 빈 응답을 돌려준다. 날짜
-            # 자체는 정상 응답이므로 "no rows"만 그 채널·날짜에 한해 빈 결과로 건너뛴다.
+            # 일부 지역국 CMS(TBS eFM, 광주MBC, 울산 ubc, 대구 TBC 등)는 당일치까지만
+            # 채워주거나 특정 날짜(예: 주말 일부)의 편성을 아직 올리지 않아 시간 없는
+            # 빈 응답을 돌려준다. 날짜 자체는 정상 응답이므로 "no rows"만 그 채널·날짜에
+            # 한해 빈 결과로 건너뛴다.
             if self.source.source_id == "tbs":
                 for channel, url in (
                     ("tbs.fm.main", "https://tbs.seoul.kr/fm/schedule.do"),
@@ -617,7 +618,11 @@ class AdditionalStationAdapter:
                         f"&sMonth={day.strftime('%m')}&sDate={day.strftime('%d')}"
                     )
                     text = await self._request(client, day, url=url)
-                    collected[channel].extend(_sbs_affiliate_tbc(text, day, channel)[channel])
+                    try:
+                        collected[channel].extend(_sbs_affiliate_tbc(text, day, channel)[channel])
+                    except ValueError as error:
+                        if "no rows" not in str(error):
+                            raise
                 knn_url = (
                     f"https://www.knn.co.kr/schedule/schedule.do?date={day.strftime('%Y%m%d')}"
                     "&channel=rd1"
