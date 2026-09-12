@@ -58,9 +58,9 @@
 | `community.taebaekfm.main` | unsupported | community | 공식 편성 이미지와 OCR fixture 미검증 |
 | `community.yeongjufm.main` | unsupported | community | 공식 편성 파일과 fixture 미검증 |
 | `community.yeonjefm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `cpbc.main.busan` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
-| `cpbc.main.daegu` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
-| `cpbc.main.gwangju` | unsupported | religious | CPBC 지역별 공식 편성 fixture 미검증 |
+| `cpbc.main.busan` | enabled | religious |  |
+| `cpbc.main.daegu` | enabled | religious |  |
+| `cpbc.main.gwangju` | enabled | religious |  |
 | `cpbc.main.main` | enabled | religious |  |
 | `ebs.bandi.main` | enabled | ebs |  |
 | `ebs.fm.main` | enabled | ebs |  |

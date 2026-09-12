@@ -199,7 +199,7 @@
   },
   {
     "source_id": "cpbc",
-    "name": "CPBC 라디오 편성표",
+    "name": "CPBC 라디오 편성표 (본원 및 부산·대구·광주 지역국)",
     "source_kind": "official",
     "source_url": "https://www.cpbc.co.kr/schedule.html?channel=radio",
     "priority": 100,

@@ -267,6 +267,27 @@ def _cpbc(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     return {channel: _rows(channel, day, items)}
 
 
+# CPBC 지역국은 본사와 다른 최신 API(schedule/{내부채널번호}/{date})를 쓴다. 번호별로
+# 응답에 섞여 나오는 "오늘의 강론(지역명)" 프로그램으로 어느 도시인지 직접 확인했다.
+_CPBC_REGIONAL_STATIONS: dict[str, tuple[str, str]] = {
+    # station: (channel_id, cpbc 내부 channel 번호)
+    "busan": ("cpbc.main.busan", "05"),
+    "daegu": ("cpbc.main.daegu", "03"),
+    "gwangju": ("cpbc.main.gwangju", "04"),
+}
+
+
+def _cpbc_regional(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    payload = json.loads(text)
+    items: list[tuple[str, str, str | None]] = []
+    for raw in payload.get("data", []):
+        if raw.get("broadcastDate") != day.strftime("%Y%m%d"):
+            raise ValueError("official schedule date does not match requested date")
+        title = raw.get("program", {}).get("title", "")
+        items.append((raw["startTime"], title, raw["endTime"]))
+    return {channel: _rows(channel, day, items)}
+
+
 def _kfn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     payload = json.loads(text)
     items = []
@@ -599,7 +620,10 @@ _CHANNELS = {
     "ifm": ("ifm.main.main",),
     "ytn": ("ytn.main.main",),
     "tbs": ("tbs.fm.main", "tbs.efm.main"),
-    "cpbc": ("cpbc.main.main",),
+    "cpbc": (
+        "cpbc.main.main",
+        *(channel for channel, _ in _CPBC_REGIONAL_STATIONS.values()),
+    ),
     "bbs": ("bbs.main.main",),
     "wbs": ("wbs.main.main",),
     "kfn": ("kookbang.main.main",),
@@ -677,7 +701,7 @@ class AdditionalStationAdapter:
             response = await client.get(endpoint, params={"searchDate": day.isoformat()})
         elif source_id == "cpbc":
             response = await client.get(
-                f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
+                url or f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
             )
         elif source_id == "bbs":
             response = await client.get(
@@ -862,6 +886,15 @@ class AdditionalStationAdapter:
                 collected[_GGN_CHANNEL].extend(
                     _mbc_regional_weekly(text, day, _GGN_CHANNEL)[_GGN_CHANNEL]
                 )
+            elif self.source.source_id == "cpbc":
+                text = await self._request(client, day)
+                parsed = parse_station_schedule("cpbc", text, expected_date=day)
+                for channel, rows in parsed.items():
+                    collected[channel].extend(rows)
+                for channel, station in _CPBC_REGIONAL_STATIONS.values():
+                    url = f"https://apis.cpbc.co.kr/radio-api/schedule/{station}/{day.strftime('%Y%m%d')}"
+                    text = await self._request(client, day, url=url)
+                    collected[channel].extend(_cpbc_regional(text, day, channel)[channel])
             else:
                 parsed = parse_station_schedule(
                     self.source.source_id, await self._request(client, day), expected_date=day

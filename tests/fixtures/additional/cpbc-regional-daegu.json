@@ -1,0 +1,37 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "broadcastDate": "20260714",
+      "startTime": "05:00",
+      "endTime": "06:00",
+      "program": {
+        "title": "매일미사"
+      }
+    },
+    {
+      "broadcastDate": "20260714",
+      "startTime": "06:00",
+      "endTime": "06:03",
+      "program": {
+        "title": "삼종기도"
+      }
+    },
+    {
+      "broadcastDate": "20260714",
+      "startTime": "06:03",
+      "endTime": "06:50",
+      "program": {
+        "title": "그대에게 평화를 김슬애입니다"
+      }
+    },
+    {
+      "broadcastDate": "20260714",
+      "startTime": "06:50",
+      "endTime": "07:00",
+      "program": {
+        "title": "오늘의 강론(대구)"
+      }
+    }
+  ]
+}

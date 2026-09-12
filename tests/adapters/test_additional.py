@@ -12,6 +12,7 @@ from radio_epg.adapters.additional import (
     _befm,
     _cbs_regional,
     _cjb_cheongju,
+    _cpbc_regional,
     _febc,
     _jibs_jeju,
     _knn_busan,
@@ -249,6 +250,40 @@ def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     assert "cbs.sfm.ulsan" in channel_ids
     assert "cbs.sfm.daegu" in channel_ids
     assert "cbs.sfm.chuncheon" in channel_ids
+
+
+def test_cpbc_regional_parser_reads_the_station_specific_endpoint_response() -> None:
+    text = (FIXTURES / "cpbc-regional-daegu.json").read_text()
+
+    rows = _cpbc_regional(text, DAY, "cpbc.main.daegu")
+
+    assert set(rows) == {"cpbc.main.daegu"}
+    assert rows["cpbc.main.daegu"][0].title == "매일미사"
+    assert rows["cpbc.main.daegu"][-1].title == "오늘의 강론(대구)"
+    assert rows["cpbc.main.daegu"][0].start == "05:00"
+
+
+def test_cpbc_collects_main_and_regional_stations_as_one_source() -> None:
+    main_fixture = (FIXTURES / "cpbc.json").read_text()
+    regional_fixture = (FIXTURES / "cpbc-regional-daegu.json").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            fixture = regional_fixture if "/schedule/0" in url else main_fixture
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = AdditionalStationAdapter(
+        _source("cpbc", "https://www.cpbc.co.kr/schedule.html?channel=radio"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {
+        "cpbc.main.main",
+        "cpbc.main.busan",
+        "cpbc.main.daegu",
+        "cpbc.main.gwangju",
+    }
 
 
 def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> None:
