@@ -1,0 +1,32 @@
+[
+  {
+    "sch_dt": "20260905",
+    "sch_start_time": "0500",
+    "sch_end_time": "0600",
+    "sch_knm": "새벽을 여는 친구"
+  },
+  {
+    "sch_dt": "20260905",
+    "sch_start_time": "0600",
+    "sch_end_time": "0700",
+    "sch_knm": "굿모닝 조이에프엠"
+  },
+  {
+    "sch_dt": "20260905",
+    "sch_start_time": "0700",
+    "sch_end_time": "0730",
+    "sch_knm": "김영철의 파워FM 1부"
+  },
+  {
+    "sch_dt": "20260905",
+    "sch_start_time": "2700",
+    "sch_end_time": "2800",
+    "sch_knm": "팝스테이션 1부"
+  },
+  {
+    "sch_dt": "20260905",
+    "sch_start_time": "2800",
+    "sch_end_time": "2900",
+    "sch_knm": "팝스테이션 2부"
+  }
+]

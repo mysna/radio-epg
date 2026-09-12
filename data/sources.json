@@ -64,7 +64,7 @@
   },
   {
     "source_id": "regional-mbc",
-    "name": "지역 MBC 편성표 (강릉 주간 템플릿, 대구·제주·여수·목포·광주 날짜별)",
+    "name": "지역 MBC 편성표 (강릉 주간 템플릿, 대구·제주·여수·목포·광주 날짜별, 원주 요일별 정적표)",
     "source_kind": "official",
     "source_url": "https://www.mbceg.co.kr/schedule/cp_depart",
     "priority": 100,
@@ -82,7 +82,7 @@
   },
   {
     "source_id": "regional-sbs",
-    "name": "SBS 지역 제휴사 편성표 (TBC 대구, KNN 부산, TJB 대전, ubc 울산)",
+    "name": "SBS 지역 제휴사 편성표 (TBC 대구, KNN 부산, TJB 대전, ubc 울산, CJB 청주, JIBS 제주)",
     "source_kind": "official",
     "source_url": "https://tbc.co.kr/schedule/",
     "priority": 100,

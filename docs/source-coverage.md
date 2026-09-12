@@ -146,7 +146,7 @@
 | `mbc.fm4u.mokpo` | enabled | regional_mbc |  |
 | `mbc.fm4u.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.wonju` | enabled | regional_mbc |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
 | `mbc.sfm.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.busan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -163,19 +163,19 @@
 | `mbc.sfm.mokpo` | enabled | regional_mbc |  |
 | `mbc.sfm.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.wonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.wonju` | enabled | regional_mbc |  |
 | `mbc.sfm.yeosu` | enabled | regional_mbc |  |
 | `obs.main.main` | enabled | independent |  |
 | `sbs.dmb.main` | enabled | sbs |  |
 | `sbs.lovefm.busan` | enabled | sbs_affiliates |  |
 | `sbs.lovefm.main` | enabled | sbs |  |
 | `sbs.powerfm.busan` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.cheongju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.cheongju` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.chuncheon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.daegu` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.daejeon` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.gwangju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
-| `sbs.powerfm.jeju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.jeju` | enabled | sbs_affiliates |  |
 | `sbs.powerfm.jeonju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.main` | enabled | sbs |  |
 | `sbs.powerfm.ulsan` | enabled | sbs_affiliates |  |
