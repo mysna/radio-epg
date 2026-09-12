@@ -422,7 +422,9 @@ def _cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[Schedul
 # station: (표준FM channel_id, 음악FM channel_id 또는 None, appradio station 번호)
 _CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
     "busan": ("cbs.sfm.busan", "cbs.mfm.busan", 2),
-    "gwangju": ("cbs.sfm.gwangju", None, 3),
+    # station=3의 새벽 편성("찬양하라 내영혼아")이 전남/광주CBS 프로그램으로
+    # 확인되어(웹 검색) 음악FM도 표준FM과 같은 station 번호를 공유함을 확인했다.
+    "gwangju": ("cbs.sfm.gwangju", "cbs.mfm.gwangju", 3),
     "jeonbuk": ("cbs.sfm.jeonbuk", None, 4),
     "cheongju": ("cbs.sfm.cheongju", None, 5),
     # station=6과 11은 편성표에 지역명이 직접 나오지 않아, 서로 다른 날짜에
@@ -438,6 +440,94 @@ _CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
     "jeonnam": ("cbs.sfm.jeonnam", None, 12),
     "ulsan": ("cbs.sfm.ulsan", None, 13),
 }
+
+
+# 강원영동CBS(yd.local.cbs.co.kr)는 appradio 공유 API가 아니라 자체 EUC-KR 정적
+# 페이지에 요일별 고정 편성표만 제공한다(날짜 쿼리 파라미터 없음). 표가 rowspan과
+# colspan을 함께 써서(시간/월~금/토/일/주일시간 6개 열) 단순 colspan 누적만으로는
+# 안 되고, 두 속성을 모두 반영해 실제 격자(grid)로 펼친 뒤 요일에 맞는 열을 읽는다.
+_YOUNGDONG_CBS_CHANNEL = "cbs.sfm.youngdong"
+_YOUNGDONG_NUM_COLS = 6
+
+
+def _expand_table_grid(table: Tag) -> list[dict[int, str]]:
+    carry: dict[int, tuple[int, str]] = {}
+    grid: list[dict[int, str]] = []
+    for row_tag in table.select("tbody tr"):
+        cells = row_tag.find_all(["td", "th"], recursive=False)
+        cell_iter = iter(cells)
+        row: dict[int, str] = {}
+        col = 0
+        while col < _YOUNGDONG_NUM_COLS:
+            if col in carry:
+                remaining, carried_text = carry[col]
+                row[col] = carried_text
+                carry[col] = (remaining - 1, carried_text)
+                if carry[col][0] <= 0:
+                    del carry[col]
+                col += 1
+                continue
+            try:
+                cell = next(cell_iter)
+            except StopIteration:
+                break
+            cell_text = cell.get_text(" ", strip=True)
+            raw_colspan = cell.get("colspan", "1")
+            raw_rowspan = cell.get("rowspan", "1")
+            colspan = int(raw_colspan) if isinstance(raw_colspan, str) and raw_colspan else 1
+            rowspan = int(raw_rowspan) if isinstance(raw_rowspan, str) and raw_rowspan else 1
+            for offset in range(colspan):
+                target = col + offset
+                if target >= _YOUNGDONG_NUM_COLS:
+                    break
+                row[target] = cell_text
+                if rowspan > 1:
+                    carry[target] = (rowspan - 1, cell_text)
+            col += colspan
+        grid.append(row)
+    return grid
+
+
+def _cbs_youngdong(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    table = soup.select_one("table.ti")
+    grid = _expand_table_grid(table) if table is not None else []
+
+    weekday = day.weekday()
+    if weekday == 6:  # 일요일: 전용 시간(주일시간) + 전용 열
+        time_col, title_col = 5, 4
+    elif weekday == 5:  # 토요일
+        time_col, title_col = 0, 3
+    else:  # 월~금
+        time_col, title_col = 0, 1
+
+    entries: list[tuple[str, str]] = []
+    last_start: str | None = None
+    first_time: str | None = None
+    for row in grid:
+        start_label = row.get(time_col, "")
+        if not start_label or start_label == last_start:
+            continue
+        match = _TIME.search(start_label)
+        title = row.get(title_col, "")
+        if not match or not title:
+            continue
+        last_start = start_label
+        if first_time is None:
+            first_time = match.group(1)
+        entries.append((match.group(1), title))
+
+    items = _normalize_wrapping_times(entries)
+    if items and first_time is not None:
+        hour, minute = first_time.split(":")
+        wrap_end = f"{int(hour) + 24:02d}:{minute}"
+        start, title, _ = items[-1]
+        items[-1] = (start, title, wrap_end)
+    return {
+        _YOUNGDONG_CBS_CHANNEL: _rows(
+            _YOUNGDONG_CBS_CHANNEL, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE
+        )
+    }
 
 
 # SBS 지역 제휴사는 CBS와 달리 회사마다 완전히 다른 사이트를 쓴다. 실제로 접속해서
@@ -659,11 +749,14 @@ _CHANNELS = {
         for channel in (sfm_channel, fm4u_channel)
     )
     + tuple(channel for channel, _ in _WONJU_MBC_STATIONS.values()),
-    "regional-cbs": tuple(
-        channel
-        for sfm_channel, mfm_channel, _ in _CBS_REGIONAL_STATIONS.values()
-        for channel in (sfm_channel, mfm_channel)
-        if channel is not None
+    "regional-cbs": (
+        *(
+            channel
+            for sfm_channel, mfm_channel, _ in _CBS_REGIONAL_STATIONS.values()
+            for channel in (sfm_channel, mfm_channel)
+            if channel is not None
+        ),
+        _YOUNGDONG_CBS_CHANNEL,
     ),
     "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values())
     + _KNN_BUSAN_CHANNELS
@@ -797,6 +890,10 @@ class AdditionalStationAdapter:
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
         response.raise_for_status()
+        if "yd.local.cbs.co.kr" in endpoint:
+            # 강원영동CBS 페이지는 Content-Type에 charset 정보가 없고 실제로는
+            # EUC-KR로 응답한다(자동 감지에 맡기면 깨진다).
+            response.encoding = "euc-kr"
         return response.text
 
     async def _collect_with(self, client: Any, window: CollectionWindow) -> AdapterResult:
@@ -855,6 +952,12 @@ class AdditionalStationAdapter:
                         )
                         text = await self._request(client, day, url=url)
                         collected[channel].extend(_cbs_regional(text, day, channel)[channel])
+                text = await self._request(
+                    client, day, url="http://yd.local.cbs.co.kr/radio/timetable.asp"
+                )
+                collected[_YOUNGDONG_CBS_CHANNEL].extend(
+                    _cbs_youngdong(text, day)[_YOUNGDONG_CBS_CHANNEL]
+                )
             elif self.source.source_id == "regional-sbs":
                 for channel, base_url in _SBS_AFFILIATE_STATIONS.values():
                     url = (

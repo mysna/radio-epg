@@ -11,6 +11,7 @@ from radio_epg.adapters.additional import (
     _bbs,
     _befm,
     _cbs_regional,
+    _cbs_youngdong,
     _cjb_cheongju,
     _cpbc_regional,
     _febc,
@@ -230,12 +231,26 @@ def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
     assert rows["cbs.sfm.busan"][0].start == "00:00"
 
 
+def test_cbs_mfm_gwangju_parser_reads_the_station_specific_response() -> None:
+    text = (FIXTURES / "cbs-regional-gwangju-mfm.json").read_text()
+
+    rows = _cbs_regional(text, REGIONAL_DAY, "cbs.mfm.gwangju")
+
+    assert set(rows) == {"cbs.mfm.gwangju"}
+    # 전남/광주CBS에서만 편성되는 새벽 찬양 프로그램으로 station=3이 광주 음악FM임을
+    # 웹 검색으로 교차 확인했다(부산/서울 등 다른 station은 이 시간대에 다른
+    # 프로그램을 내보낸다).
+    assert rows["cbs.mfm.gwangju"][2].title == "찬양하라 내영혼아"
+
+
 def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     fixture = (FIXTURES / "cbs-regional-busan.json").read_text()
+    youngdong_fixture = (FIXTURES / "cbs-youngdong.html").read_text()
 
     class Client:
         async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+            body = youngdong_fixture if "yd.local.cbs.co.kr" in url else fixture
+            return httpx.Response(200, text=body, request=httpx.Request("GET", url))
 
     adapter = AdditionalStationAdapter(
         _source("regional-cbs", "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"),
@@ -247,10 +262,54 @@ def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
     assert "cbs.sfm.busan" in channel_ids
     assert "cbs.mfm.busan" in channel_ids
     assert "cbs.sfm.gwangju" in channel_ids
+    assert "cbs.mfm.gwangju" in channel_ids
     assert "cbs.sfm.pohang" in channel_ids
     assert "cbs.sfm.ulsan" in channel_ids
     assert "cbs.sfm.daegu" in channel_ids
     assert "cbs.sfm.chuncheon" in channel_ids
+    assert "cbs.sfm.youngdong" in channel_ids
+
+
+@pytest.mark.parametrize(
+    ("day", "index", "expected_title"),
+    [
+        (date(2026, 9, 7), 4, "하루를 여는 생각"),  # 월요일: "월~금" 열
+        (date(2026, 9, 12), 4, "크리스천 칼럼"),  # 토요일: 별도 "토" 열
+    ],
+)
+def test_cbs_youngdong_parser_picks_the_column_matching_the_requested_weekday(
+    day: date, index: int, expected_title: str
+) -> None:
+    text = (FIXTURES / "cbs-youngdong.html").read_text()
+
+    rows = _cbs_youngdong(text, day)["cbs.sfm.youngdong"]
+
+    assert rows[index].title == expected_title
+    assert all(row.confidence == pytest.approx(0.7) for row in rows)
+
+
+def test_cbs_youngdong_parser_uses_the_finer_grained_sunday_time_column() -> None:
+    text = (FIXTURES / "cbs-youngdong.html").read_text()
+
+    rows = _cbs_youngdong(text, date(2026, 9, 13))["cbs.sfm.youngdong"]
+
+    # 일요일은 "주일시간" 열이 평일/토요일보다 시간을 더 잘게 쪼갠다(예: 05:30~06:00
+    # 한 슬롯이 평일엔 "아침강단" 하나지만 일요일엔 06:00~06:30/06:30~07:00로 갈라져
+    # "복음의 메아리"/"안디옥 강단" 두 프로그램이 된다).
+    titles = [row.title for row in rows]
+    assert "복음의 메아리" in titles
+    assert "안디옥 강단" in titles
+
+
+def test_cbs_youngdong_parser_normalizes_times_that_wrap_past_midnight() -> None:
+    text = (FIXTURES / "cbs-youngdong.html").read_text()
+
+    rows = _cbs_youngdong(text, date(2026, 9, 7))["cbs.sfm.youngdong"]
+
+    starts = [row.start for row in rows]
+    assert starts[0] == "04:00"
+    assert starts[-1] == "27:00"
+    assert rows[-1].end == "28:00"
 
 
 def test_cpbc_regional_parser_reads_the_station_specific_endpoint_response() -> None:

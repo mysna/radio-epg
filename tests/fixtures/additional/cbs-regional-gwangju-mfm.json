@@ -1,0 +1,35 @@
+{
+  "station": 3,
+  "ch": 0,
+  "date": 20260905,
+  "ProgSchedule": [
+    {
+      "progID": 1842,
+      "pname": "한밤의 음반가게",
+      "start": 0,
+      "end": 100,
+      "genre": ""
+    },
+    {
+      "progID": 100023,
+      "pname": "최강희의 영화음악(재)",
+      "start": 100,
+      "end": 200,
+      "genre": ""
+    },
+    {
+      "progID": 303007,
+      "pname": "찬양하라 내영혼아",
+      "start": 200,
+      "end": 400,
+      "genre": ""
+    },
+    {
+      "progID": 303008,
+      "pname": "내가 매일 기쁘게",
+      "start": 400,
+      "end": 600,
+      "genre": ""
+    }
+  ]
+}
