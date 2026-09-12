@@ -1,35 +1,17 @@
 """공동체 라디오 mapping과 보수적인 primary/fallback 병합."""
 
-from collections import defaultdict
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date
 from pathlib import Path
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from radio_epg.adapters.base import CollectionWindow
-from radio_epg.adapters.community_ocr import fetch_kjfm_schedule_image, kjfm_gwangju_fm
-from radio_epg.adapters.html_schedule import (
-    ChannelMapping,
-    ChannelMappingFile,
-    ScheduleRow,
-    normalize_rows,
-)
+from radio_epg.adapters.html_schedule import ScheduleRow
 from radio_epg.broadcast_time import parse_broadcast_interval
 from radio_epg.config import SourceConfig
 from radio_epg.models import AdapterResult
-from radio_epg.validation import SchedulePolicy
-
-_OcrParser = Callable[[bytes, date], dict[str, tuple[ScheduleRow, ...]]]
-_ImageFetcher = Callable[[Any], Awaitable[bytes]]
-_PARSERS: dict[str, _OcrParser] = {
-    "community.kjfm.main": kjfm_gwangju_fm,
-}
-_IMAGE_FETCHERS: dict[str, _ImageFetcher] = {
-    "community.kjfm.main": fetch_kjfm_schedule_image,
-}
 
 CommunityStatus = Literal["enabled", "unsupported"]
 FallbackKind = Literal["official", "wiki", "inferred", "ocr"]
@@ -129,29 +111,13 @@ def merge_schedule_rows(
 class CommunityAdapter:
     """검증되지 않은 community source를 자동 활성화하지 않는 수집 경계."""
 
-    schedule_policy = SchedulePolicy(allow_adjacent=True)
-
-    def __init__(
-        self,
-        source: SourceConfig,
-        *,
-        mapping_path: Path | None = None,
-        client: Any | None = None,
-    ) -> None:
+    def __init__(self, source: SourceConfig, *, mapping_path: Path | None = None) -> None:
         self.source = source
         path = mapping_path or Path(__file__).parents[3] / "data" / "mappings" / "community.json"
         self._mapping = load_community_mapping(path)
-        self._client = client
 
     async def collect(self, window: CollectionWindow) -> AdapterResult:
-        if self._client is not None:
-            return await self._collect_with(self._client, window)
-        import httpx
-
-        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
-            return await self._collect_with(client, window)
-
-    async def _collect_with(self, client: Any, window: CollectionWindow) -> AdapterResult:
+        del window
         enabled = tuple(
             item
             for item in self._mapping.channels
@@ -159,46 +125,6 @@ class CommunityAdapter:
         )
         if not enabled:
             raise CommunityUnavailableError("no fixture-verified community source is enabled")
-
-        collected: dict[str, list[ScheduleRow]] = defaultdict(list)
-        day = window.start
-        while day <= window.end:
-            for item in enabled:
-                parser = _PARSERS.get(item.channel_id)
-                fetch_image = _IMAGE_FETCHERS.get(item.channel_id)
-                if parser is None or fetch_image is None:
-                    raise CommunityUnavailableError(
-                        f"enabled community source requires a configured parser: {item.channel_id}"
-                    )
-                try:
-                    image_bytes = await fetch_image(client)
-                    parsed = parser(image_bytes, day)
-                except ValueError as error:
-                    if "no rows" not in str(error):
-                        raise
-                    parsed = {}
-                for channel_id, rows in parsed.items():
-                    collected[channel_id].extend(rows)
-            day += timedelta(days=1)
-
-        mapping = ChannelMappingFile(
-            channels=tuple(
-                ChannelMapping(
-                    channel_id=item.channel_id,
-                    upstream_code=item.channel_id,
-                    url=item.primary_source,
-                    parser="community-ocr",
-                    evidence_date=window.start,
-                )
-                for item in enabled
-            )
-        )
-        return normalize_rows(
-            source=self.source,
-            mapping=mapping,
-            catalog_path=Path(__file__).parents[3] / "data" / "radio_channels.json",
-            rows=collected,
-            fetched_at=datetime.now(UTC),
-        )
+        raise CommunityUnavailableError("enabled community source requires a configured parser")
 
     family = "community"

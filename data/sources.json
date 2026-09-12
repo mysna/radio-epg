@@ -126,15 +126,6 @@
     "enabled": true
   },
   {
-    "source_id": "community",
-    "name": "공동체 라디오 편성표 (광주FM 이미지 OCR)",
-    "source_kind": "official-with-fallback",
-    "source_url": "https://kjfm.communityradio.kr/",
-    "priority": 70,
-    "adapter": "community",
-    "enabled": true
-  },
-  {
     "source_id": "afn",
     "name": "AFN Eagle 편성표",
     "source_kind": "official-with-local-inserts",

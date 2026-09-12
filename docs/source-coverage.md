@@ -1,7 +1,7 @@
 # Radio EPG Source Coverage
 
-- Catalog: 194
-- Accounted: 194
+- Catalog: 171
+- Accounted: 171
 - Pending: 0
 
 | Channel | Status | Owner | Reason |
@@ -35,29 +35,6 @@
 | `cbs.sfm.pohang` | enabled | religious |  |
 | `cbs.sfm.ulsan` | enabled | religious |  |
 | `cbs.sfm.youngdong` | enabled | religious |  |
-| `community.crfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.daegufm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.dwfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.gurifm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.gwanakfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.hanbatfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.jcfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.keumkangfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.kjfm.main` | enabled | community |  |
-| `community.mapofm.main` | unsupported | community | 공식 HTML selector fixture 미검증 |
-| `community.namhaefm.main` | unsupported | community | 공식 HTML selector fixture 미검증 |
-| `community.obn.main` | unsupported | community | 공식 편성 이미지와 OCR fixture 미검증 |
-| `community.sangjufm.main` | unsupported | community | 공식 편성 파일과 fixture 미검증 |
-| `community.scnfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.sdmfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.sejongfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.seongnamfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.sjfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.sonefm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.suncheonfm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
-| `community.taebaekfm.main` | unsupported | community | 공식 편성 이미지와 OCR fixture 미검증 |
-| `community.yeongjufm.main` | unsupported | community | 공식 편성 파일과 fixture 미검증 |
-| `community.yeonjefm.main` | unsupported | community | 개별 공식 편성 페이지와 fixture 미검증 |
 | `cpbc.main.busan` | enabled | religious |  |
 | `cpbc.main.daegu` | enabled | religious |  |
 | `cpbc.main.gwangju` | enabled | religious |  |
