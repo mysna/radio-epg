@@ -127,12 +127,12 @@
   },
   {
     "source_id": "community",
-    "name": "공동체 라디오 편성표",
+    "name": "공동체 라디오 편성표 (광주FM 이미지 OCR)",
     "source_kind": "official-with-fallback",
-    "source_url": "https://communityradio.kr/",
+    "source_url": "https://kjfm.communityradio.kr/",
     "priority": 70,
     "adapter": "community",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "afn",
