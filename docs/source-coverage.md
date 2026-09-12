@@ -12,7 +12,7 @@
 | `bbs.main.gwangju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `bbs.main.jeju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `bbs.main.main` | enabled | religious |  |
-| `befm.main.main` | enabled | independent |  |
+| `befm.main.main` | unsupported | independent | 파서는 fixture로 검증됐으나 개발 샌드박스에서는 정상 접속되는 반면 실제 production(GitHub Actions)에서는 도입 직후부터 연속 8회 모두 ConnectError로 실패(2026-09-12), wbsi.kr과 같은 GH Actions IP 대역 차단으로 추정 |
 | `cbs.joy4u.main` | enabled | cbs |  |
 | `cbs.mfm.busan` | enabled | religious |  |
 | `cbs.mfm.daegu` | unsupported | religious | 대구CBS 표준FM과 같은 station=6으로 ch=0(음악FM) 요청 시 빈 배열만 반환됨(실존하는 방송이지만 이 API의 어느 station 번호로도 응답을 못 찾음, station 1~4만 콘텐츠 있음) |

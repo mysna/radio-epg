@@ -217,12 +217,12 @@
   },
   {
     "source_id": "befm",
-    "name": "BeFM(부산영어방송) 편성표 (요일별 정적표)",
+    "name": "BeFM(부산영어방송) 편성표 (요일별 정적표, befm.or.kr가 GH Actions IP 대역 차단 추정)",
     "source_kind": "official",
     "source_url": "https://www.befm.or.kr/sub/template.php?midx=37&lang=ko",
     "priority": 100,
     "adapter": "additional",
-    "enabled": true
+    "enabled": false
   },
   {
     "source_id": "arirang",
