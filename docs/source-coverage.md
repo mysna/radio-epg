@@ -194,9 +194,9 @@
 | `tbn.main.ulsan` | enabled | tbn |  |
 | `tbs.efm.main` | enabled | independent |  |
 | `tbs.fm.main` | enabled | independent |  |
-| `wbs.main.busan` | enabled | religious |  |
-| `wbs.main.daegu` | enabled | religious |  |
-| `wbs.main.gwangju` | enabled | religious |  |
-| `wbs.main.jeonbuk` | enabled | religious |  |
-| `wbs.main.main` | enabled | religious |  |
+| `wbs.main.busan` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
+| `wbs.main.daegu` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
+| `wbs.main.gwangju` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
+| `wbs.main.jeonbuk` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
+| `wbs.main.main` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
 | `ytn.main.main` | enabled | independent |  |

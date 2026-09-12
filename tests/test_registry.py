@@ -100,7 +100,6 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "febc",
         "bbs",
         "cpbc",
-        "wbs",
         "kfn",
         "gugak",
         "befm",
@@ -130,6 +129,6 @@ def test_additional_official_schedule_sources_are_registered_but_not_enabled_wit
     }
 
     assert {source_id: sources[source_id].source_url for source_id in expected} == expected
-    disabled = {"afn-humphreys"}
+    disabled = {"wbs", "afn-humphreys"}
     assert all(not sources[source_id].enabled for source_id in disabled)
     assert all(sources[source_id].enabled for source_id in expected.keys() - disabled)
