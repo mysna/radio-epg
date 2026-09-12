@@ -15,7 +15,7 @@
 | `bbs.main.gwangju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `bbs.main.jeju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
 | `bbs.main.main` | enabled | religious |  |
-| `befm.main.main` | unsupported | independent | 공식 편성 fixture 미검증 |
+| `befm.main.main` | enabled | independent |  |
 | `cbs.joy4u.main` | enabled | cbs |  |
 | `cbs.mfm.busan` | enabled | religious |  |
 | `cbs.mfm.daegu` | unsupported | religious | 지역 CBS 공식 편성 fixture 미검증 |

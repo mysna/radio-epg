@@ -8,6 +8,7 @@ import pytest
 from radio_epg.adapters.additional import (
     AdditionalStationAdapter,
     _bbs,
+    _befm,
     _cbs_regional,
     _cjb_cheongju,
     _febc,
@@ -46,6 +47,7 @@ REGIONAL_DAY = date(2026, 9, 5)
             {"kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"},
             "송지원의 국악산책(재)",
         ),
+        ("befm", "html", {"befm.main.main"}, "[ L ] 4 My Busan (RE)"),
         ("afn-humphreys", "jsonp", {"afn.main.humphreys"}, "AFN Eagle Overnight"),
     ],
 )
@@ -373,6 +375,17 @@ def test_jibs_jeju_parser_strips_badges_and_normalizes_midnight_wrap() -> None:
     assert starts == ["05:00", "16:00", "23:00", "25:00"]
     assert rows["sbs.powerfm.jeju"][1].title == "이정민의 All4U"
     assert all(row.confidence == pytest.approx(0.7) for row in rows["sbs.powerfm.jeju"])
+
+
+def test_befm_parser_picks_the_div_matching_the_requested_weekday() -> None:
+    text = (FIXTURES / "befm.html").read_text()
+
+    mon_rows = _befm(text, date(2026, 9, 7))  # Monday
+    tue_rows = _befm(text, date(2026, 9, 8))  # Tuesday (tue-thu)
+
+    assert mon_rows["befm.main.main"][0].title == "[ L ] World Classics (RE)"
+    assert tue_rows["befm.main.main"][0].title == "[ L ] 4 My Busan (RE)"
+    assert all(row.confidence == pytest.approx(0.7) for row in mon_rows["befm.main.main"])
 
 
 def test_bbs_normalizes_times_that_wrap_past_midnight() -> None:

@@ -102,6 +102,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "cpbc",
         "kfn",
         "gugak",
+        "befm",
     ]
 
 
@@ -121,6 +122,7 @@ def test_additional_official_schedule_sources_are_registered_but_not_enabled_wit
         "wbs": "https://wbsi.kr/schedule_radio.php",
         "kfn": "https://radio.dema.mil.kr/web/radio/timetable.do",
         "gugak": "https://www.igbf.kr/gugak_web/?sub_num=786",
+        "befm": "https://www.befm.or.kr/sub/template.php?midx=37&lang=ko",
         "afn-humphreys": "https://myafn.dodmedia.osd.mil/Radio.aspx",
     }
 

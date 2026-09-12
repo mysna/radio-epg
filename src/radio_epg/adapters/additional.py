@@ -307,6 +307,29 @@ def _gugak(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     return {channel: _rows(channel, day, items) for channel, items in collected.items()}
 
 
+# BeFM(부산영어방송)은 요일별로 별도 div(mon/tue-thu/fri/sat/sun, 화·수·목은
+# 하나로 묶임)에 완전한 표를 정적으로 렌더링한다. 날짜별이 아니라 "이번 주" 고정
+# 편성이므로 낮은 confidence로 싣는다.
+_BEFM_DAY_IDS = {0: "mon", 1: "tue-thu", 2: "tue-thu", 3: "tue-thu", 4: "fri", 5: "sat", 6: "sun"}
+
+
+def _befm(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    container = soup.select_one(f"#{_BEFM_DAY_IDS[day.weekday()]}")
+    items: list[tuple[str, str, str | None]] = []
+    if container is not None:
+        for row in container.select("tbody tr"):
+            cells = row.find_all(["th", "td"], recursive=False)
+            if len(cells) < 2:
+                continue
+            match = _TIME.search(cells[0].get_text(strip=True))
+            title = cells[1].get_text(" ", strip=True)
+            if match and title:
+                items.append((match.group(1), title, None))
+    channel = "befm.main.main"
+    return {channel: _rows(channel, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE)}
+
+
 def _afn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     match = re.fullmatch(r"\s*\$afn\.ProcessRadioSchedule\((.*)\)\s*;?\s*", text, re.DOTALL)
     if match is None:
@@ -535,6 +558,7 @@ def parse_station_schedule(
         "cpbc": _cpbc,
         "kfn": _kfn,
         "gugak": _gugak,
+        "befm": _befm,
         "afn-humphreys": _afn,
     }
     try:
@@ -553,6 +577,7 @@ _CHANNELS = {
     "wbs": ("wbs.main.main",),
     "kfn": ("kookbang.main.main",),
     "gugak": ("kugak.main.main", "kugak.main.gwangju", "kugak.main.daejeon"),
+    "befm": ("befm.main.main",),
     "febc": tuple(channel for channel, _ in _FEBC_REGIONS.values()),
     "regional-mbc": tuple(
         channel
@@ -652,7 +677,7 @@ class AdditionalStationAdapter:
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
             )
-        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn"}:
+        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs", "ggn", "befm"}:
             response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
