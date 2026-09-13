@@ -125,7 +125,7 @@
 | `mbc.sfm.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
 | `mbc.sfm.busan` | enabled | mbc_busan |  |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
-| `mbc.sfm.cheongju` | unsupported | mbc_regional_vision | 편성표가 게시판 첨부 이미지(JPG)로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
+| `mbc.sfm.cheongju` | enabled | mbc_regional_vision |  |
 | `mbc.sfm.chuncheon` | enabled | mbc_chuncheon |  |
 | `mbc.sfm.daegu` | enabled | regional_mbc |  |
 | `mbc.sfm.daejeon` | enabled | regional_mbc |  |

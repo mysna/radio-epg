@@ -109,12 +109,12 @@
   },
   {
     "source_id": "mbc-regional-vision",
-    "name": "편성표가 이미지로만 공개되는 지역 MBC (청주·울산, Cowork가 주기적으로 판독해 커밋, 첫 커밋 전까지 비활성. 안동·창원은 클라우드에서 접속 차단돼 제외)",
+    "name": "편성표가 이미지로만 공개되는 지역 MBC (청주·울산, Cowork가 주기적으로 판독해 커밋. 안동·창원은 클라우드에서 접속 차단돼 제외)",
     "source_kind": "vision-assisted",
     "source_url": "https://www.mbccb.co.kr/rb/?r=home&c=78/109/668",
     "priority": 60,
     "adapter": "mbc_regional_vision",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "cbs-regional",
