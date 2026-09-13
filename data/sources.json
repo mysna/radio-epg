@@ -99,12 +99,12 @@
     "enabled": true
   },
   {
-    "source_id": "mbc-andong-vision",
-    "name": "안동MBC 편성표 (편성표가 이미지로만 공개돼 Cowork가 주기적으로 판독해 커밋, 첫 커밋 전까지 비활성)",
+    "source_id": "mbc-regional-vision",
+    "name": "편성표가 이미지로만 공개되는 지역 MBC (안동·청주 등, Cowork가 주기적으로 판독해 커밋, 첫 커밋 전까지 비활성)",
     "source_kind": "vision-assisted",
-    "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
+    "source_url": "https://www.mbccb.co.kr/rb/?r=home&c=78/109/668",
     "priority": 60,
-    "adapter": "mbc_andong_vision",
+    "adapter": "mbc_regional_vision",
     "enabled": false
   },
   {

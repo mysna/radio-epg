@@ -105,10 +105,10 @@
 | `kugak.main.main` | enabled | independent |  |
 | `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
 | `mbc.chm.main` | enabled | mbc |  |
-| `mbc.fm4u.andong` | unsupported | mbc_andong_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
+| `mbc.fm4u.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
 | `mbc.fm4u.busan` | enabled | mbc_busan |  |
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.cheongju` | unsupported | mbc_regional_vision | 편성표가 게시판 첨부 이미지(JPG)로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
 | `mbc.fm4u.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.daegu` | enabled | regional_mbc |  |
 | `mbc.fm4u.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -122,10 +122,10 @@
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.wonju` | enabled | mbc_wonju |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
-| `mbc.sfm.andong` | unsupported | mbc_andong_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
+| `mbc.sfm.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
 | `mbc.sfm.busan` | enabled | mbc_busan |  |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.cheongju` | unsupported | mbc_regional_vision | 편성표가 게시판 첨부 이미지(JPG)로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
 | `mbc.sfm.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.daegu` | enabled | regional_mbc |  |
 | `mbc.sfm.daejeon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |

@@ -9,10 +9,10 @@ import pytest
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
 from radio_epg.adapters.mbc_regional import (
-    MbcAndongVisionAdapter,
     MbcBusanAdapter,
     MbcPohangAdapter,
     MbcRegionalAdapter,
+    MbcVisionAdapter,
     MbcWonjuAdapter,
 )
 from radio_epg.adapters.sbs_regional import KnnAdapter, TbcAdapter
@@ -208,7 +208,7 @@ def _andong_vision_mapping_path(tmp_path) -> Path:
         "channels": [
             {
                 "channel_id": "mbc.sfm.andong",
-                "family": "mbc_andong_vision",
+                "family": "mbc_regional_vision",
                 "status": "enabled",
                 "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
                 "parser": "vision-json",
@@ -216,7 +216,7 @@ def _andong_vision_mapping_path(tmp_path) -> Path:
             },
             {
                 "channel_id": "mbc.fm4u.andong",
-                "family": "mbc_andong_vision",
+                "family": "mbc_regional_vision",
                 "status": "enabled",
                 "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
                 "parser": "vision-json",
@@ -248,10 +248,10 @@ def test_mbc_andong_vision_reads_the_json_cowork_commits_and_needs_no_network(
     (vision_dir / "mbc.sfm.andong.json").write_text(json.dumps(payload), encoding="utf-8")
     (vision_dir / "mbc.fm4u.andong.json").write_text(json.dumps(payload), encoding="utf-8")
 
-    adapter = MbcAndongVisionAdapter(
+    adapter = MbcVisionAdapter(
         _source(
-            "mbc-andong-vision",
-            "mbc_andong_vision",
+            "mbc-regional-vision",
+            "mbc_regional_vision",
             "https://andongmbc.co.kr/main/radio/radioTable.php",
         ),
         client=_NeverCalledClient(),
@@ -270,10 +270,10 @@ def test_mbc_andong_vision_tolerates_a_missing_or_stale_commit(tmp_path, monkeyp
     monkeypatch.setattr("radio_epg.regional_mapping._VISION_DIR", vision_dir)
     day = date(2026, 9, 14)
 
-    adapter = MbcAndongVisionAdapter(
+    adapter = MbcVisionAdapter(
         _source(
-            "mbc-andong-vision",
-            "mbc_andong_vision",
+            "mbc-regional-vision",
+            "mbc_regional_vision",
             "https://andongmbc.co.kr/main/radio/radioTable.php",
         ),
         client=_NeverCalledClient(),

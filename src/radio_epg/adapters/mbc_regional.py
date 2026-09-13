@@ -32,18 +32,21 @@ class MbcBusanAdapter(ConfiguredRegionalAdapter):
     family = "mbc_busan"
 
 
-class MbcAndongVisionAdapter(ConfiguredRegionalAdapter):
-    """안동MBC 전용 - 편성표가 이미지로만 공개돼 Cowork가 커밋한 JSON을 읽는다."""
+class MbcVisionAdapter(ConfiguredRegionalAdapter):
+    """편성표가 이미지로만 공개되는 지역 MBC 전용 - Cowork가 커밋한 JSON을 읽는다.
 
-    family = "mbc_andong_vision"
+    안동·청주 등 도시가 달라도 "이미지를 읽어 커밋된 JSON을 읽는다"는 수집 방식
+    자체는 동일하므로 도시별 서브클래스를 늘리지 않고 하나의 family로 묶는다."""
+
+    family = "mbc_regional_vision"
 
 
 def owned_channels(mapping: RegionalMapping) -> tuple[RegionalChannelMapping, ...]:
-    """지역 MBC(포항·원주·부산·안동 포함)가 소유하는 identity를 반환한다."""
+    """지역 MBC(포항·원주·부산·vision 판독 포함)가 소유하는 identity를 반환한다."""
     return (
         channels_for_family(mapping, "regional_mbc")
         + channels_for_family(mapping, "mbc_pohang")
         + channels_for_family(mapping, "mbc_wonju")
         + channels_for_family(mapping, "mbc_busan")
-        + channels_for_family(mapping, "mbc_andong_vision")
+        + channels_for_family(mapping, "mbc_regional_vision")
     )

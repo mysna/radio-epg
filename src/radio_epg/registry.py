@@ -49,10 +49,10 @@ def default_registry() -> AdapterRegistry:
     from radio_epg.adapters.kbs import KbsAdapter
     from radio_epg.adapters.mbc import MbcAdapter
     from radio_epg.adapters.mbc_regional import (
-        MbcAndongVisionAdapter,
         MbcBusanAdapter,
         MbcPohangAdapter,
         MbcRegionalAdapter,
+        MbcVisionAdapter,
         MbcWonjuAdapter,
     )
     from radio_epg.adapters.sbs import SbsAdapter
@@ -81,7 +81,7 @@ def default_registry() -> AdapterRegistry:
     registry.register("mbc_pohang", MbcPohangAdapter)
     registry.register("mbc_wonju", MbcWonjuAdapter)
     registry.register("mbc_busan", MbcBusanAdapter)
-    registry.register("mbc_andong_vision", MbcAndongVisionAdapter)
+    registry.register("mbc_regional_vision", MbcVisionAdapter)
     registry.register("cbs_regional", CbsRegionalAdapter)
     registry.register("tbc", TbcAdapter)
     registry.register("knn", KnnAdapter)
