@@ -1,4 +1,6 @@
 import asyncio
+import json
+from datetime import date
 from pathlib import Path
 
 import httpx
@@ -7,6 +9,7 @@ import pytest
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
 from radio_epg.adapters.mbc_regional import (
+    MbcAndongVisionAdapter,
     MbcBusanAdapter,
     MbcPohangAdapter,
     MbcRegionalAdapter,
@@ -194,6 +197,93 @@ def test_mbc_busan_survives_a_short_burst_of_remote_protocol_errors(monkeypatch)
     result = asyncio.run(adapter.collect(CollectionWindow(day, day)))
 
     assert {row.channel_id for row in result.schedules} == {"mbc.sfm.busan", "mbc.fm4u.busan"}
+
+
+def _andong_vision_mapping_path(tmp_path) -> Path:
+    # 실제 data/mappings/regional.json은 안동MBC를 아직 status="unsupported"로
+    # 둔다(Cowork 첫 커밋 전까지는 production에서 비활성) - 그래서 이 테스트는
+    # "enabled"로 켜둔 자체 mapping 파일로 parser/adapter 배선만 검증한다.
+    mapping = {
+        "schema_version": 1,
+        "channels": [
+            {
+                "channel_id": "mbc.sfm.andong",
+                "family": "mbc_andong_vision",
+                "status": "enabled",
+                "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
+                "parser": "vision-json",
+                "last_investigated": "2026-09-13",
+            },
+            {
+                "channel_id": "mbc.fm4u.andong",
+                "family": "mbc_andong_vision",
+                "status": "enabled",
+                "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
+                "parser": "vision-json",
+                "last_investigated": "2026-09-13",
+            },
+        ],
+    }
+    path = tmp_path / "regional.json"
+    path.write_text(json.dumps(mapping), encoding="utf-8")
+    return path
+
+
+class _NeverCalledClient:
+    async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+        raise AssertionError("vision source should never make a network request")
+
+
+def test_mbc_andong_vision_reads_the_json_cowork_commits_and_needs_no_network(
+    tmp_path, monkeypatch
+) -> None:
+    vision_dir = tmp_path / "vision"
+    vision_dir.mkdir()
+    monkeypatch.setattr("radio_epg.regional_mapping._VISION_DIR", vision_dir)
+    day = date(2026, 9, 14)  # Monday
+    payload = {
+        "week_of": "2026-09-14",
+        "days": {"monday": [{"start": "06:00", "title": "생방송 아침이좋다"}]},
+    }
+    (vision_dir / "mbc.sfm.andong.json").write_text(json.dumps(payload), encoding="utf-8")
+    (vision_dir / "mbc.fm4u.andong.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    adapter = MbcAndongVisionAdapter(
+        _source(
+            "mbc-andong-vision",
+            "mbc_andong_vision",
+            "https://andongmbc.co.kr/main/radio/radioTable.php",
+        ),
+        client=_NeverCalledClient(),
+        mapping_path=_andong_vision_mapping_path(tmp_path),
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(day, day)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {"mbc.sfm.andong", "mbc.fm4u.andong"}
+    assert all(row.confidence == pytest.approx(0.5) for row in result.schedules)
+
+
+def test_mbc_andong_vision_tolerates_a_missing_or_stale_commit(tmp_path, monkeypatch) -> None:
+    vision_dir = tmp_path / "vision"
+    vision_dir.mkdir()
+    monkeypatch.setattr("radio_epg.regional_mapping._VISION_DIR", vision_dir)
+    day = date(2026, 9, 14)
+
+    adapter = MbcAndongVisionAdapter(
+        _source(
+            "mbc-andong-vision",
+            "mbc_andong_vision",
+            "https://andongmbc.co.kr/main/radio/radioTable.php",
+        ),
+        client=_NeverCalledClient(),
+        mapping_path=_andong_vision_mapping_path(tmp_path),
+    )
+
+    # Cowork가 아직 이번 주 파일을 커밋하지 않았을 뿐이므로 실패가 아니라 그냥
+    # 빈 결과로 조용히 넘어가야 한다(다른 "no rows" 소스와 동일한 관례).
+    result = asyncio.run(adapter.collect(CollectionWindow(day, day)))
+    assert result.schedules == ()
 
 
 def test_mbc_pohang_and_mbc_busan_are_the_only_sources_with_tls_verification_disabled() -> None:

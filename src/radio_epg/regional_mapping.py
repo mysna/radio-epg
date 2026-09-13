@@ -1,6 +1,7 @@
 """지역·독립 방송 mapping의 엄격한 데이터 계약과 채널별 수집 엔진."""
 
 import asyncio
+import json
 import re
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
@@ -22,6 +23,7 @@ from radio_epg.validation import SchedulePolicy
 _ROOT = Path(__file__).parents[2]
 _MAPPING = _ROOT / "data" / "mappings" / "regional.json"
 _CATALOG = _ROOT / "data" / "radio_channels.json"
+_VISION_DIR = _ROOT / "data" / "vision"
 
 RegionalStatus = Literal["enabled", "unsupported"]
 
@@ -249,6 +251,21 @@ async def _mbc_busan_fm4u(
     return additional.busan_mbc_fm4u(pdf_bytes, day, item.channel_id)[item.channel_id]
 
 
+async def _vision_json(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    # 편성표가 이미지로만 공개돼 결정적으로 파싱할 수 없는 채널은, Cowork가 주기적으로
+    # 이미지를 읽어 정해진 스키마의 JSON을 이 repo(data/vision/<channel_id>.json)에
+    # 커밋해 넣는다(스키마는 additional.vision_json 참고). 네트워크 요청 없이 그
+    # 커밋된 파일만 읽는다 - 아직 그 주 파일이 없거나 오래됐으면 "no rows"로 넘어간다.
+    del client
+    path = _VISION_DIR / f"{item.channel_id}.json"
+    if not path.exists():
+        raise ValueError("no rows")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return additional.vision_json(payload, day, item.channel_id)[item.channel_id]
+
+
 # RegionalChannelMapping.parser 값이 곧 실제 수집 방식을 고르는 키다 - 새 지역
 # 채널을 추가할 때는 이 값이 가리키는 fetch/parse 로직이 여기 있어야 한다.
 _PARSERS: dict[
@@ -268,6 +285,7 @@ _PARSERS: dict[
     "sbs-jibs": _sbs_jibs,
     "mbc-busan-sfm": _mbc_busan_sfm,
     "mbc-busan-fm4u": _mbc_busan_fm4u,
+    "vision-json": _vision_json,
 }
 
 # phmbc.co.kr·busanmbc.co.kr가 중간 인증서를 보내지 않아 기본 TLS 체인 검증이

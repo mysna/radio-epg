@@ -390,6 +390,42 @@ def busan_mbc_fm4u(pdf_bytes: bytes, day: date, channel: str) -> dict[str, tuple
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
+# 편성표가 이미지로만 공개돼 결정적으로 파싱할 수 없는 채널(예: 안동MBC)은 Cowork가
+# 주기적으로 이미지를 읽어 이 스키마의 JSON을 커밋해 넣는다:
+#   {"week_of": "YYYY-MM-DD" (그 주 월요일 날짜),
+#    "days": {"monday": [{"start": "HH:MM", "title": "..."}, ...], ..., "sunday": [...]}}
+# LLM 판독이라 다른 공식 소스보다 신뢰도를 낮게 매긴다. week_of가 요청한 날짜가
+# 속한 주의 월요일과 다르면(아직 그 주 편성이 올라오지 않음) 조용히 건너뛴다.
+_VISION_CONFIDENCE = 0.5
+_WEEKDAY_KEYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def vision_json(payload: Any, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    if not isinstance(payload, dict):
+        raise ValueError("no rows")
+    week_of_text = payload.get("week_of")
+    if not isinstance(week_of_text, str):
+        raise ValueError("no rows")
+    try:
+        week_of = date.fromisoformat(week_of_text)
+    except ValueError:
+        raise ValueError("no rows") from None
+    if week_of != day - timedelta(days=day.weekday()):
+        raise ValueError("no rows")
+    days = payload.get("days")
+    if not isinstance(days, dict):
+        raise ValueError("no rows")
+    entries = days.get(_WEEKDAY_KEYS[day.weekday()])
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("no rows")
+    try:
+        items = [(str(entry["start"]), str(entry["title"])) for entry in entries]
+    except (KeyError, TypeError):
+        raise ValueError("no rows") from None
+    normalized = _normalize_wrapping_times(items)
+    return {channel: _rows(channel, day, normalized, confidence=_VISION_CONFIDENCE)}
+
+
 def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")

@@ -105,7 +105,7 @@
 | `kugak.main.main` | enabled | independent |  |
 | `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
 | `mbc.chm.main` | enabled | mbc |  |
-| `mbc.fm4u.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.andong` | unsupported | mbc_andong_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
 | `mbc.fm4u.busan` | enabled | mbc_busan |  |
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -122,7 +122,7 @@
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.wonju` | enabled | mbc_wonju |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
-| `mbc.sfm.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.andong` | unsupported | mbc_andong_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
 | `mbc.sfm.busan` | enabled | mbc_busan |  |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |

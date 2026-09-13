@@ -27,6 +27,7 @@ from radio_epg.adapters.additional import (
     sbs_affiliate_tbc,
     tjb_daejeon,
     ubc_ulsan,
+    vision_json,
     wonju_mbc,
 )
 from radio_epg.adapters.base import CollectionWindow
@@ -235,6 +236,60 @@ def test_busan_mbc_fm4u_parser_picks_the_day_group_matching_the_requested_weekda
     assert set(weekday_rows) == {"mbc.fm4u.busan"}
     assert weekday_rows["mbc.fm4u.busan"][0].start == "05:05"
     assert saturday_rows["mbc.fm4u.busan"][2].title == "굿모닝 FM 테이입니다"
+
+
+def test_vision_json_reads_the_requested_weekday_at_reduced_confidence() -> None:
+    day = date(2026, 9, 14)  # Monday
+    payload = {
+        "week_of": "2026-09-14",
+        "days": {
+            "monday": [
+                {"start": "06:00", "title": "생방송 아침이좋다"},
+                {"start": "09:00", "title": "정오의 희망곡"},
+            ],
+            "tuesday": [],
+        },
+    }
+
+    rows = vision_json(payload, day, "mbc.sfm.andong")
+
+    assert set(rows) == {"mbc.sfm.andong"}
+    assert rows["mbc.sfm.andong"][0].start == "06:00"
+    assert rows["mbc.sfm.andong"][0].title == "생방송 아침이좋다"
+    assert all(row.confidence == pytest.approx(0.5) for row in rows["mbc.sfm.andong"])
+
+
+def test_vision_json_skips_a_stale_week() -> None:
+    day = date(2026, 9, 14)  # Monday
+    payload = {
+        "week_of": "2026-09-07",  # 지난 주 - 아직 이번 주 파일이 안 올라옴
+        "days": {"monday": [{"start": "06:00", "title": "생방송 아침이좋다"}]},
+    }
+
+    with pytest.raises(ValueError, match="no rows"):
+        vision_json(payload, day, "mbc.sfm.andong")
+
+
+def test_vision_json_skips_an_empty_or_missing_weekday() -> None:
+    day = date(2026, 9, 15)  # Tuesday
+    payload = {
+        "week_of": "2026-09-14",
+        "days": {"monday": [{"start": "06:00", "title": "생방송 아침이좋다"}], "tuesday": []},
+    }
+
+    with pytest.raises(ValueError, match="no rows"):
+        vision_json(payload, day, "mbc.sfm.andong")
+
+
+def test_vision_json_skips_malformed_entries_instead_of_crashing() -> None:
+    day = date(2026, 9, 14)  # Monday
+    payload = {
+        "week_of": "2026-09-14",
+        "days": {"monday": [{"start": "06:00"}]},  # title 누락
+    }
+
+    with pytest.raises(ValueError, match="no rows"):
+        vision_json(payload, day, "mbc.sfm.andong")
 
 
 def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:

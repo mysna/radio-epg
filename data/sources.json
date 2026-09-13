@@ -99,6 +99,15 @@
     "enabled": true
   },
   {
+    "source_id": "mbc-andong-vision",
+    "name": "안동MBC 편성표 (편성표가 이미지로만 공개돼 Cowork가 주기적으로 판독해 커밋, 첫 커밋 전까지 비활성)",
+    "source_kind": "vision-assisted",
+    "source_url": "https://andongmbc.co.kr/main/radio/radioTable.php",
+    "priority": 60,
+    "adapter": "mbc_andong_vision",
+    "enabled": false
+  },
+  {
     "source_id": "cbs-regional",
     "name": "CBS 지역국 편성표 (부산·광주·전북·청주·대구·대전·포항·경남·제주·춘천·전남·울산 표준FM, 부산·광주 음악FM, 강원영동)",
     "source_kind": "official",
