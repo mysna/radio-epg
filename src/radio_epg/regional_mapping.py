@@ -1,5 +1,6 @@
 """지역·독립 방송 mapping의 엄격한 데이터 계약과 채널별 수집 엔진."""
 
+import asyncio
 import re
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
@@ -206,16 +207,30 @@ async def _sbs_jibs(
 _BUSAN_MBC_PDF_LINK = re.compile(r'viewer\.asp\?file=([^"\'<>\s]+)')
 
 
+async def _get_with_retry(client: _Client, url: str, *, attempts: int = 4) -> httpx.Response:
+    # busanmbc.co.kr는 GH Actions 환경에서 간헐적으로 RemoteProtocolError로 연결이
+    # 끊긴다(로컬 sandbox에서는 재현되지 않음 - befm/ggn과 같은 호스팅 쪽 불안정으로
+    # 추정). 짧게 재시도한다.
+    for attempt in range(attempts):
+        try:
+            return await client.get(url)
+        except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.ConnectTimeout):
+            if attempt == attempts - 1:
+                raise
+            await asyncio.sleep(1.0 * (2**attempt))
+    raise AssertionError("unreachable")
+
+
 async def _mbc_busan_pdf_bytes(client: _Client, item: RegionalChannelMapping) -> bytes:
     # 부산MBC는 요일별 편성표 대신 편성표 페이지(oar05/06.asp) 안의 iframe이
     # 그 주의 PDF를 가리킨다. PDF 파일명이 매주 바뀌므로 페이지를 먼저 읽어
     # 현재 PDF 링크를 알아낸 뒤에 그 PDF를 받는다.
-    page_response = await client.get(item.source_url)
+    page_response = await _get_with_retry(client, item.source_url)
     page_response.raise_for_status()
     match = _BUSAN_MBC_PDF_LINK.search(page_response.text)
     if match is None:
         raise ValueError("no rows")
-    pdf_response = await client.get(unquote(match.group(1)))
+    pdf_response = await _get_with_retry(client, unquote(match.group(1)))
     pdf_response.raise_for_status()
     return pdf_response.content
 

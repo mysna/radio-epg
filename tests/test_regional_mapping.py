@@ -155,6 +155,47 @@ def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first() ->
     assert any("sfm-test.pdf" in url for url in requested_urls)
 
 
+def test_mbc_busan_survives_a_short_burst_of_remote_protocol_errors(monkeypatch) -> None:
+    sfm_page = (FIXTURES / "busan-mbc-sfm-page.html").read_text()
+    fm4u_page = (FIXTURES / "busan-mbc-fm4u-page.html").read_text()
+    sfm_pdf = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
+    fm4u_pdf = (FIXTURES / "busan-mbc-fm4u.pdf").read_bytes()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.regional_mapping.asyncio.sleep", skip_sleep)
+
+    class Client:
+        attempts = 0
+
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            if self.attempts % 5 == 1:
+                raise httpx.RemoteProtocolError("server disconnected")
+            if url.endswith("oar05.asp"):
+                return httpx.Response(200, text=sfm_page, request=httpx.Request("GET", url))
+            if url.endswith("oar06.asp"):
+                return httpx.Response(200, text=fm4u_page, request=httpx.Request("GET", url))
+            if "sfm-test.pdf" in url:
+                return httpx.Response(200, content=sfm_pdf, request=httpx.Request("GET", url))
+            if "fm4u-test.pdf" in url:
+                return httpx.Response(200, content=fm4u_pdf, request=httpx.Request("GET", url))
+            raise AssertionError(f"unexpected url: {url}")
+
+    client = Client()
+    adapter = MbcBusanAdapter(
+        _source("mbc-busan", "mbc_busan", "https://busanmbc.co.kr/06_oar/oar05.asp"),
+        client=client,
+    )
+    from datetime import date
+
+    day = date(2026, 9, 14)
+    result = asyncio.run(adapter.collect(CollectionWindow(day, day)))
+
+    assert {row.channel_id for row in result.schedules} == {"mbc.sfm.busan", "mbc.fm4u.busan"}
+
+
 def test_mbc_pohang_and_mbc_busan_are_the_only_sources_with_tls_verification_disabled() -> None:
     assert {"mbc-pohang", "mbc-busan"} == _INSECURE_SOURCE_IDS
 
