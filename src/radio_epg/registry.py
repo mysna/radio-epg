@@ -43,15 +43,25 @@ def default_registry() -> AdapterRegistry:
     """프로젝트에 포함된 adapter registry를 만든다."""
     from radio_epg.adapters.additional import AdditionalStationAdapter
     from radio_epg.adapters.cbs import CbsAdapter
+    from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
     from radio_epg.adapters.ebs import EbsAdapter
     from radio_epg.adapters.febc import FebcAdapter
-    from radio_epg.adapters.independent import IndependentAdapter
     from radio_epg.adapters.kbs import KbsAdapter
     from radio_epg.adapters.mbc import MbcAdapter
-    from radio_epg.adapters.regional_mbc import RegionalMbcAdapter
-    from radio_epg.adapters.religious import ReligiousAdapter
+    from radio_epg.adapters.mbc_regional import (
+        MbcPohangAdapter,
+        MbcRegionalAdapter,
+        MbcWonjuAdapter,
+    )
     from radio_epg.adapters.sbs import SbsAdapter
-    from radio_epg.adapters.sbs_affiliates import SbsAffiliatesAdapter
+    from radio_epg.adapters.sbs_regional import (
+        CjbAdapter,
+        JibsAdapter,
+        KnnAdapter,
+        TbcAdapter,
+        TjbAdapter,
+        UbcAdapter,
+    )
     from radio_epg.adapters.tbn import TbnAdapter
 
     registry = AdapterRegistry()
@@ -65,11 +75,17 @@ def default_registry() -> AdapterRegistry:
     registry.register("ebs", EbsAdapter)
     registry.register("cbs", CbsAdapter)
     registry.register("tbn", TbnAdapter)
-    registry.register("regional_mbc", RegionalMbcAdapter)
-    registry.register("sbs_affiliates", SbsAffiliatesAdapter)
+    registry.register("mbc_regional", MbcRegionalAdapter)
+    registry.register("mbc_pohang", MbcPohangAdapter)
+    registry.register("mbc_wonju", MbcWonjuAdapter)
+    registry.register("cbs_regional", CbsRegionalAdapter)
+    registry.register("tbc", TbcAdapter)
+    registry.register("knn", KnnAdapter)
+    registry.register("tjb", TjbAdapter)
+    registry.register("ubc", UbcAdapter)
+    registry.register("cjb", CjbAdapter)
+    registry.register("jibs", JibsAdapter)
     registry.register("febc", FebcAdapter)
-    registry.register("religious", ReligiousAdapter)
-    registry.register("independent", IndependentAdapter)
 
     registry.register("additional", AdditionalStationAdapter)
     return registry

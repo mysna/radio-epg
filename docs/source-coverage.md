@@ -14,24 +14,24 @@
 | `bbs.main.main` | enabled | religious |  |
 | `befm.main.main` | unsupported | independent | 파서는 fixture로 검증됐으나 개발 샌드박스에서는 정상 접속되는 반면 실제 production(GitHub Actions)에서는 도입 직후부터 연속 8회 모두 ConnectError로 실패(2026-09-12), wbsi.kr과 같은 GH Actions IP 대역 차단으로 추정 |
 | `cbs.joy4u.main` | enabled | cbs |  |
-| `cbs.mfm.busan` | enabled | religious |  |
-| `cbs.mfm.daegu` | unsupported | religious | 대구CBS 표준FM과 같은 station=6으로 ch=0(음악FM) 요청 시 빈 배열만 반환됨(실존하는 방송이지만 이 API의 어느 station 번호로도 응답을 못 찾음, station 1~4만 콘텐츠 있음) |
-| `cbs.mfm.gwangju` | enabled | religious |  |
+| `cbs.mfm.busan` | enabled | cbs_regional |  |
+| `cbs.mfm.daegu` | unsupported | cbs_regional | 대구CBS 표준FM과 같은 station=6으로 ch=0(음악FM) 요청 시 빈 배열만 반환됨(실존하는 방송이지만 이 API의 어느 station 번호로도 응답을 못 찾음, station 1~4만 콘텐츠 있음) |
+| `cbs.mfm.gwangju` | enabled | cbs_regional |  |
 | `cbs.mfm.main` | enabled | cbs |  |
-| `cbs.sfm.busan` | enabled | religious |  |
-| `cbs.sfm.cheongju` | enabled | religious |  |
-| `cbs.sfm.chuncheon` | enabled | religious |  |
-| `cbs.sfm.daegu` | enabled | religious |  |
-| `cbs.sfm.daejeon` | enabled | religious |  |
-| `cbs.sfm.gwangju` | enabled | religious |  |
-| `cbs.sfm.gyeongnam` | enabled | religious |  |
-| `cbs.sfm.jeju` | enabled | religious |  |
-| `cbs.sfm.jeonbuk` | enabled | religious |  |
-| `cbs.sfm.jeonnam` | enabled | religious |  |
+| `cbs.sfm.busan` | enabled | cbs_regional |  |
+| `cbs.sfm.cheongju` | enabled | cbs_regional |  |
+| `cbs.sfm.chuncheon` | enabled | cbs_regional |  |
+| `cbs.sfm.daegu` | enabled | cbs_regional |  |
+| `cbs.sfm.daejeon` | enabled | cbs_regional |  |
+| `cbs.sfm.gwangju` | enabled | cbs_regional |  |
+| `cbs.sfm.gyeongnam` | enabled | cbs_regional |  |
+| `cbs.sfm.jeju` | enabled | cbs_regional |  |
+| `cbs.sfm.jeonbuk` | enabled | cbs_regional |  |
+| `cbs.sfm.jeonnam` | enabled | cbs_regional |  |
 | `cbs.sfm.main` | enabled | cbs |  |
-| `cbs.sfm.pohang` | enabled | religious |  |
-| `cbs.sfm.ulsan` | enabled | religious |  |
-| `cbs.sfm.youngdong` | enabled | religious |  |
+| `cbs.sfm.pohang` | enabled | cbs_regional |  |
+| `cbs.sfm.ulsan` | enabled | cbs_regional |  |
+| `cbs.sfm.youngdong` | enabled | cbs_regional |  |
 | `cpbc.main.busan` | enabled | religious |  |
 | `cpbc.main.daegu` | enabled | religious |  |
 | `cpbc.main.gwangju` | enabled | religious |  |
@@ -118,9 +118,9 @@
 | `mbc.fm4u.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.main` | enabled | mbc |  |
 | `mbc.fm4u.mokpo` | enabled | regional_mbc |  |
-| `mbc.fm4u.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.pohang` | enabled | mbc_pohang |  |
 | `mbc.fm4u.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.wonju` | enabled | regional_mbc |  |
+| `mbc.fm4u.wonju` | enabled | mbc_wonju |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
 | `mbc.sfm.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.busan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -135,24 +135,24 @@
 | `mbc.sfm.jeonju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.main` | enabled | mbc |  |
 | `mbc.sfm.mokpo` | enabled | regional_mbc |  |
-| `mbc.sfm.pohang` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.pohang` | enabled | mbc_pohang |  |
 | `mbc.sfm.ulsan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.wonju` | enabled | regional_mbc |  |
+| `mbc.sfm.wonju` | enabled | mbc_wonju |  |
 | `mbc.sfm.yeosu` | enabled | regional_mbc |  |
 | `obs.main.main` | enabled | independent |  |
 | `sbs.dmb.main` | enabled | sbs |  |
-| `sbs.lovefm.busan` | enabled | sbs_affiliates |  |
+| `sbs.lovefm.busan` | enabled | knn |  |
 | `sbs.lovefm.main` | enabled | sbs |  |
-| `sbs.powerfm.busan` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.cheongju` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.chuncheon` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
-| `sbs.powerfm.daegu` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.daejeon` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.gwangju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
-| `sbs.powerfm.jeju` | enabled | sbs_affiliates |  |
-| `sbs.powerfm.jeonju` | unsupported | sbs_affiliates | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.busan` | enabled | knn |  |
+| `sbs.powerfm.cheongju` | enabled | cjb |  |
+| `sbs.powerfm.chuncheon` | unsupported | g1 | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.daegu` | enabled | tbc |  |
+| `sbs.powerfm.daejeon` | enabled | tjb |  |
+| `sbs.powerfm.gwangju` | unsupported | kbc | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.jeju` | enabled | jibs |  |
+| `sbs.powerfm.jeonju` | unsupported | jtv | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
 | `sbs.powerfm.main` | enabled | sbs |  |
-| `sbs.powerfm.ulsan` | enabled | sbs_affiliates |  |
+| `sbs.powerfm.ulsan` | enabled | ubc |  |
 | `tbn.main.busan` | enabled | tbn |  |
 | `tbn.main.chungbuk` | enabled | tbn |  |
 | `tbn.main.chungnam` | enabled | tbn |  |

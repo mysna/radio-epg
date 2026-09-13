@@ -63,58 +63,94 @@
     "enabled": false
   },
   {
-    "source_id": "regional-mbc",
-    "name": "지역 MBC 편성표 (강릉 주간 템플릿, 대구·제주·여수·목포·광주 날짜별, 원주 요일별 정적표)",
+    "source_id": "mbc-regional",
+    "name": "MBC 지역국 편성표 (강릉 주간 템플릿, 대구·제주·여수·목포·광주 날짜별, 원주 요일별 정적표)",
     "source_kind": "official",
     "source_url": "https://www.mbceg.co.kr/schedule/cp_depart",
     "priority": 100,
-    "adapter": "additional",
+    "adapter": "mbc_regional",
     "enabled": true
   },
   {
-    "source_id": "regional-cbs",
-    "name": "지역 CBS 편성표 (부산·광주·전북·청주·대구·대전·포항·경남·제주·춘천·전남·울산 표준FM, 부산·광주 음악FM, 강원영동)",
+    "source_id": "mbc-pohang",
+    "name": "포항MBC 편성표 (phmbc.co.kr 중간 인증서 누락으로 TLS 검증 예외)",
+    "source_kind": "official",
+    "source_url": "https://www.phmbc.co.kr/www/support/scheduler/scheduler_fm",
+    "priority": 100,
+    "adapter": "mbc_pohang",
+    "enabled": true
+  },
+  {
+    "source_id": "mbc-wonju",
+    "name": "원주MBC 편성표 (wjmbc.co.kr가 기본 User-Agent를 406으로 차단)",
+    "source_kind": "official",
+    "source_url": "https://www.wjmbc.co.kr/radio/am.html",
+    "priority": 100,
+    "adapter": "mbc_wonju",
+    "enabled": true
+  },
+  {
+    "source_id": "cbs-regional",
+    "name": "CBS 지역국 편성표 (부산·광주·전북·청주·대구·대전·포항·경남·제주·춘천·전남·울산 표준FM, 부산·광주 음악FM, 강원영동)",
     "source_kind": "official",
     "source_url": "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp",
     "priority": 100,
-    "adapter": "additional",
+    "adapter": "cbs_regional",
     "enabled": true
   },
   {
-    "source_id": "regional-sbs",
-    "name": "SBS 지역 제휴사 편성표 (TBC 대구, KNN 부산, TJB 대전, ubc 울산, CJB 청주, JIBS 제주)",
+    "source_id": "tbc",
+    "name": "TBC(대구) 편성표",
     "source_kind": "official",
     "source_url": "https://tbc.co.kr/schedule/",
     "priority": 100,
-    "adapter": "additional",
+    "adapter": "tbc",
     "enabled": true
   },
   {
-    "source_id": "sbs-affiliates",
-    "name": "SBS 지역 제휴사 편성표",
+    "source_id": "knn",
+    "name": "KNN(부산) 편성표",
     "source_kind": "official",
-    "source_url": "https://www.sbs.co.kr/radio",
+    "source_url": "https://www.knn.co.kr/schedule/schedule.do",
     "priority": 100,
-    "adapter": "sbs_affiliates",
-    "enabled": false
+    "adapter": "knn",
+    "enabled": true
   },
   {
-    "source_id": "religious-regions",
-    "name": "CBS BBS CPBC WBS 지역 편성표",
+    "source_id": "tjb",
+    "name": "TJB(대전) 편성표",
     "source_kind": "official",
-    "source_url": "https://www.cbs.co.kr/",
+    "source_url": "https://www.tjb.co.kr/sub0502/pairing/radio/date/",
     "priority": 100,
-    "adapter": "religious",
-    "enabled": false
+    "adapter": "tjb",
+    "enabled": true
   },
   {
-    "source_id": "independent",
-    "name": "독립 라디오 편성표",
+    "source_id": "ubc",
+    "name": "ubc(울산) 편성표",
     "source_kind": "official",
-    "source_url": "https://tbs.seoul.kr/fm/schedule.do",
+    "source_url": "https://www.ubc.co.kr/api/broadcast/schedule/",
     "priority": 100,
-    "adapter": "independent",
-    "enabled": false
+    "adapter": "ubc",
+    "enabled": true
+  },
+  {
+    "source_id": "cjb",
+    "name": "CJB(청주) 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.cjb.co.kr/base/php/onair_ajax.php",
+    "priority": 100,
+    "adapter": "cjb",
+    "enabled": true
+  },
+  {
+    "source_id": "jibs",
+    "name": "JIBS(제주) 편성표 (날짜 무관 고정 템플릿)",
+    "source_kind": "official",
+    "source_url": "https://www.jibs.co.kr/timetable/timetableMain",
+    "priority": 100,
+    "adapter": "jibs",
+    "enabled": true
   },
   {
     "source_id": "ggn",

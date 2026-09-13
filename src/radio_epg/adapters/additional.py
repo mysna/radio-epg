@@ -24,6 +24,10 @@ from radio_epg.validation import SchedulePolicy
 
 _TIME = re.compile(r"(\d{1,2}:\d{2})")
 _TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    " (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
 
 
 def _rows(
@@ -106,7 +110,7 @@ def _wbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[Schedul
 _STATIC_TEMPLATE_CONFIDENCE = 0.7
 
 
-def _mbc_regional_weekly(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def mbc_regional_weekly(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
     items: list[tuple[str, str, str | None]] = []
     for row in soup.select("tr"):
@@ -126,7 +130,7 @@ def _mbc_regional_weekly(text: str, day: date, channel: str) -> dict[str, tuple[
 # 누적해 실제 요일 컬럼 번호(월=1~일=7)와 겹치는 칸을 찾는다. 표 자체가 (예) 05:00부터
 # 다음날 05:00까지 하루 전체를 담고 있어서 맨 처음 시각이 다시 나오면 그 시점에서
 # 멈춘다(안 그러면 같은 하루가 두 번 들어간다).
-def _wonju_mbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def wonju_mbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
     target_column = day.weekday() + 1
     entries: list[tuple[str, str]] = []
@@ -162,30 +166,10 @@ def _wonju_mbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
     return {channel: _rows(channel, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE)}
 
 
-_WONJU_MBC_STATIONS: dict[str, tuple[str, str]] = {
-    # band: (channel_id, path)
-    "am": ("mbc.sfm.wonju", "am.html"),
-    "fm": ("mbc.fm4u.wonju", "fm.html"),
-}
-
-
-# 지역 MBC는 공유 CMS 없이 방송사마다 완전히 별도 도메인을 쓴다. 실제로 접속·구조를
-# 확인한 방송국만 여기 추가한다. g=am은 표준FM, g=fm은 FM4U, d는 날짜가 아니라
-# 요일 index(일=0~토=6)다.
-_MBC_REGIONAL_STATIONS: dict[str, tuple[str, str, str]] = {
-    # station: (표준FM channel_id, FM4U channel_id, base_url)
-    "gangneung": (
-        "mbc.sfm.gangneung",
-        "mbc.fm4u.gangneung",
-        "https://www.mbceg.co.kr/schedule/cp_depart",
-    ),
-}
-
-
-# 대구·제주·여수 MBC는 별도 CMS 업체가 공통으로 만들어준 것으로 보이는 같은 템플릿을
-# 쓴다: /FMTimetable/FM|FM4U/YYYY-MM-DD 로 날짜별 실제 편성(주간 템플릿이 아니다)을
-# 서버 렌더링해서 준다. 실제로 접속·구조를 확인한 방송국만 여기 추가한다.
-def _mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+# 대구·제주·여수·목포·광주 MBC는 별도 CMS 업체가 공통으로 만들어준 것으로 보이는
+# 같은 템플릿을 쓴다: /FMTimetable/FM|FM4U/YYYY-MM-DD 로 날짜별 실제 편성(주간
+# 템플릿이 아니다)을 서버 렌더링해서 준다.
+def mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
     entries: list[tuple[str, str]] = []
@@ -196,15 +180,21 @@ def _mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[Sched
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
-_MBC_SHARED_CMS_STATIONS: dict[str, tuple[str, str, str, str]] = {
-    # station: (표준FM channel_id, FM4U channel_id, domain, timetable path 이름)
-    # 같은 CMS를 쓰지만 방송국마다 이 path 이름을 다르게 붙였다.
-    "daegu": ("mbc.sfm.daegu", "mbc.fm4u.daegu", "dgmbc.com", "FMTimetable"),
-    "jeju": ("mbc.sfm.jeju", "mbc.fm4u.jeju", "jejumbc.com", "FMTimetable"),
-    "yeosu": ("mbc.sfm.yeosu", "mbc.fm4u.yeosu", "ysmbc.co.kr", "FMTimetable"),
-    "mokpo": ("mbc.sfm.mokpo", "mbc.fm4u.mokpo", "www.mpmbc.co.kr", "TVTimetable"),
-    "gwangju": ("mbc.sfm.gwangju", "mbc.fm4u.gwangju", "kjmbc.co.kr", "Timetable"),
-}
+# 포항MBC는 표준FM/FM4U가 서로 다른 경로(scheduler_fm/scheduler_fm4u)로 완전히
+# 분리돼 있고, 날짜 파라미터가 실제로 다른 편성을 주지만 아직 게시되지 않은 날짜를
+# 요청하면 조용히 직전 게시일로 대체한다. 날짜 네비게이션의 "on" 항목이 실제로
+# 표시된 날짜를 알려주므로 그걸로 요청한 날짜와 일치하는지 확인한다.
+def phmbc(text: str, day: date, channel: str, path: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    marker = f'<li class="on"><a href="/www/support/scheduler/{path}?date={day.isoformat()}">'
+    if marker not in text:
+        raise ValueError("official schedule contains no rows")
+    soup = BeautifulSoup(text, "html.parser")
+    entries: list[tuple[str, str]] = []
+    for row in soup.select("table tr"):
+        time_node, title_node = row.select_one("td.time"), row.select_one("td.left")
+        if time_node and title_node:
+            entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
 def _ytn(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -386,14 +376,17 @@ def _befm(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
 
 
 # CBS 지역국은 자체 도메인을 쓰지만, 편성표 위젯은 전부 CBS 본사의 공유 API
-# (appradio.cbs.co.kr)를 station 번호로 구분해서 호출한다. FEBC와 마찬가지로
-# fixture로 실제 접속·구조를 확인한 지역국만 여기 추가한다.
+# (appradio.cbs.co.kr)를 station 번호로 구분해서 호출한다(번호는
+# data/mappings/regional.json의 채널별 source_url에 있다 - 예: station=6/11은
+# 편성표에 지역명이 직접 나오지 않아 그 시간대에만 편성되는 프로그램명을 웹
+# 검색으로 교차 확인해서 구분했다. station=11: "반가운 오늘"(강원CBS 93.7MHz,
+# 토요일 12:05 편성과 정확히 일치) → 춘천. station=6은 배제법으로 대구).
 def _hmm_to_time(value: int) -> str:
     hour, minute = divmod(value, 100)
     return f"{hour:02d}:{minute:02d}"
 
 
-def _cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     payload = json.loads(text)
     if payload.get("date") != int(day.strftime("%Y%m%d")):
         raise ValueError("official schedule date does not match requested date")
@@ -402,29 +395,6 @@ def _cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[Schedul
         for entry in payload["ProgSchedule"]
     ]
     return {channel: _rows(channel, day, items)}
-
-
-# station: (표준FM channel_id, 음악FM channel_id 또는 None, appradio station 번호)
-_CBS_REGIONAL_STATIONS: dict[str, tuple[str, str | None, int]] = {
-    "busan": ("cbs.sfm.busan", "cbs.mfm.busan", 2),
-    # station=3의 새벽 편성("찬양하라 내영혼아")이 전남/광주CBS 프로그램으로
-    # 확인되어(웹 검색) 음악FM도 표준FM과 같은 station 번호를 공유함을 확인했다.
-    "gwangju": ("cbs.sfm.gwangju", "cbs.mfm.gwangju", 3),
-    "jeonbuk": ("cbs.sfm.jeonbuk", None, 4),
-    "cheongju": ("cbs.sfm.cheongju", None, 5),
-    # station=6과 11은 편성표에 지역명이 직접 나오지 않아, 서로 다른 날짜에
-    # 국지적으로만 편성되는 프로그램명을 웹 검색으로 교차 확인해서 구분했다.
-    # station=11: "반가운 오늘"(강원CBS 93.7MHz, 토요일 12:05 편성과 정확히 일치)
-    # → 춘천. station=6은 남은 유일한 후보로 배제법에 의해 대구로 확정.
-    "daegu": ("cbs.sfm.daegu", None, 6),
-    "daejeon": ("cbs.sfm.daejeon", None, 7),
-    "pohang": ("cbs.sfm.pohang", None, 8),
-    "gyeongnam": ("cbs.sfm.gyeongnam", None, 9),
-    "jeju": ("cbs.sfm.jeju", None, 10),
-    "chuncheon": ("cbs.sfm.chuncheon", None, 11),
-    "jeonnam": ("cbs.sfm.jeonnam", None, 12),
-    "ulsan": ("cbs.sfm.ulsan", None, 13),
-}
 
 
 # 강원영동CBS(yd.local.cbs.co.kr)는 appradio 공유 API가 아니라 자체 EUC-KR 정적
@@ -473,7 +443,7 @@ def _expand_table_grid(table: Tag) -> list[dict[int, str]]:
     return grid
 
 
-def _cbs_youngdong(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
+def cbs_youngdong(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
     table = soup.select_one("table.ti")
     grid = _expand_table_grid(table) if table is not None else []
@@ -518,14 +488,8 @@ def _cbs_youngdong(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
 # SBS 지역 제휴사는 CBS와 달리 회사마다 완전히 다른 사이트를 쓴다. 실제로 접속해서
 # 날짜별 편성 페이지 구조를 확인한 곳만 추가한다. TBC(대구)는 sYear/sMonth/sDate
 # 쿼리로 날짜별 서버 렌더링 HTML을 제공한다.
-def _sbs_affiliate_tbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def sbs_affiliate_tbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     return _table(text, day, channel, selector="table.sch tr")
-
-
-_SBS_AFFILIATE_STATIONS: dict[str, tuple[str, str]] = {
-    # station: (channel_id, base_url)
-    "daegu": ("sbs.powerfm.daegu", "https://tbc.co.kr/schedule/"),
-}
 
 
 def _normalize_wrapping_times(
@@ -562,7 +526,7 @@ def _normalize_wrapping_times(
 # 편성표를 전부 담아 보내고 channel 파라미터는 어느 탭을 펼쳐 보일지에만 쓰인다. 응답
 # 본문에 날짜 문자열이 없어 _require_date로 되짚어 검증할 수 없지만, 서로 다른 날짜를
 # 요청했을 때 실제로 다른 편성이 오는 것은 직접 확인했다.
-def _knn_busan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def knn_busan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     container_id = "fm1-schedule" if channel == "sbs.powerfm.busan" else "fm2-schedule"
     soup = BeautifulSoup(text, "html.parser")
     container = soup.find(id=container_id)
@@ -584,12 +548,9 @@ def _knn_busan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
-_KNN_BUSAN_CHANNELS = ("sbs.powerfm.busan", "sbs.lovefm.busan")
-
-
 # TJB(대전)는 날짜별 페이지(/sub0502/pairing/radio/date/YYYY-MM-DD)를 서버 렌더링해서
 # 준다. 자정 전후 표기가 뒤섞여 있어(23:30 -> 00:00 -> 25:00 -> 02:00) 정규화가 필요하다.
-def _tjb_daejeon(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def tjb_daejeon(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
     entries: list[tuple[str, str]] = []
@@ -605,12 +566,9 @@ def _tjb_daejeon(text: str, day: date, channel: str) -> dict[str, tuple[Schedule
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 
-_TJB_DAEJEON_CHANNEL = "sbs.powerfm.daejeon"
-
-
 # ubc(울산)는 /api/broadcast/schedule/?type=RADIO&date=YYYYMMDD로 깔끔한 JSON을
 # 준다. 항목마다 start_time/end_time이 명시돼 있어 자정-넘김 정규화가 필요 없다.
-def _ubc_ulsan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def ubc_ulsan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     payload = json.loads(text)
     if payload.get("date") != day.isoformat():
         raise ValueError("official schedule date does not match requested date")
@@ -618,14 +576,11 @@ def _ubc_ulsan(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
     return {channel: _rows(channel, day, items)}
 
 
-_UBC_ULSAN_CHANNEL = "sbs.powerfm.ulsan"
-
-
 # CJB(청주)는 /base/php/onair_ajax.php?mod=radio&moveDate=YYYY-MM-DD로 깔끔한 JSON을
 # 준다. sch_start_time/sch_end_time이 자정-넘김도 24를 더한 값("2600" 등)으로 이미
 # 정규화돼 있어 추가 정규화가 필요 없다. 서버가 오늘 날짜까지만 값을 채워주고 내일은
 # 항상 빈 배열을 돌려준다(사이트 자체가 maxDate를 오늘로 고정).
-def _cjb_cheongju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def cjb_cheongju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     payload = json.loads(text)
     items: list[tuple[str, str, str | None]] = []
     for raw in payload:
@@ -636,13 +591,10 @@ def _cjb_cheongju(text: str, day: date, channel: str) -> dict[str, tuple[Schedul
     return {channel: _rows(channel, day, items)}
 
 
-_CJB_CHEONGJU_CHANNEL = "sbs.powerfm.cheongju"
-
-
 # JIBS(제주)는 날짜별 URL(timetableMain?search_date=...)이 있지만 실제로는 요청한
 # 날짜와 무관하게 항상 같은 편성을 돌려준다(직접 여러 날짜로 확인). 그래서 진짜
 # 날짜별 데이터가 아니라 고정 템플릿으로 취급해 confidence를 낮춘다.
-def _jibs_jeju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+def jibs_jeju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
     tbody = soup.select_one("table#DataTables_Table_0 tbody#TBODY_LIST")
     entries: list[tuple[str, str]] = []
@@ -663,9 +615,6 @@ def _jibs_jeju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRo
             channel, day, _normalize_wrapping_times(entries), confidence=_STATIC_TEMPLATE_CONFIDENCE
         )
     }
-
-
-_JIBS_JEJU_CHANNEL = "sbs.powerfm.jeju"
 
 
 # GGN(글로벌광주방송)는 요일 tab(day=1 월 ~ 7 일)만 있고 날짜별 편성은 아니다.
@@ -722,29 +671,6 @@ _CHANNELS = {
     "befm": ("befm.main.main",),
     "arirang": ("arirang.main.main",),
     "febc": tuple(channel for channel, _ in _FEBC_REGIONS.values()),
-    "regional-mbc": tuple(
-        channel
-        for sfm_channel, fm4u_channel, _ in _MBC_REGIONAL_STATIONS.values()
-        for channel in (sfm_channel, fm4u_channel)
-    )
-    + tuple(
-        channel
-        for sfm_channel, fm4u_channel, _, _ in _MBC_SHARED_CMS_STATIONS.values()
-        for channel in (sfm_channel, fm4u_channel)
-    )
-    + tuple(channel for channel, _ in _WONJU_MBC_STATIONS.values()),
-    "regional-cbs": (
-        *(
-            channel
-            for sfm_channel, mfm_channel, _ in _CBS_REGIONAL_STATIONS.values()
-            for channel in (sfm_channel, mfm_channel)
-            if channel is not None
-        ),
-        _YOUNGDONG_CBS_CHANNEL,
-    ),
-    "regional-sbs": tuple(channel for channel, _ in _SBS_AFFILIATE_STATIONS.values())
-    + _KNN_BUSAN_CHANNELS
-    + (_TJB_DAEJEON_CHANNEL, _UBC_ULSAN_CHANNEL, _CJB_CHEONGJU_CHANNEL, _JIBS_JEJU_CHANNEL),
     "ggn": (_GGN_CHANNEL,),
 }
 
@@ -869,15 +795,9 @@ class AdditionalStationAdapter:
                     if attempt == 2:
                         raise
                     await asyncio.sleep(1.0 * (2**attempt))
-        elif source_id in {"regional-mbc", "regional-cbs", "regional-sbs"}:
-            response = await client.get(endpoint)
         else:
             raise ValueError(f"unsupported additional source: {source_id}")
         response.raise_for_status()
-        if "yd.local.cbs.co.kr" in endpoint:
-            # 강원영동CBS 페이지는 Content-Type에 charset 정보가 없고 실제로는
-            # EUC-KR로 응답한다(자동 감지에 맡기면 깨진다).
-            response.encoding = "euc-kr"
         return response.text
 
     async def _collect_with(self, client: Any, window: CollectionWindow) -> AdapterResult:
@@ -905,105 +825,12 @@ class AdditionalStationAdapter:
                 for channel, url in _FEBC_REGIONS.values():
                     text = await self._request(client, day, url=url)
                     collected[channel].extend(_febc(text, day, channel)[channel])
-            elif self.source.source_id == "regional-mbc":
-                weekday = (day.weekday() + 1) % 7
-                for sfm_channel, fm4u_channel, base_url in _MBC_REGIONAL_STATIONS.values():
-                    for channel, band in ((sfm_channel, "am"), (fm4u_channel, "fm")):
-                        url = f"{base_url}?g={band}&d={weekday}&a=g"
-                        text = await self._request(client, day, url=url)
-                        collected[channel].extend(_mbc_regional_weekly(text, day, channel)[channel])
-                for sfm_channel, fm4u_channel, domain, path in _MBC_SHARED_CMS_STATIONS.values():
-                    for channel, band in ((sfm_channel, "FM"), (fm4u_channel, "FM4U")):
-                        url = f"https://{domain}/{path}/{band}/{day.isoformat()}"
-                        text = await self._request(client, day, url=url)
-                        try:
-                            collected[channel].extend(_mbc_shared_cms(text, day, channel)[channel])
-                        except ValueError as error:
-                            if "no rows" not in str(error):
-                                raise
-                for channel, path in _WONJU_MBC_STATIONS.values():
-                    url = f"https://www.wjmbc.co.kr/radio/{path}"
-                    text = await self._request(client, day, url=url)
-                    collected[channel].extend(_wonju_mbc(text, day, channel)[channel])
-            elif self.source.source_id == "regional-cbs":
-                for sfm_channel, mfm_channel, station in _CBS_REGIONAL_STATIONS.values():
-                    for channel, ch_param in ((sfm_channel, 1), (mfm_channel, 0)):
-                        if channel is None:
-                            continue
-                        url = (
-                            "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"
-                            f"?station={station}&ch={ch_param}&fetchDate={day.isoformat()}"
-                        )
-                        text = await self._request(client, day, url=url)
-                        collected[channel].extend(_cbs_regional(text, day, channel)[channel])
-                text = await self._request(
-                    client, day, url="http://yd.local.cbs.co.kr/radio/timetable.asp"
-                )
-                collected[_YOUNGDONG_CBS_CHANNEL].extend(
-                    _cbs_youngdong(text, day)[_YOUNGDONG_CBS_CHANNEL]
-                )
-            elif self.source.source_id == "regional-sbs":
-                for channel, base_url in _SBS_AFFILIATE_STATIONS.values():
-                    url = (
-                        f"{base_url}?mid=7_181&sYear={day.strftime('%Y')}"
-                        f"&sMonth={day.strftime('%m')}&sDate={day.strftime('%d')}"
-                    )
-                    text = await self._request(client, day, url=url)
-                    try:
-                        collected[channel].extend(_sbs_affiliate_tbc(text, day, channel)[channel])
-                    except ValueError as error:
-                        if "no rows" not in str(error):
-                            raise
-                knn_url = (
-                    f"https://www.knn.co.kr/schedule/schedule.do?date={day.strftime('%Y%m%d')}"
-                    "&channel=rd1"
-                )
-                knn_text = await self._request(client, day, url=knn_url)
-                for channel in _KNN_BUSAN_CHANNELS:
-                    collected[channel].extend(_knn_busan(knn_text, day, channel)[channel])
-                tjb_url = f"https://www.tjb.co.kr/sub0502/pairing/radio/date/{day.isoformat()}"
-                tjb_text = await self._request(client, day, url=tjb_url)
-                collected[_TJB_DAEJEON_CHANNEL].extend(
-                    _tjb_daejeon(tjb_text, day, _TJB_DAEJEON_CHANNEL)[_TJB_DAEJEON_CHANNEL]
-                )
-                ubc_url = (
-                    "https://www.ubc.co.kr/api/broadcast/schedule/"
-                    f"?type=RADIO&date={day.strftime('%Y%m%d')}"
-                )
-                ubc_text = await self._request(client, day, url=ubc_url)
-                try:
-                    collected[_UBC_ULSAN_CHANNEL].extend(
-                        _ubc_ulsan(ubc_text, day, _UBC_ULSAN_CHANNEL)[_UBC_ULSAN_CHANNEL]
-                    )
-                except ValueError as error:
-                    if "no rows" not in str(error):
-                        raise
-                cjb_url = (
-                    "https://www.cjb.co.kr/base/php/onair_ajax.php"
-                    f"?mod=radio&moveDate={day.isoformat()}"
-                )
-                cjb_text = await self._request(client, day, url=cjb_url)
-                try:
-                    collected[_CJB_CHEONGJU_CHANNEL].extend(
-                        _cjb_cheongju(cjb_text, day, _CJB_CHEONGJU_CHANNEL)[_CJB_CHEONGJU_CHANNEL]
-                    )
-                except ValueError as error:
-                    if "no rows" not in str(error):
-                        raise
-                jibs_url = (
-                    "https://www.jibs.co.kr/timetable/timetableMain"
-                    f"?search_date={day.isoformat()}&lch_id=2"
-                )
-                jibs_text = await self._request(client, day, url=jibs_url)
-                collected[_JIBS_JEJU_CHANNEL].extend(
-                    _jibs_jeju(jibs_text, day, _JIBS_JEJU_CHANNEL)[_JIBS_JEJU_CHANNEL]
-                )
             elif self.source.source_id == "ggn":
                 weekday = day.weekday() + 1
                 url = f"https://www.ggn.or.kr/sub/content.do?cno=14&menuNo=94&day={weekday}"
                 text = await self._request(client, day, url=url)
                 collected[_GGN_CHANNEL].extend(
-                    _mbc_regional_weekly(text, day, _GGN_CHANNEL)[_GGN_CHANNEL]
+                    mbc_regional_weekly(text, day, _GGN_CHANNEL)[_GGN_CHANNEL]
                 )
             elif self.source.source_id == "cpbc":
                 text = await self._request(client, day)

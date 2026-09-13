@@ -1,7 +1,7 @@
-"""지역·독립 방송 mapping의 엄격한 데이터 계약."""
+"""지역·독립 방송 mapping의 엄격한 데이터 계약과 채널별 수집 엔진."""
 
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal, Protocol, Self
@@ -9,6 +9,8 @@ from typing import Literal, Protocol, Self
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from radio_epg.adapters import additional
+from radio_epg.adapters.html_schedule import ScheduleRow
 from radio_epg.catalog import RadioCatalog
 from radio_epg.config import SourceConfig
 from radio_epg.models import AdapterResult
@@ -30,12 +32,12 @@ class _StrictModel(BaseModel):
 
 
 class RegionalChannelMapping(_StrictModel):
-    """하나의 canonical identity에 대한 조사 결과."""
+    """하나의 canonical identity에 대한 조사 결과이자 수집 설정 그 자체."""
 
     channel_id: str = Field(min_length=1)
     family: str = Field(min_length=1)
     status: RegionalStatus
-    source_url: str = Field(pattern=r"^https://")
+    source_url: str = Field(pattern=r"^https?://")
     parser: str = Field(min_length=1)
     reason: str | None = None
     last_investigated: date
@@ -50,7 +52,7 @@ class RegionalChannelMapping(_StrictModel):
 
 
 class RegionalMapping(_StrictModel):
-    """Task 11이 소유하는 모든 identity 목록."""
+    """지역 방송망이 소유하는 모든 identity 목록."""
 
     schema_version: Literal[1]
     channels: tuple[RegionalChannelMapping, ...] = Field(min_length=1)
@@ -82,7 +84,7 @@ def validate_regional_catalog(mapping: RegionalMapping, catalog: RadioCatalog) -
 def channels_for_family(
     mapping: RegionalMapping, family: str
 ) -> tuple[RegionalChannelMapping, ...]:
-    """mapping 순서를 유지하며 한 shared-CMS family를 선택한다."""
+    """mapping 순서를 유지하며 한 방송사(family)를 선택한다."""
     return tuple(item for item in mapping.channels if item.family == family)
 
 
@@ -94,8 +96,144 @@ class _Client(Protocol):
     async def get(self, url: str) -> httpx.Response: ...
 
 
+def _format_url(item: RegionalChannelMapping, day: date) -> str:
+    """채널마다 필요한 자리표시자가 달라 한 번에 전부 채워 넣는다."""
+    return item.source_url.format(
+        date=day.isoformat(),
+        date_compact=day.strftime("%Y%m%d"),
+        weekday=(day.weekday() + 1) % 7,
+        year=day.strftime("%Y"),
+        month=day.strftime("%m"),
+        day=day.strftime("%d"),
+    )
+
+
+async def _mbc_weekly_template(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.mbc_regional_weekly(text, day, item.channel_id)[item.channel_id]
+
+
+async def _mbc_shared_cms(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.mbc_shared_cms(text, day, item.channel_id)[item.channel_id]
+
+
+async def _mbc_wonju(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(item.source_url)).text
+    return additional.wonju_mbc(text, day, item.channel_id)[item.channel_id]
+
+
+async def _mbc_pohang(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    url = _format_url(item, day)
+    response = await client.get(url)
+    response.raise_for_status()
+    path = url.rsplit("/", 1)[-1].split("?", 1)[0]
+    return additional.phmbc(response.text, day, item.channel_id, path)[item.channel_id]
+
+
+async def _cbs_appradio(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.cbs_regional(text, day, item.channel_id)[item.channel_id]
+
+
+async def _cbs_youngdong(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    response = await client.get(item.source_url)
+    # 강원영동CBS 페이지는 Content-Type에 charset 정보가 없고 실제로는 EUC-KR로
+    # 응답한다(자동 감지에 맡기면 깨진다).
+    response.encoding = "euc-kr"
+    return additional.cbs_youngdong(response.text, day)[item.channel_id]
+
+
+async def _sbs_tbc(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.sbs_affiliate_tbc(text, day, item.channel_id)[item.channel_id]
+
+
+async def _sbs_knn(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    # KNN(부산)은 channel= 파라미터 값과 무관하게 파워FM/러브FM 응답이 한 번에
+    # 함께 온다(어느 탭을 펼쳐 보일지에만 쓰임). 그래서 두 채널이 요청마다 같은
+    # 응답을 한 번씩 다시 받는다(중복 호출 1회, 데이터 오류는 아니다).
+    text = (await client.get(_format_url(item, day))).text
+    return additional.knn_busan(text, day, item.channel_id)[item.channel_id]
+
+
+async def _sbs_tjb(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.tjb_daejeon(text, day, item.channel_id)[item.channel_id]
+
+
+async def _sbs_ubc(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.ubc_ulsan(text, day, item.channel_id)[item.channel_id]
+
+
+async def _sbs_cjb(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.cjb_cheongju(text, day, item.channel_id)[item.channel_id]
+
+
+async def _sbs_jibs(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.jibs_jeju(text, day, item.channel_id)[item.channel_id]
+
+
+# RegionalChannelMapping.parser 값이 곧 실제 수집 방식을 고르는 키다 - 새 지역
+# 채널을 추가할 때는 이 값이 가리키는 fetch/parse 로직이 여기 있어야 한다.
+_PARSERS: dict[
+    str, Callable[[_Client, date, RegionalChannelMapping], Awaitable[tuple[ScheduleRow, ...]]]
+] = {
+    "mbc-weekly-template": _mbc_weekly_template,
+    "mbc-shared-cms": _mbc_shared_cms,
+    "mbc-wonju": _mbc_wonju,
+    "mbc-pohang": _mbc_pohang,
+    "cbs-appradio": _cbs_appradio,
+    "cbs-youngdong": _cbs_youngdong,
+    "sbs-tbc": _sbs_tbc,
+    "sbs-knn": _sbs_knn,
+    "sbs-tjb": _sbs_tjb,
+    "sbs-ubc": _sbs_ubc,
+    "sbs-cjb": _sbs_cjb,
+    "sbs-jibs": _sbs_jibs,
+}
+
+# phmbc.co.kr가 중간 인증서를 보내지 않아 기본 TLS 체인 검증이 실패한다(브라우저는
+# 이미 아는 중간 인증서로 넘어가지만 httpx는 그렇지 않음). 이 source_id만 검증을
+# 끄고 브라우저 User-Agent를 쓴다 - 같은 엔진을 쓰는 다른 지역 방송사 소스는
+# 영향받지 않는다.
+_INSECURE_SOURCE_IDS = {"mbc-pohang"}
+
+# wjmbc.co.kr는 PoliteHttpClient가 보내는 식별용 User-Agent("radio-epg/0.1 ...")를
+# 406으로 막는다(브라우저 User-Agent는 통과). TLS는 정상이라 검증까지 끌 필요는
+# 없고, 이 source_id만 브라우저 User-Agent를 쓰는 별도 클라이언트로 뺀다.
+_BROWSER_UA_SOURCE_IDS = {"mbc-wonju"}
+
+
 class ConfiguredRegionalAdapter:
-    """공유 HTML 중간 형식을 mapping 설정으로 수집하는 지역 adapter."""
+    """지역 방송망 채널 목록(regional.json)을 순회하며 채널별 parser로 수집한다."""
 
     family = ""
     schedule_policy = SchedulePolicy(allow_adjacent=True)
@@ -123,6 +261,21 @@ class ConfiguredRegionalAdapter:
             raise TypeError("regional adapter requires CollectionWindow")
         if self._client is not None:
             return await self._collect_with(self._client, window)
+        if self.source.source_id in _INSECURE_SOURCE_IDS:
+            async with httpx.AsyncClient(
+                follow_redirects=True,
+                timeout=30,
+                verify=False,
+                headers={"User-Agent": additional.BROWSER_USER_AGENT},
+            ) as client:
+                return await self._collect_with(client, window)
+        if self.source.source_id in _BROWSER_UA_SOURCE_IDS:
+            async with httpx.AsyncClient(
+                follow_redirects=True,
+                timeout=30,
+                headers={"User-Agent": additional.BROWSER_USER_AGENT},
+            ) as client:
+                return await self._collect_with(client, window)
         async with PoliteHttpClient() as client:
             return await self._collect_with(client, window)
 
@@ -131,9 +284,7 @@ class ConfiguredRegionalAdapter:
         from radio_epg.adapters.html_schedule import (
             ChannelMapping,
             ChannelMappingFile,
-            ScheduleRow,
             normalize_rows,
-            parse_html_schedule,
         )
 
         if not isinstance(window, CollectionWindow):
@@ -146,13 +297,12 @@ class ConfiguredRegionalAdapter:
         current = window.start
         while current <= window.end:
             for item in enabled:
-                url = item.source_url.format(
-                    date=current.isoformat(), date_compact=current.strftime("%Y%m%d")
-                )
-                parsed = parse_html_schedule((await client.get(url)).text, expected_date=current)
-                if set(parsed) != {item.channel_id}:
-                    raise RegionalMappingError("regional response channel does not match mapping")
-                rows[item.channel_id].extend(parsed[item.channel_id])
+                parser = _PARSERS[item.parser]
+                try:
+                    rows[item.channel_id].extend(await parser(client, current, item))
+                except ValueError as error:
+                    if "no rows" not in str(error):
+                        raise
             current += timedelta(days=1)
         normalized_mapping = ChannelMappingFile(
             channels=tuple(

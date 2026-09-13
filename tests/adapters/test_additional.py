@@ -10,21 +10,22 @@ from radio_epg.adapters.additional import (
     _arirang,
     _bbs,
     _befm,
-    _cbs_regional,
-    _cbs_youngdong,
-    _cjb_cheongju,
     _cpbc_regional,
     _febc,
-    _jibs_jeju,
-    _knn_busan,
-    _mbc_regional_weekly,
-    _mbc_shared_cms,
-    _sbs_affiliate_tbc,
-    _tjb_daejeon,
-    _ubc_ulsan,
     _wbs_regional,
-    _wonju_mbc,
+    cbs_regional,
+    cbs_youngdong,
+    cjb_cheongju,
+    jibs_jeju,
+    knn_busan,
+    mbc_regional_weekly,
+    mbc_shared_cms,
     parse_station_schedule,
+    phmbc,
+    sbs_affiliate_tbc,
+    tjb_daejeon,
+    ubc_ulsan,
+    wonju_mbc,
 )
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.config import SourceConfig
@@ -151,59 +152,17 @@ def test_febc_collects_every_region_as_one_source() -> None:
 def test_mbc_regional_weekly_parser_marks_rows_with_reduced_confidence(
     fixture_name: str, channel: str, first_title: str
 ) -> None:
-    rows = _mbc_regional_weekly((FIXTURES / f"{fixture_name}.html").read_text(), DAY, channel)
+    rows = mbc_regional_weekly((FIXTURES / f"{fixture_name}.html").read_text(), DAY, channel)
 
     assert set(rows) == {channel}
     assert rows[channel][0].title == first_title
     assert all(row.confidence == pytest.approx(0.7) for row in rows[channel])
 
 
-def test_regional_mbc_collects_both_bands_of_a_station_as_one_source() -> None:
-    am_fixture = (FIXTURES / "mbc-gangneung-am.html").read_text()
-    fm_fixture = (FIXTURES / "mbc-gangneung-fm.html").read_text()
-    shared_cms_fixture = (FIXTURES / "mbc-daegu.html").read_text()
-    wonju_fixture = (FIXTURES / "wonju-mbc-fm4u.html").read_text()
-
-    class Client:
-        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            if "g=am" in url:
-                fixture = am_fixture
-            elif "g=fm" in url:
-                fixture = fm_fixture
-            elif "wjmbc.co.kr" in url:
-                fixture = wonju_fixture
-            else:
-                fixture = shared_cms_fixture
-            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
-
-    adapter = AdditionalStationAdapter(
-        _source("regional-mbc", "https://www.mbceg.co.kr/schedule/cp_depart"), client=Client()
-    )
-    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
-
-    channel_ids = {row.channel_id for row in result.schedules}
-    assert channel_ids == {
-        "mbc.sfm.gangneung",
-        "mbc.fm4u.gangneung",
-        "mbc.sfm.daegu",
-        "mbc.fm4u.daegu",
-        "mbc.sfm.jeju",
-        "mbc.fm4u.jeju",
-        "mbc.sfm.yeosu",
-        "mbc.fm4u.yeosu",
-        "mbc.sfm.mokpo",
-        "mbc.fm4u.mokpo",
-        "mbc.sfm.gwangju",
-        "mbc.fm4u.gwangju",
-        "mbc.sfm.wonju",
-        "mbc.fm4u.wonju",
-    }
-
-
 def test_mbc_shared_cms_parser_reads_the_date_specific_schedule_page() -> None:
     text = (FIXTURES / "mbc-daegu.html").read_text()
 
-    rows = _mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
+    rows = mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
 
     assert set(rows) == {"mbc.sfm.daegu"}
     assert rows["mbc.sfm.daegu"][0].title == "오늘의 대구문화방송"
@@ -213,17 +172,43 @@ def test_mbc_shared_cms_parser_reads_the_date_specific_schedule_page() -> None:
 def test_mbc_shared_cms_normalizes_times_that_wrap_past_midnight() -> None:
     text = (FIXTURES / "mbc-daegu-midnight-wrap.html").read_text()
 
-    rows = _mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
+    rows = mbc_shared_cms(text, REGIONAL_DAY, "mbc.sfm.daegu")
 
     starts = [row.start for row in rows["mbc.sfm.daegu"]]
     assert starts == ["23:05", "24:00", "25:00"]
     assert rows["mbc.sfm.daegu"][-1].end == "30:00"
 
 
+def test_phmbc_parser_reads_the_date_specific_schedule_page() -> None:
+    text = (FIXTURES / "mbc-pohang-am.html").read_text()
+
+    rows = phmbc(text, date(2026, 9, 12), "mbc.sfm.pohang", "scheduler_fm")
+
+    assert set(rows) == {"mbc.sfm.pohang"}
+    assert rows["mbc.sfm.pohang"][0].title == "오늘의 문화방송"
+    assert rows["mbc.sfm.pohang"][0].start == "05:00"
+
+
+def test_phmbc_parser_normalizes_times_that_wrap_past_midnight() -> None:
+    text = (FIXTURES / "mbc-pohang-fm.html").read_text()
+
+    rows = phmbc(text, date(2026, 9, 13), "mbc.fm4u.pohang", "scheduler_fm4u")
+
+    starts = [row.start for row in rows["mbc.fm4u.pohang"]]
+    assert starts[-5:] == ["22:00", "24:00", "25:00", "27:00", "28:00"]
+
+
+def test_phmbc_parser_rejects_a_not_yet_published_date() -> None:
+    text = (FIXTURES / "mbc-pohang-am.html").read_text()
+
+    with pytest.raises(ValueError, match="no rows"):
+        phmbc(text, date(2026, 9, 13), "mbc.sfm.pohang", "scheduler_fm")
+
+
 def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
     text = (FIXTURES / "cbs-regional-busan.json").read_text()
 
-    rows = _cbs_regional(text, REGIONAL_DAY, "cbs.sfm.busan")
+    rows = cbs_regional(text, REGIONAL_DAY, "cbs.sfm.busan")
 
     assert set(rows) == {"cbs.sfm.busan"}
     assert rows["cbs.sfm.busan"][0].title == "최정원의 당신을 향한 노래 (재)"
@@ -233,40 +218,13 @@ def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
 def test_cbs_mfm_gwangju_parser_reads_the_station_specific_response() -> None:
     text = (FIXTURES / "cbs-regional-gwangju-mfm.json").read_text()
 
-    rows = _cbs_regional(text, REGIONAL_DAY, "cbs.mfm.gwangju")
+    rows = cbs_regional(text, REGIONAL_DAY, "cbs.mfm.gwangju")
 
     assert set(rows) == {"cbs.mfm.gwangju"}
     # 전남/광주CBS에서만 편성되는 새벽 찬양 프로그램으로 station=3이 광주 음악FM임을
     # 웹 검색으로 교차 확인했다(부산/서울 등 다른 station은 이 시간대에 다른
     # 프로그램을 내보낸다).
     assert rows["cbs.mfm.gwangju"][2].title == "찬양하라 내영혼아"
-
-
-def test_regional_cbs_collects_every_configured_station_as_one_source() -> None:
-    fixture = (FIXTURES / "cbs-regional-busan.json").read_text()
-    youngdong_fixture = (FIXTURES / "cbs-youngdong.html").read_text()
-
-    class Client:
-        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            body = youngdong_fixture if "yd.local.cbs.co.kr" in url else fixture
-            return httpx.Response(200, text=body, request=httpx.Request("GET", url))
-
-    adapter = AdditionalStationAdapter(
-        _source("regional-cbs", "https://appradio.cbs.co.kr/51/GetInfo_ProgSchedule.asp"),
-        client=Client(),
-    )
-    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
-
-    channel_ids = {row.channel_id for row in result.schedules}
-    assert "cbs.sfm.busan" in channel_ids
-    assert "cbs.mfm.busan" in channel_ids
-    assert "cbs.sfm.gwangju" in channel_ids
-    assert "cbs.mfm.gwangju" in channel_ids
-    assert "cbs.sfm.pohang" in channel_ids
-    assert "cbs.sfm.ulsan" in channel_ids
-    assert "cbs.sfm.daegu" in channel_ids
-    assert "cbs.sfm.chuncheon" in channel_ids
-    assert "cbs.sfm.youngdong" in channel_ids
 
 
 @pytest.mark.parametrize(
@@ -281,7 +239,7 @@ def test_cbs_youngdong_parser_picks_the_column_matching_the_requested_weekday(
 ) -> None:
     text = (FIXTURES / "cbs-youngdong.html").read_text()
 
-    rows = _cbs_youngdong(text, day)["cbs.sfm.youngdong"]
+    rows = cbs_youngdong(text, day)["cbs.sfm.youngdong"]
 
     assert rows[index].title == expected_title
     assert all(row.confidence == pytest.approx(0.7) for row in rows)
@@ -290,7 +248,7 @@ def test_cbs_youngdong_parser_picks_the_column_matching_the_requested_weekday(
 def test_cbs_youngdong_parser_uses_the_finer_grained_sunday_time_column() -> None:
     text = (FIXTURES / "cbs-youngdong.html").read_text()
 
-    rows = _cbs_youngdong(text, date(2026, 9, 13))["cbs.sfm.youngdong"]
+    rows = cbs_youngdong(text, date(2026, 9, 13))["cbs.sfm.youngdong"]
 
     # 일요일은 "주일시간" 열이 평일/토요일보다 시간을 더 잘게 쪼갠다(예: 05:30~06:00
     # 한 슬롯이 평일엔 "아침강단" 하나지만 일요일엔 06:00~06:30/06:30~07:00로 갈라져
@@ -303,7 +261,7 @@ def test_cbs_youngdong_parser_uses_the_finer_grained_sunday_time_column() -> Non
 def test_cbs_youngdong_parser_normalizes_times_that_wrap_past_midnight() -> None:
     text = (FIXTURES / "cbs-youngdong.html").read_text()
 
-    rows = _cbs_youngdong(text, date(2026, 9, 7))["cbs.sfm.youngdong"]
+    rows = cbs_youngdong(text, date(2026, 9, 7))["cbs.sfm.youngdong"]
 
     starts = [row.start for row in rows]
     assert starts[0] == "04:00"
@@ -348,57 +306,16 @@ def test_cpbc_collects_main_and_regional_stations_as_one_source() -> None:
 def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> None:
     text = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
 
-    rows = _sbs_affiliate_tbc(text, REGIONAL_DAY, "sbs.powerfm.daegu")
+    rows = sbs_affiliate_tbc(text, REGIONAL_DAY, "sbs.powerfm.daegu")
 
     assert set(rows) == {"sbs.powerfm.daegu"}
     assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
 
 
-def test_regional_sbs_collects_tbc_knn_tjb_ubc_cjb_and_jibs() -> None:
-    tbc_fixture = (FIXTURES / "sbs-affiliate-tbc-daegu.html").read_text()
-    knn_fixture = (FIXTURES / "sbs-knn-busan.html").read_text()
-    tjb_fixture = (FIXTURES / "sbs-tjb-daejeon.html").read_text()
-    ubc_fixture = (FIXTURES / "sbs-ubc-ulsan.json").read_text()
-    cjb_fixture = (FIXTURES / "cjb-cheongju.json").read_text()
-    jibs_fixture = (FIXTURES / "jibs-jeju.html").read_text()
-
-    class Client:
-        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
-            if "knn.co.kr" in url:
-                body = knn_fixture
-            elif "tjb.co.kr" in url:
-                body = tjb_fixture
-            elif "ubc.co.kr" in url:
-                body = ubc_fixture
-            elif "cjb.co.kr" in url:
-                body = cjb_fixture
-            elif "jibs.co.kr" in url:
-                body = jibs_fixture
-            else:
-                body = tbc_fixture
-            return httpx.Response(200, text=body, request=httpx.Request("GET", url))
-
-    adapter = AdditionalStationAdapter(
-        _source("regional-sbs", "https://tbc.co.kr/schedule/"), client=Client()
-    )
-    result = asyncio.run(adapter.collect(CollectionWindow(REGIONAL_DAY, REGIONAL_DAY)))
-
-    channel_ids = {row.channel_id for row in result.schedules}
-    assert channel_ids == {
-        "sbs.powerfm.daegu",
-        "sbs.powerfm.busan",
-        "sbs.lovefm.busan",
-        "sbs.powerfm.daejeon",
-        "sbs.powerfm.ulsan",
-        "sbs.powerfm.cheongju",
-        "sbs.powerfm.jeju",
-    }
-
-
 def test_ubc_ulsan_parser_uses_explicit_start_and_end_times() -> None:
     text = (FIXTURES / "sbs-ubc-ulsan.json").read_text()
 
-    rows = _ubc_ulsan(text, REGIONAL_DAY, "sbs.powerfm.ulsan")
+    rows = ubc_ulsan(text, REGIONAL_DAY, "sbs.powerfm.ulsan")
 
     assert set(rows) == {"sbs.powerfm.ulsan"}
     assert rows["sbs.powerfm.ulsan"][0].title == "뮤직하이"
@@ -409,7 +326,7 @@ def test_ubc_ulsan_parser_uses_explicit_start_and_end_times() -> None:
 def test_tjb_daejeon_parser_normalizes_the_midnight_crossing() -> None:
     text = (FIXTURES / "sbs-tjb-daejeon.html").read_text()
 
-    rows = _tjb_daejeon(text, REGIONAL_DAY, "sbs.powerfm.daejeon")
+    rows = tjb_daejeon(text, REGIONAL_DAY, "sbs.powerfm.daejeon")
 
     assert set(rows) == {"sbs.powerfm.daejeon"}
     starts = [row.start for row in rows["sbs.powerfm.daejeon"]]
@@ -428,7 +345,7 @@ def test_knn_busan_parser_reads_the_matching_channel_section(
 ) -> None:
     text = (FIXTURES / "sbs-knn-busan.html").read_text()
 
-    rows = _knn_busan(text, REGIONAL_DAY, channel)
+    rows = knn_busan(text, REGIONAL_DAY, channel)
 
     assert set(rows) == {channel}
     assert rows[channel][0].title == first_title
@@ -437,7 +354,7 @@ def test_knn_busan_parser_reads_the_matching_channel_section(
 def test_cjb_cheongju_parser_uses_explicit_start_and_end_times() -> None:
     text = (FIXTURES / "cjb-cheongju.json").read_text()
 
-    rows = _cjb_cheongju(text, REGIONAL_DAY, "sbs.powerfm.cheongju")
+    rows = cjb_cheongju(text, REGIONAL_DAY, "sbs.powerfm.cheongju")
 
     assert set(rows) == {"sbs.powerfm.cheongju"}
     starts = [row.start for row in rows["sbs.powerfm.cheongju"]]
@@ -448,8 +365,8 @@ def test_cjb_cheongju_parser_uses_explicit_start_and_end_times() -> None:
 def test_wonju_mbc_parser_picks_the_column_matching_the_requested_weekday() -> None:
     text = (FIXTURES / "wonju-mbc-fm4u.html").read_text()
 
-    weekday_rows = _wonju_mbc(text, date(2026, 9, 7), "mbc.fm4u.wonju")
-    weekend_rows = _wonju_mbc(text, date(2026, 9, 12), "mbc.fm4u.wonju")
+    weekday_rows = wonju_mbc(text, date(2026, 9, 7), "mbc.fm4u.wonju")
+    weekend_rows = wonju_mbc(text, date(2026, 9, 12), "mbc.fm4u.wonju")
 
     assert weekday_rows["mbc.fm4u.wonju"][1].title == "친한친구 (1,2부)"
     assert weekend_rows["mbc.fm4u.wonju"][1].title == "스포왕 고영배 (1,2부)"
@@ -466,7 +383,7 @@ def test_wonju_mbc_parser_picks_the_column_matching_the_requested_weekday() -> N
 def test_jibs_jeju_parser_strips_badges_and_normalizes_midnight_wrap() -> None:
     text = (FIXTURES / "jibs-jeju.html").read_text()
 
-    rows = _jibs_jeju(text, REGIONAL_DAY, "sbs.powerfm.jeju")
+    rows = jibs_jeju(text, REGIONAL_DAY, "sbs.powerfm.jeju")
 
     assert set(rows) == {"sbs.powerfm.jeju"}
     starts = [row.start for row in rows["sbs.powerfm.jeju"]]
