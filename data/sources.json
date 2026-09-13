@@ -90,6 +90,15 @@
     "enabled": true
   },
   {
+    "source_id": "mbc-busan",
+    "name": "부산MBC 편성표 (주간 PDF, busanmbc.co.kr 중간 인증서 누락으로 TLS 검증 예외)",
+    "source_kind": "official",
+    "source_url": "https://busanmbc.co.kr/06_oar/oar05.asp",
+    "priority": 100,
+    "adapter": "mbc_busan",
+    "enabled": true
+  },
+  {
     "source_id": "cbs-regional",
     "name": "CBS 지역국 편성표 (부산·광주·전북·청주·대구·대전·포항·경남·제주·춘천·전남·울산 표준FM, 부산·광주 음악FM, 강원영동)",
     "source_kind": "official",

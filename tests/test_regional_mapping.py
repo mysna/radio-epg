@@ -6,7 +6,12 @@ import pytest
 
 from radio_epg.adapters.base import CollectionWindow
 from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
-from radio_epg.adapters.mbc_regional import MbcPohangAdapter, MbcRegionalAdapter, MbcWonjuAdapter
+from radio_epg.adapters.mbc_regional import (
+    MbcBusanAdapter,
+    MbcPohangAdapter,
+    MbcRegionalAdapter,
+    MbcWonjuAdapter,
+)
 from radio_epg.adapters.sbs_regional import KnnAdapter, TbcAdapter
 from radio_epg.config import SourceConfig
 from radio_epg.regional_mapping import _BROWSER_UA_SOURCE_IDS, _INSECURE_SOURCE_IDS
@@ -114,8 +119,44 @@ def test_mbc_pohang_is_a_separate_source_from_the_rest_of_regional_mbc() -> None
     assert channel_ids == {"mbc.sfm.pohang", "mbc.fm4u.pohang"}
 
 
-def test_mbc_pohang_is_the_only_source_with_tls_verification_disabled() -> None:
-    assert {"mbc-pohang"} == _INSECURE_SOURCE_IDS
+def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first() -> None:
+    sfm_page = (FIXTURES / "busan-mbc-sfm-page.html").read_text()
+    fm4u_page = (FIXTURES / "busan-mbc-fm4u-page.html").read_text()
+    sfm_pdf = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
+    fm4u_pdf = (FIXTURES / "busan-mbc-fm4u.pdf").read_bytes()
+    requested_urls: list[str] = []
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            requested_urls.append(url)
+            if url.endswith("oar05.asp"):
+                return httpx.Response(200, text=sfm_page, request=httpx.Request("GET", url))
+            if url.endswith("oar06.asp"):
+                return httpx.Response(200, text=fm4u_page, request=httpx.Request("GET", url))
+            if "sfm-test.pdf" in url:
+                return httpx.Response(200, content=sfm_pdf, request=httpx.Request("GET", url))
+            if "fm4u-test.pdf" in url:
+                return httpx.Response(200, content=fm4u_pdf, request=httpx.Request("GET", url))
+            raise AssertionError(f"unexpected url: {url}")
+
+    adapter = MbcBusanAdapter(
+        _source("mbc-busan", "mbc_busan", "https://busanmbc.co.kr/06_oar/oar05.asp"),
+        client=Client(),
+    )
+    from datetime import date
+
+    day = date(2026, 9, 14)
+    result = asyncio.run(adapter.collect(CollectionWindow(day, day)))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {"mbc.sfm.busan", "mbc.fm4u.busan"}
+    # 페이지를 먼저 읽어 그 안의 PDF 링크를 알아낸 뒤에야 실제 PDF를 받아야 한다.
+    assert any(url.endswith("oar05.asp") for url in requested_urls)
+    assert any("sfm-test.pdf" in url for url in requested_urls)
+
+
+def test_mbc_pohang_and_mbc_busan_are_the_only_sources_with_tls_verification_disabled() -> None:
+    assert {"mbc-pohang", "mbc-busan"} == _INSECURE_SOURCE_IDS
 
 
 def test_mbc_wonju_is_the_only_source_using_a_browser_user_agent() -> None:

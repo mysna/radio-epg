@@ -13,6 +13,8 @@ from radio_epg.adapters.additional import (
     _cpbc_regional,
     _febc,
     _wbs_regional,
+    busan_mbc_fm4u,
+    busan_mbc_sfm,
     cbs_regional,
     cbs_youngdong,
     cjb_cheongju,
@@ -203,6 +205,36 @@ def test_phmbc_parser_rejects_a_not_yet_published_date() -> None:
 
     with pytest.raises(ValueError, match="no rows"):
         phmbc(text, date(2026, 9, 13), "mbc.sfm.pohang", "scheduler_fm")
+
+
+def test_busan_mbc_sfm_parser_reads_the_weekday_column_from_the_weekly_pdf() -> None:
+    pdf_bytes = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
+
+    rows = busan_mbc_sfm(pdf_bytes, date(2026, 9, 14), "mbc.sfm.busan")
+
+    assert set(rows) == {"mbc.sfm.busan"}
+    assert rows["mbc.sfm.busan"][0].start == "05:05"
+    assert rows["mbc.sfm.busan"][0].title == "오늘의 부산문화방송 / 가요 1999"
+
+
+def test_busan_mbc_sfm_parser_normalizes_times_that_wrap_past_midnight() -> None:
+    pdf_bytes = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
+
+    rows = busan_mbc_sfm(pdf_bytes, date(2026, 9, 14), "mbc.sfm.busan")
+
+    assert rows["mbc.sfm.busan"][-1].start == "28:00"
+    assert rows["mbc.sfm.busan"][-1].end == "30:00"
+
+
+def test_busan_mbc_fm4u_parser_picks_the_day_group_matching_the_requested_weekday() -> None:
+    pdf_bytes = (FIXTURES / "busan-mbc-fm4u.pdf").read_bytes()
+
+    weekday_rows = busan_mbc_fm4u(pdf_bytes, date(2026, 9, 14), "mbc.fm4u.busan")
+    saturday_rows = busan_mbc_fm4u(pdf_bytes, date(2026, 9, 19), "mbc.fm4u.busan")
+
+    assert set(weekday_rows) == {"mbc.fm4u.busan"}
+    assert weekday_rows["mbc.fm4u.busan"][0].start == "05:05"
+    assert saturday_rows["mbc.fm4u.busan"][2].title == "굿모닝 FM 테이입니다"
 
 
 def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:

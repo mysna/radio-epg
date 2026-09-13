@@ -1,6 +1,7 @@
 """사용자가 확인한 공식 편성표 11종의 엄격한 parser."""
 
 import asyncio
+import io
 import json
 import re
 import ssl
@@ -9,6 +10,9 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pdfplumber
+import pdfplumber.page
+import pdfplumber.table
 from bs4 import BeautifulSoup, Tag
 
 from radio_epg.adapters.base import CollectionWindow
@@ -194,6 +198,195 @@ def phmbc(text: str, day: date, channel: str, path: str) -> dict[str, tuple[Sche
         time_node, title_node = row.select_one("td.time"), row.select_one("td.left")
         if time_node and title_node:
             entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+
+
+# 부산MBC는 편성표를 HTML이 아니라 주간 PDF로만 공개한다. PDF는 ruling line으로
+# 그려진 표라 pdfplumber의 find_tables()로 셀 좌표를 얻어 x좌표로 요일 칸을,
+# 시간 칸의 위치로 시간대 블록을 구분한다. 오전/오후 표시는 12시 경계에서만
+# 나오므로 _BusanMbcHourTracker가 마지막 상태를 이어받아 24시간제로 바꾼다.
+# 원 표는 1부/2부/3부/4부로 세분돼 있지만 이 구분을 재현할 만큼 신뢰도 있는
+# 시각 정보가 없어(사용자 확인 후) 한 시간대의 내용을 합쳐 하나의 항목으로 싣는다.
+class _BusanMbcHourTracker:
+    def __init__(self) -> None:
+        self.is_pm = False
+
+    def parse(self, text: str) -> tuple[int, str]:
+        parts = text.split("\n")
+        if len(parts) >= 2 and parts[0] in ("AM", "PM"):
+            self.is_pm = parts[0] == "PM"
+            hour = int(parts[1])
+            minute = parts[2] if len(parts) == 3 else "00"
+        else:
+            hour = int(parts[-1])
+            minute = "00"
+        hour24 = (12 if self.is_pm else 0) if hour == 12 else hour + 12 if self.is_pm else hour
+        return hour24, minute
+
+
+_BUSAN_MBC_SYMBOLS = re.compile(r"[★◆◇※▲◎●⊙n△]\s*\(?[RL]?\)?")
+_BUSAN_MBC_STRAY_DIGIT = re.compile(r"(^|\s)\d{1,2}(\s|$)")
+
+
+def _busan_mbc_clean_title(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("\n", " ")
+    text = re.sub(r"[1-4]\s*부", " ", text)
+    text = _BUSAN_MBC_SYMBOLS.sub(" ", text)
+    text = re.sub(r"\bC\b", " ", text)
+    text = re.sub(r"[@/]", " ", text)
+    text = _BUSAN_MBC_STRAY_DIGIT.sub(" ", text)
+    return re.sub(r"\s+", " ", text).strip(" .,-")
+
+
+def _busan_mbc_overlaps(cell: tuple[float, float, float, float], band: tuple[float, float]) -> bool:
+    # 인접 요일 칸과 경계가 거의 붙어 있어(실측 0.02pt 단위 오차) 여유를 두지
+    # 않으면 옆 칸 내용이 새어 들어온다.
+    x0, x1 = cell[0], cell[2]
+    b0, b1 = band
+    return x0 < b1 - 0.5 and x1 > b0 + 0.5
+
+
+def _busan_mbc_cell_text(
+    page: "pdfplumber.page.Page", cell: tuple[float, float, float, float]
+) -> str:
+    return _busan_mbc_clean_title(page.within_bbox(cell).extract_text() or "")
+
+
+def _busan_mbc_bands(
+    page: "pdfplumber.page.Page", header_row: "pdfplumber.table.CellGroup", labels: tuple[str, ...]
+) -> dict[str, tuple[float, float]]:
+    bands: dict[str, tuple[float, float]] = {}
+    for cell in header_row.cells:
+        if cell is None:
+            continue
+        text = (page.within_bbox(cell).extract_text() or "").strip()
+        if text in labels:
+            bands[text] = (cell[0], cell[2])
+    return bands
+
+
+# 표준FM: 요일 칸이 "월 - 금"/"토"/"일" 3개뿐이고, 시간 칸(85<=x0<99)과 분 칸
+# (99<=x0<111)이 나뉘어 있어 한 시간대에 최대 두 개(정시/반시)의 분 표시가 온다.
+def busan_mbc_sfm(pdf_bytes: bytes, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    band_key = "토" if day.weekday() == 5 else "일" if day.weekday() == 6 else "월 - 금"
+    entries: list[tuple[str, str]] = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[0]
+        table = page.find_tables()[0]
+        band = _busan_mbc_bands(page, table.rows[0], ("월 - 금", "토", "일"))[band_key]
+        tracker = _BusanMbcHourTracker()
+        current_hour: int | None = None
+        block_rows: list[list] = []
+
+        def flush(rows_in_block: list[list], hour: int | None) -> None:
+            if not rows_in_block or hour is None:
+                return
+            minute_labels: list[str] = []
+            for cell in rows_in_block[0]:
+                if cell is not None and 99 <= cell[0] < 111:
+                    text = page.within_bbox(cell).extract_text() or ""
+                    minute_labels = [
+                        part.strip() for part in text.split("\n") if part.strip().isdigit()
+                    ]
+                    break
+            if not minute_labels:
+                minute_labels = ["00"]
+            row_texts: list[str] = []
+            for row_cells in rows_in_block:
+                texts = [
+                    cleaned
+                    for cell in row_cells
+                    if cell is not None
+                    and _busan_mbc_overlaps(cell, band)
+                    and (cleaned := _busan_mbc_cell_text(page, cell))
+                ]
+                joined = " ".join(texts).strip()
+                if joined:
+                    row_texts.append(joined)
+            if len(minute_labels) >= 2 and row_texts:
+                first_minute, second_minute = minute_labels[0], minute_labels[1]
+                first, rest = row_texts[0], " / ".join(row_texts[1:]) or row_texts[0]
+                entries.append((f"{hour:02d}:{first_minute}", first))
+                if rest != first:
+                    entries.append((f"{hour:02d}:{second_minute}", rest))
+            elif row_texts:
+                entries.append((f"{hour:02d}:{minute_labels[0]}", " / ".join(row_texts)))
+
+        for row in table.rows[1:]:
+            hour_cell = next(
+                (cell for cell in row.cells if cell is not None and 85 <= cell[0] < 99), None
+            )
+            if hour_cell is not None:
+                flush(block_rows, current_hour)
+                hour_text = page.within_bbox(hour_cell).extract_text() or ""
+                current_hour, _ = tracker.parse(hour_text)
+                block_rows = [row.cells]
+            else:
+                block_rows.append(row.cells)
+        flush(block_rows, current_hour)
+
+    if not entries:
+        raise ValueError("official schedule contains no rows")
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+
+
+# FM4U: 요일 칸이 "월 - 수"/"목 - 금"/"토"/"일" 4개로 더 세분돼 있고, 시간 칸
+# (100<=x0<119.3) 하나에 시+분이 함께 오며 첫 칸(AM 5시) 말고는 분 표시가 아예
+# 없다 - 그래서 한 시간대의 내용을 정시(:00) 하나로 합쳐서 싣는다.
+def busan_mbc_fm4u(pdf_bytes: bytes, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    weekday = day.weekday()
+    if weekday in (0, 1, 2):
+        band_key = "월 - 수"
+    elif weekday in (3, 4):
+        band_key = "목 - 금"
+    else:
+        band_key = "토" if weekday == 5 else "일"
+    entries: list[tuple[str, str]] = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[0]
+        table = page.find_tables()[0]
+        band = _busan_mbc_bands(page, table.rows[0], ("월 - 수", "목 - 금", "토", "일"))[band_key]
+        tracker = _BusanMbcHourTracker()
+        current_hour: int | None = None
+        current_minute = "00"
+        block_rows: list[list] = []
+
+        def flush(rows_in_block: list[list], hour: int | None, minute: str) -> None:
+            if not rows_in_block or hour is None:
+                return
+            row_texts: list[str] = []
+            for row_cells in rows_in_block:
+                texts = [
+                    cleaned
+                    for cell in row_cells
+                    if cell is not None
+                    and cell[0] >= 130
+                    and _busan_mbc_overlaps(cell, band)
+                    and (cleaned := _busan_mbc_cell_text(page, cell))
+                ]
+                if texts:
+                    row_texts.append(" ".join(texts).strip())
+            merged = " / ".join(dict.fromkeys(row_texts))
+            if merged:
+                entries.append((f"{hour:02d}:{minute}", merged))
+
+        for row in table.rows[1:]:
+            hour_cell = next(
+                (cell for cell in row.cells if cell is not None and 100 <= cell[0] < 119.3), None
+            )
+            if hour_cell is not None:
+                flush(block_rows, current_hour, current_minute)
+                hour_text = page.within_bbox(hour_cell).extract_text() or ""
+                current_hour, current_minute = tracker.parse(hour_text)
+                block_rows = [row.cells]
+            else:
+                block_rows.append(row.cells)
+        flush(block_rows, current_hour, current_minute)
+
+    if not entries:
+        raise ValueError("official schedule contains no rows")
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 

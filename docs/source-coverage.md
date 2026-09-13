@@ -106,7 +106,7 @@
 | `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
 | `mbc.chm.main` | enabled | mbc |  |
 | `mbc.fm4u.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.fm4u.busan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.fm4u.busan` | enabled | mbc_busan |  |
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.fm4u.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
@@ -123,7 +123,7 @@
 | `mbc.fm4u.wonju` | enabled | mbc_wonju |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
 | `mbc.sfm.andong` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
-| `mbc.sfm.busan` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
+| `mbc.sfm.busan` | enabled | mbc_busan |  |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.cheongju` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |
 | `mbc.sfm.chuncheon` | unsupported | regional_mbc | 지역 공식 편성 CMS endpoint와 fixture 미검증 |

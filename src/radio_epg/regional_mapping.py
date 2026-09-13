@@ -1,10 +1,12 @@
 """지역·독립 방송 mapping의 엄격한 데이터 계약과 채널별 수집 엔진."""
 
+import re
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal, Protocol, Self
+from urllib.parse import unquote
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -201,6 +203,37 @@ async def _sbs_jibs(
     return additional.jibs_jeju(text, day, item.channel_id)[item.channel_id]
 
 
+_BUSAN_MBC_PDF_LINK = re.compile(r'viewer\.asp\?file=([^"\'<>\s]+)')
+
+
+async def _mbc_busan_pdf_bytes(client: _Client, item: RegionalChannelMapping) -> bytes:
+    # 부산MBC는 요일별 편성표 대신 편성표 페이지(oar05/06.asp) 안의 iframe이
+    # 그 주의 PDF를 가리킨다. PDF 파일명이 매주 바뀌므로 페이지를 먼저 읽어
+    # 현재 PDF 링크를 알아낸 뒤에 그 PDF를 받는다.
+    page_response = await client.get(item.source_url)
+    page_response.raise_for_status()
+    match = _BUSAN_MBC_PDF_LINK.search(page_response.text)
+    if match is None:
+        raise ValueError("no rows")
+    pdf_response = await client.get(unquote(match.group(1)))
+    pdf_response.raise_for_status()
+    return pdf_response.content
+
+
+async def _mbc_busan_sfm(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    pdf_bytes = await _mbc_busan_pdf_bytes(client, item)
+    return additional.busan_mbc_sfm(pdf_bytes, day, item.channel_id)[item.channel_id]
+
+
+async def _mbc_busan_fm4u(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    pdf_bytes = await _mbc_busan_pdf_bytes(client, item)
+    return additional.busan_mbc_fm4u(pdf_bytes, day, item.channel_id)[item.channel_id]
+
+
 # RegionalChannelMapping.parser 값이 곧 실제 수집 방식을 고르는 키다 - 새 지역
 # 채널을 추가할 때는 이 값이 가리키는 fetch/parse 로직이 여기 있어야 한다.
 _PARSERS: dict[
@@ -218,13 +251,15 @@ _PARSERS: dict[
     "sbs-ubc": _sbs_ubc,
     "sbs-cjb": _sbs_cjb,
     "sbs-jibs": _sbs_jibs,
+    "mbc-busan-sfm": _mbc_busan_sfm,
+    "mbc-busan-fm4u": _mbc_busan_fm4u,
 }
 
-# phmbc.co.kr가 중간 인증서를 보내지 않아 기본 TLS 체인 검증이 실패한다(브라우저는
-# 이미 아는 중간 인증서로 넘어가지만 httpx는 그렇지 않음). 이 source_id만 검증을
-# 끄고 브라우저 User-Agent를 쓴다 - 같은 엔진을 쓰는 다른 지역 방송사 소스는
-# 영향받지 않는다.
-_INSECURE_SOURCE_IDS = {"mbc-pohang"}
+# phmbc.co.kr·busanmbc.co.kr가 중간 인증서를 보내지 않아 기본 TLS 체인 검증이
+# 실패한다(브라우저는 이미 아는 중간 인증서로 넘어가지만 httpx는 그렇지 않음).
+# 이 source_id들만 검증을 끄고 브라우저 User-Agent를 쓴다 - 같은 엔진을 쓰는
+# 다른 지역 방송사 소스는 영향받지 않는다.
+_INSECURE_SOURCE_IDS = {"mbc-pohang", "mbc-busan"}
 
 # wjmbc.co.kr는 PoliteHttpClient가 보내는 식별용 User-Agent("radio-epg/0.1 ...")를
 # 406으로 막는다(브라우저 User-Agent는 통과). TLS는 정상이라 검증까지 끌 필요는

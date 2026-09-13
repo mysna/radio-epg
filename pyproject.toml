@@ -12,6 +12,7 @@ dependencies = [
     "cairosvg",
     "defusedxml",
     "httpx",
+    "pdfplumber>=0.11.10",
     "pillow",
     "pydantic",
     "pypdf",

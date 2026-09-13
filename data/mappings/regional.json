@@ -2,7 +2,7 @@
   "schema_version": 1,
   "channels": [
     {"channel_id":"mbc.fm4u.andong","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
-    {"channel_id":"mbc.fm4u.busan","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
+    {"channel_id":"mbc.fm4u.busan","family":"mbc_busan","status":"enabled","source_url":"https://busanmbc.co.kr/06_oar/oar06.asp","parser":"mbc-busan-fm4u","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.fm4u.changwon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"mbc.fm4u.cheongju","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"mbc.fm4u.chuncheon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
@@ -18,7 +18,7 @@
     {"channel_id":"mbc.fm4u.wonju","family":"mbc_wonju","status":"enabled","source_url":"https://www.wjmbc.co.kr/radio/fm.html","parser":"mbc-wonju","last_investigated":"2026-09-12"},
     {"channel_id":"mbc.fm4u.yeosu","family":"regional_mbc","status":"enabled","source_url":"https://ysmbc.co.kr/FMTimetable/FM4U/{date}","parser":"mbc-shared-cms","last_investigated":"2026-09-05"},
     {"channel_id":"mbc.sfm.andong","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
-    {"channel_id":"mbc.sfm.busan","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
+    {"channel_id":"mbc.sfm.busan","family":"mbc_busan","status":"enabled","source_url":"https://busanmbc.co.kr/06_oar/oar05.asp","parser":"mbc-busan-sfm","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.sfm.changwon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"mbc.sfm.cheongju","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},
     {"channel_id":"mbc.sfm.chuncheon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"지역 공식 편성 CMS endpoint와 fixture 미검증","last_investigated":"2026-07-13"},

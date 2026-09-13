@@ -92,6 +92,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "mbc-regional",
         "mbc-pohang",
         "mbc-wonju",
+        "mbc-busan",
         "cbs-regional",
         "tbc",
         "knn",

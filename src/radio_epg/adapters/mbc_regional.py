@@ -26,10 +26,17 @@ class MbcWonjuAdapter(ConfiguredRegionalAdapter):
     family = "mbc_wonju"
 
 
+class MbcBusanAdapter(ConfiguredRegionalAdapter):
+    """부산MBC 전용 - busanmbc.co.kr의 TLS 예외와 주간 PDF 파싱 때문에 별도 source로 뺐다."""
+
+    family = "mbc_busan"
+
+
 def owned_channels(mapping: RegionalMapping) -> tuple[RegionalChannelMapping, ...]:
-    """지역 MBC(포항·원주 포함)가 소유하는 identity를 반환한다."""
+    """지역 MBC(포항·원주·부산 포함)가 소유하는 identity를 반환한다."""
     return (
         channels_for_family(mapping, "regional_mbc")
         + channels_for_family(mapping, "mbc_pohang")
         + channels_for_family(mapping, "mbc_wonju")
+        + channels_for_family(mapping, "mbc_busan")
     )
