@@ -17,6 +17,7 @@ from radio_epg.adapters.additional import (
     busan_mbc_sfm,
     cbs_regional,
     cbs_youngdong,
+    chuncheon_mbc,
     cjb_cheongju,
     jibs_jeju,
     knn_busan,
@@ -180,6 +181,35 @@ def test_mbc_shared_cms_normalizes_times_that_wrap_past_midnight() -> None:
     starts = [row.start for row in rows["mbc.sfm.daegu"]]
     assert starts == ["23:05", "24:00", "25:00"]
     assert rows["mbc.sfm.daegu"][-1].end == "30:00"
+
+
+def test_mbc_shared_cms_parser_also_reads_daejeon_mbc() -> None:
+    text = (FIXTURES / "tjmbc-daejeon-sfm.html").read_text()
+
+    rows = mbc_shared_cms(text, date(2026, 9, 13), "mbc.sfm.daejeon")
+
+    assert set(rows) == {"mbc.sfm.daejeon"}
+    assert rows["mbc.sfm.daejeon"][0].title == "오늘의 대전문화방송"
+    assert rows["mbc.sfm.daejeon"][0].start == "05:00"
+
+
+def test_chuncheon_mbc_parser_reads_the_hour_bun_time_format() -> None:
+    text = (FIXTURES / "chmbc-chuncheon-sfm.html").read_text()
+
+    rows = chuncheon_mbc(text, date(2026, 9, 13), "mbc.sfm.chuncheon")
+
+    assert set(rows) == {"mbc.sfm.chuncheon"}
+    assert rows["mbc.sfm.chuncheon"][0].start == "05:00"
+    assert rows["mbc.sfm.chuncheon"][0].title == "오늘의 문화방송"
+
+
+def test_chuncheon_mbc_parser_normalizes_times_that_wrap_past_midnight() -> None:
+    text = (FIXTURES / "chmbc-chuncheon-sfm.html").read_text()
+
+    rows = chuncheon_mbc(text, date(2026, 9, 13), "mbc.sfm.chuncheon")
+
+    starts = [row.start for row in rows["mbc.sfm.chuncheon"]]
+    assert starts == ["05:00", "23:05", "24:00", "26:00"]
 
 
 def test_phmbc_parser_reads_the_date_specific_schedule_page() -> None:

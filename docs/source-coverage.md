@@ -109,9 +109,9 @@
 | `mbc.fm4u.busan` | enabled | mbc_busan |  |
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.fm4u.cheongju` | unsupported | mbc_regional_vision | 편성표가 게시판 첨부 이미지(JPG)로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
-| `mbc.fm4u.chuncheon` | unsupported | regional_mbc | chmbc.co.kr이 날짜별 HTML 표(guide2/channel/radio/date/YYYY-MM-DD)를 제공해 결정적으로 파싱 가능함을 확인함 - 전용 parser 미구현, 다음 작업으로 남김 |
+| `mbc.fm4u.chuncheon` | enabled | mbc_chuncheon |  |
 | `mbc.fm4u.daegu` | enabled | regional_mbc |  |
-| `mbc.fm4u.daejeon` | unsupported | regional_mbc | tjmbc.co.kr이 날짜별 HTML 표(FM4U/FM4U/YYYY-MM-DD)를 제공해 결정적으로 파싱 가능함을 확인함 - 전용 parser 미구현, 다음 작업으로 남김 |
+| `mbc.fm4u.daejeon` | enabled | regional_mbc |  |
 | `mbc.fm4u.gangneung` | enabled | regional_mbc |  |
 | `mbc.fm4u.gwangju` | enabled | regional_mbc |  |
 | `mbc.fm4u.jeju` | enabled | regional_mbc |  |
@@ -126,9 +126,9 @@
 | `mbc.sfm.busan` | enabled | mbc_busan |  |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.sfm.cheongju` | unsupported | mbc_regional_vision | 편성표가 게시판 첨부 이미지(JPG)로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 아직 data/vision/에 첫 데이터가 커밋되지 않음 |
-| `mbc.sfm.chuncheon` | unsupported | regional_mbc | chmbc.co.kr이 날짜별 HTML 표(guide2/channel/radio2/date/YYYY-MM-DD)를 제공해 결정적으로 파싱 가능함을 확인함 - 전용 parser 미구현, 다음 작업으로 남김 |
+| `mbc.sfm.chuncheon` | enabled | mbc_chuncheon |  |
 | `mbc.sfm.daegu` | enabled | regional_mbc |  |
-| `mbc.sfm.daejeon` | unsupported | regional_mbc | tjmbc.co.kr이 날짜별 HTML 표(StandardFM/FM/YYYY-MM-DD)를 제공해 결정적으로 파싱 가능함을 확인함 - 전용 parser 미구현, 다음 작업으로 남김 |
+| `mbc.sfm.daejeon` | enabled | regional_mbc |  |
 | `mbc.sfm.gangneung` | enabled | regional_mbc |  |
 | `mbc.sfm.gwangju` | enabled | regional_mbc |  |
 | `mbc.sfm.jeju` | enabled | regional_mbc |  |

@@ -127,6 +127,13 @@ async def _mbc_shared_cms(
     return additional.mbc_shared_cms(text, day, item.channel_id)[item.channel_id]
 
 
+async def _mbc_chuncheon(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.chuncheon_mbc(text, day, item.channel_id)[item.channel_id]
+
+
 async def _mbc_wonju(
     client: _Client, day: date, item: RegionalChannelMapping
 ) -> tuple[ScheduleRow, ...]:
@@ -273,6 +280,7 @@ _PARSERS: dict[
 ] = {
     "mbc-weekly-template": _mbc_weekly_template,
     "mbc-shared-cms": _mbc_shared_cms,
+    "mbc-chuncheon": _mbc_chuncheon,
     "mbc-wonju": _mbc_wonju,
     "mbc-pohang": _mbc_pohang,
     "cbs-appradio": _cbs_appradio,
@@ -295,9 +303,10 @@ _PARSERS: dict[
 _INSECURE_SOURCE_IDS = {"mbc-pohang", "mbc-busan"}
 
 # wjmbc.co.kr는 PoliteHttpClient가 보내는 식별용 User-Agent("radio-epg/0.1 ...")를
-# 406으로 막는다(브라우저 User-Agent는 통과). TLS는 정상이라 검증까지 끌 필요는
-# 없고, 이 source_id만 브라우저 User-Agent를 쓰는 별도 클라이언트로 뺀다.
-_BROWSER_UA_SOURCE_IDS = {"mbc-wonju"}
+# 406으로, chmbc.co.kr는 같은 이유로 502를 돌려준다(둘 다 브라우저 User-Agent는
+# 통과). TLS는 정상이라 검증까지 끌 필요는 없고, 이 source_id들만 브라우저
+# User-Agent를 쓰는 별도 클라이언트로 뺀다.
+_BROWSER_UA_SOURCE_IDS = {"mbc-wonju", "mbc-chuncheon"}
 
 
 class ConfiguredRegionalAdapter:

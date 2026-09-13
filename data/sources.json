@@ -90,6 +90,15 @@
     "enabled": true
   },
   {
+    "source_id": "mbc-chuncheon",
+    "name": "춘천MBC 편성표 (chmbc.co.kr가 기본 User-Agent를 502로 차단)",
+    "source_kind": "official",
+    "source_url": "https://chmbc.co.kr/guide2/channel/radio2",
+    "priority": 100,
+    "adapter": "mbc_chuncheon",
+    "enabled": true
+  },
+  {
     "source_id": "mbc-busan",
     "name": "부산MBC 편성표 (주간 PDF, busanmbc.co.kr 중간 인증서 누락으로 TLS 검증 예외)",
     "source_kind": "official",

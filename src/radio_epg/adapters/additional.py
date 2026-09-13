@@ -170,9 +170,10 @@ def wonju_mbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow
     return {channel: _rows(channel, day, items, confidence=_STATIC_TEMPLATE_CONFIDENCE)}
 
 
-# 대구·제주·여수·목포·광주 MBC는 별도 CMS 업체가 공통으로 만들어준 것으로 보이는
-# 같은 템플릿을 쓴다: /FMTimetable/FM|FM4U/YYYY-MM-DD 로 날짜별 실제 편성(주간
-# 템플릿이 아니다)을 서버 렌더링해서 준다.
+# 대구·제주·여수·목포·광주·대전 MBC는 별도 CMS 업체가 공통으로 만들어준 것으로
+# 보이는 같은 템플릿(.broadcast-list li > strong+p)을 쓴다. URL 경로 접두사는
+# 방송사마다 다르지만(/FMTimetable/, /StandardFM/ 등) 날짜별 실제 편성(주간
+# 템플릿이 아니다)을 서버 렌더링해서 주는 응답 구조 자체는 동일하다.
 def mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
     _require_date(text, day)
     soup = BeautifulSoup(text, "html.parser")
@@ -181,6 +182,27 @@ def mbc_shared_cms(text: str, day: date, channel: str) -> dict[str, tuple[Schedu
         time_node, title_node = node.select_one("strong"), node.select_one("p")
         if time_node and title_node:
             entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+
+
+# 춘천MBC는 위 공용 CMS와 다른 자체 템플릿(.guide2_schedule_wrap .row)을 쓰고,
+# 시각도 "05시 00분" 형식이다. 날짜는 URL 경로(.../date/YYYY-MM-DD)로 지정하고
+# 그 날짜의 편성만 돌려주므로 요일 선택이나 날짜 검증이 따로 필요 없다.
+_CHUNCHEON_TIME = re.compile(r"(\d{1,2})시\s*(\d{1,2})분")
+
+
+def chuncheon_mbc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    entries: list[tuple[str, str]] = []
+    for row in soup.select(".guide2_schedule_wrap .row"):
+        time_node = row.select_one(".left_section i:not(.far)")
+        title_node = row.select_one(".title-wrap")
+        if time_node is None or title_node is None:
+            continue
+        match = _CHUNCHEON_TIME.search(time_node.get_text(strip=True))
+        title = title_node.get_text(" ", strip=True)
+        if match and title:
+            entries.append((f"{int(match.group(1)):02d}:{match.group(2)}", title))
     return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
 
 

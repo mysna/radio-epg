@@ -10,6 +10,7 @@ from radio_epg.adapters.base import CollectionWindow
 from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
 from radio_epg.adapters.mbc_regional import (
     MbcBusanAdapter,
+    MbcChuncheonAdapter,
     MbcPohangAdapter,
     MbcRegionalAdapter,
     MbcVisionAdapter,
@@ -76,7 +77,30 @@ def test_mbc_regional_collects_every_configured_station_as_one_source() -> None:
         "mbc.fm4u.mokpo",
         "mbc.sfm.gwangju",
         "mbc.fm4u.gwangju",
+        "mbc.sfm.daejeon",
+        "mbc.fm4u.daejeon",
     }
+
+
+def test_mbc_chuncheon_is_a_separate_source_from_the_rest_of_regional_mbc() -> None:
+    chuncheon_fixture = (FIXTURES / "chmbc-chuncheon-sfm.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=chuncheon_fixture, request=httpx.Request("GET", url))
+
+    adapter = MbcChuncheonAdapter(
+        _source("mbc-chuncheon", "mbc_chuncheon", "https://chmbc.co.kr/guide2/channel/radio2"),
+        client=Client(),
+    )
+    result = asyncio.run(adapter.collect(_window()))
+
+    channel_ids = {row.channel_id for row in result.schedules}
+    assert channel_ids == {"mbc.sfm.chuncheon", "mbc.fm4u.chuncheon"}
+
+
+def test_mbc_wonju_and_mbc_chuncheon_are_the_only_sources_using_a_browser_user_agent() -> None:
+    assert {"mbc-wonju", "mbc-chuncheon"} == _BROWSER_UA_SOURCE_IDS
 
 
 def test_mbc_wonju_is_a_separate_source_from_the_rest_of_regional_mbc() -> None:
@@ -288,10 +312,6 @@ def test_mbc_andong_vision_tolerates_a_missing_or_stale_commit(tmp_path, monkeyp
 
 def test_mbc_pohang_and_mbc_busan_are_the_only_sources_with_tls_verification_disabled() -> None:
     assert {"mbc-pohang", "mbc-busan"} == _INSECURE_SOURCE_IDS
-
-
-def test_mbc_wonju_is_the_only_source_using_a_browser_user_agent() -> None:
-    assert {"mbc-wonju"} == _BROWSER_UA_SOURCE_IDS
 
 
 def test_cbs_regional_collects_every_configured_station_as_one_source() -> None:
