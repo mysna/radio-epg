@@ -146,7 +146,37 @@ def test_mbc_pohang_is_a_separate_source_from_the_rest_of_regional_mbc() -> None
     assert channel_ids == {"mbc.sfm.pohang", "mbc.fm4u.pohang"}
 
 
-def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first() -> None:
+def _busan_mapping_path(tmp_path) -> Path:
+    # 실제 data/mappings/regional.json은 부산MBC를 busanmbc.co.kr의 WAF 차단
+    # 때문에 status="unsupported"로 둔다 - 그래서 이 테스트는 parser/adapter
+    # 배선만 검증하는 자체 mapping 파일을 쓴다.
+    mapping = {
+        "schema_version": 1,
+        "channels": [
+            {
+                "channel_id": "mbc.sfm.busan",
+                "family": "mbc_busan",
+                "status": "enabled",
+                "source_url": "https://busanmbc.co.kr/06_oar/oar05.asp",
+                "parser": "mbc-busan-sfm",
+                "last_investigated": "2026-09-13",
+            },
+            {
+                "channel_id": "mbc.fm4u.busan",
+                "family": "mbc_busan",
+                "status": "enabled",
+                "source_url": "https://busanmbc.co.kr/06_oar/oar06.asp",
+                "parser": "mbc-busan-fm4u",
+                "last_investigated": "2026-09-13",
+            },
+        ],
+    }
+    path = tmp_path / "regional.json"
+    path.write_text(json.dumps(mapping), encoding="utf-8")
+    return path
+
+
+def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first(tmp_path) -> None:
     sfm_page = (FIXTURES / "busan-mbc-sfm-page.html").read_text()
     fm4u_page = (FIXTURES / "busan-mbc-fm4u-page.html").read_text()
     sfm_pdf = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
@@ -169,6 +199,7 @@ def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first() ->
     adapter = MbcBusanAdapter(
         _source("mbc-busan", "mbc_busan", "https://busanmbc.co.kr/06_oar/oar05.asp"),
         client=Client(),
+        mapping_path=_busan_mapping_path(tmp_path),
     )
     from datetime import date
 
@@ -182,7 +213,7 @@ def test_mbc_busan_fetches_the_weekly_pdf_link_from_the_schedule_page_first() ->
     assert any("sfm-test.pdf" in url for url in requested_urls)
 
 
-def test_mbc_busan_survives_a_short_burst_of_remote_protocol_errors(monkeypatch) -> None:
+def test_mbc_busan_survives_a_short_burst_of_remote_protocol_errors(tmp_path, monkeypatch) -> None:
     sfm_page = (FIXTURES / "busan-mbc-sfm-page.html").read_text()
     fm4u_page = (FIXTURES / "busan-mbc-fm4u-page.html").read_text()
     sfm_pdf = (FIXTURES / "busan-mbc-sfm.pdf").read_bytes()
@@ -214,6 +245,7 @@ def test_mbc_busan_survives_a_short_burst_of_remote_protocol_errors(monkeypatch)
     adapter = MbcBusanAdapter(
         _source("mbc-busan", "mbc_busan", "https://busanmbc.co.kr/06_oar/oar05.asp"),
         client=client,
+        mapping_path=_busan_mapping_path(tmp_path),
     )
     from datetime import date
 

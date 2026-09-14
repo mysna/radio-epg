@@ -2,7 +2,7 @@
   "schema_version": 1,
   "channels": [
     {"channel_id":"mbc.fm4u.andong","family":"mbc_regional_vision","status":"unsupported","source_url":"https://andongmbc.co.kr/main/radio/radioTable.php","parser":"vision-json","reason":"편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환)","last_investigated":"2026-09-13"},
-    {"channel_id":"mbc.fm4u.busan","family":"mbc_busan","status":"enabled","source_url":"https://busanmbc.co.kr/06_oar/oar06.asp","parser":"mbc-busan-fm4u","last_investigated":"2026-09-13"},
+    {"channel_id":"mbc.fm4u.busan","family":"mbc_busan","status":"unsupported","source_url":"https://busanmbc.co.kr/06_oar/oar06.asp","parser":"mbc-busan-fm4u","reason":"파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인)","last_investigated":"2026-09-14"},
     {"channel_id":"mbc.fm4u.changwon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴)","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.fm4u.cheongju","family":"mbc_regional_vision","status":"enabled","source_url":"https://www.mbccb.co.kr/rb/?r=home&c=78/109/668/797","parser":"vision-json","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.fm4u.chuncheon","family":"mbc_chuncheon","status":"enabled","source_url":"https://chmbc.co.kr/guide2/channel/radio/date/{date}","parser":"mbc-chuncheon","last_investigated":"2026-09-13"},
@@ -18,7 +18,7 @@
     {"channel_id":"mbc.fm4u.wonju","family":"mbc_wonju","status":"enabled","source_url":"https://www.wjmbc.co.kr/radio/fm.html","parser":"mbc-wonju","last_investigated":"2026-09-12"},
     {"channel_id":"mbc.fm4u.yeosu","family":"regional_mbc","status":"enabled","source_url":"https://ysmbc.co.kr/FMTimetable/FM4U/{date}","parser":"mbc-shared-cms","last_investigated":"2026-09-05"},
     {"channel_id":"mbc.sfm.andong","family":"mbc_regional_vision","status":"unsupported","source_url":"https://andongmbc.co.kr/main/radio/radioTable.php","parser":"vision-json","reason":"편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환)","last_investigated":"2026-09-13"},
-    {"channel_id":"mbc.sfm.busan","family":"mbc_busan","status":"enabled","source_url":"https://busanmbc.co.kr/06_oar/oar05.asp","parser":"mbc-busan-sfm","last_investigated":"2026-09-13"},
+    {"channel_id":"mbc.sfm.busan","family":"mbc_busan","status":"unsupported","source_url":"https://busanmbc.co.kr/06_oar/oar05.asp","parser":"mbc-busan-sfm","reason":"파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인)","last_investigated":"2026-09-14"},
     {"channel_id":"mbc.sfm.changwon","family":"regional_mbc","status":"unsupported","source_url":"https://schedule.imbc.com/","parser":"shared-html","reason":"MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴)","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.sfm.cheongju","family":"mbc_regional_vision","status":"enabled","source_url":"https://www.mbccb.co.kr/rb/?r=home&c=78/109/668/798","parser":"vision-json","last_investigated":"2026-09-13"},
     {"channel_id":"mbc.sfm.chuncheon","family":"mbc_chuncheon","status":"enabled","source_url":"https://chmbc.co.kr/guide2/channel/radio2/date/{date}","parser":"mbc-chuncheon","last_investigated":"2026-09-13"},

@@ -106,7 +106,7 @@
 | `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
 | `mbc.chm.main` | enabled | mbc |  |
 | `mbc.fm4u.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
-| `mbc.fm4u.busan` | enabled | mbc_busan |  |
+| `mbc.fm4u.busan` | unsupported | mbc_busan | 파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인) |
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.fm4u.cheongju` | enabled | mbc_regional_vision |  |
 | `mbc.fm4u.chuncheon` | enabled | mbc_chuncheon |  |
@@ -123,7 +123,7 @@
 | `mbc.fm4u.wonju` | enabled | mbc_wonju |  |
 | `mbc.fm4u.yeosu` | enabled | regional_mbc |  |
 | `mbc.sfm.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
-| `mbc.sfm.busan` | enabled | mbc_busan |  |
+| `mbc.sfm.busan` | unsupported | mbc_busan | 파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인) |
 | `mbc.sfm.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.sfm.cheongju` | enabled | mbc_regional_vision |  |
 | `mbc.sfm.chuncheon` | enabled | mbc_chuncheon |  |

@@ -100,12 +100,12 @@
   },
   {
     "source_id": "mbc-busan",
-    "name": "부산MBC 편성표 (주간 PDF, busanmbc.co.kr 중간 인증서 누락으로 TLS 검증 예외)",
+    "name": "부산MBC 편성표 (주간 PDF, busanmbc.co.kr가 WAF로 GH Actions 요청을 차단해 재비활성화)",
     "source_kind": "official",
     "source_url": "https://busanmbc.co.kr/06_oar/oar05.asp",
     "priority": 100,
     "adapter": "mbc_busan",
-    "enabled": true
+    "enabled": false
   },
   {
     "source_id": "mbc-regional-vision",
