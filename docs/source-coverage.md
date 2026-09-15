@@ -115,7 +115,7 @@
 | `mbc.fm4u.gangneung` | enabled | regional_mbc |  |
 | `mbc.fm4u.gwangju` | enabled | regional_mbc |  |
 | `mbc.fm4u.jeju` | enabled | regional_mbc |  |
-| `mbc.fm4u.jeonju` | unsupported | regional_mbc | jmbc.co.kr 편성표 페이지가 "편성표가 존재하지 않습니다"만 표시함 - 사이트 CMS 자체에 데이터가 비어 있는 것으로 보임 |
+| `mbc.fm4u.jeonju` | enabled | mbc_regional_vision |  |
 | `mbc.fm4u.main` | enabled | mbc |  |
 | `mbc.fm4u.mokpo` | enabled | regional_mbc |  |
 | `mbc.fm4u.pohang` | enabled | mbc_pohang |  |
@@ -132,7 +132,7 @@
 | `mbc.sfm.gangneung` | enabled | regional_mbc |  |
 | `mbc.sfm.gwangju` | enabled | regional_mbc |  |
 | `mbc.sfm.jeju` | enabled | regional_mbc |  |
-| `mbc.sfm.jeonju` | unsupported | regional_mbc | jmbc.co.kr 편성표 페이지 경로가 불안정함(404) - 사이트 구조 재확인 필요 |
+| `mbc.sfm.jeonju` | enabled | mbc_regional_vision |  |
 | `mbc.sfm.main` | enabled | mbc |  |
 | `mbc.sfm.mokpo` | enabled | regional_mbc |  |
 | `mbc.sfm.pohang` | enabled | mbc_pohang |  |
