@@ -223,8 +223,11 @@ async def _sbs_kbc(
 async def _bbs_daegu(
     client: _Client, day: date, item: RegionalChannelMapping
 ) -> tuple[ScheduleRow, ...]:
-    text = (await client.get(item.source_url)).text
-    return additional.bbs_daegu(text, day, item.channel_id)[item.channel_id]
+    # dgbbs.co.kr가 GH Actions 환경에서 간헐적으로 ConnectTimeout으로 끊긴다(로컬
+    # sandbox에서는 재현되지 않음 - 다른 소형 방송사 사이트들과 같은 호스팅 쪽
+    # 불안정으로 추정). busanmbc.co.kr에 쓰던 것과 같은 재시도를 그대로 쓴다.
+    response = await _get_with_retry(client, item.source_url)
+    return additional.bbs_daegu(response.text, day, item.channel_id)[item.channel_id]
 
 
 _BUSAN_MBC_PDF_LINK = re.compile(r'viewer\.asp\?file=([^"\'<>\s]+)')
