@@ -5,6 +5,8 @@
 JSON을 채널당 하나씩 커밋한다. `src/radio_epg/adapters/additional.py`의
 `vision_json()`과 `src/radio_epg/regional_mapping.py`의 `_vision_json` parser가
 이 파일을 읽어 수집 파이프라인에 흘려보낸다(네트워크 요청 없이 로컬 파일만 읽음).
+그 Cowork Routine에 실제로 설정된 프롬프트 원문은 [`cowork-prompt.md`](cowork-prompt.md)
+참고.
 
 ## 파일명
 
