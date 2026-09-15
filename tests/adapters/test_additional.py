@@ -587,6 +587,33 @@ def test_ggn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
     assert client.attempts == 3
 
 
+def test_kfn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
+    fixture = (FIXTURES / "kfn.json").read_text()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", skip_sleep)
+
+    class Client:
+        attempts = 0
+
+        async def post(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            if self.attempts <= 2:
+                raise httpx.ConnectTimeout("connect timed out", request=httpx.Request("POST", url))
+            return httpx.Response(200, text=fixture, request=httpx.Request("POST", url))
+
+    client = Client()
+    adapter = AdditionalStationAdapter(
+        _source("kfn", "https://radio.dema.mil.kr/web/radio/timetable.do"), client=client
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert result.schedules
+    assert client.attempts == 3
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "channel", "first_title"),
     [

@@ -990,14 +990,26 @@ class AdditionalStationAdapter:
                     break
                 await asyncio.sleep(0.25 * (2**attempt))
         elif source_id == "kfn":
-            response = await client.post(
-                "https://radio.dema.mil.kr/web/api/v1/media/radio/fmTimeTableListAjax.do",
-                json={"program_date": day.strftime("%Y%m%d")},
-                headers={
-                    "Referer": self.source.source_url,
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-            )
+            # radio.dema.mil.kr은 간헐적으로 연결이 끊기거나 타임아웃난다(약
+            # 30초 만에 ConnectTimeout으로 끝나는 패턴이 반복 관찰됨). 짧게
+            # 재시도한다.
+            import httpx
+
+            for attempt in range(3):
+                try:
+                    response = await client.post(
+                        "https://radio.dema.mil.kr/web/api/v1/media/radio/fmTimeTableListAjax.do",
+                        json={"program_date": day.strftime("%Y%m%d")},
+                        headers={
+                            "Referer": self.source.source_url,
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    )
+                    break
+                except (httpx.ConnectError, httpx.ConnectTimeout):
+                    if attempt == 2:
+                        raise
+                    await asyncio.sleep(1.0 * (2**attempt))
         elif source_id == "gugak":
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}
