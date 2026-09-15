@@ -15,7 +15,7 @@
 | `befm.main.main` | unsupported | independent | 파서는 fixture로 검증됐으나 개발 샌드박스에서는 정상 접속되는 반면 실제 production(GitHub Actions)에서는 도입 직후부터 연속 8회 모두 ConnectError로 실패(2026-09-12), wbsi.kr과 같은 GH Actions IP 대역 차단으로 추정 |
 | `cbs.joy4u.main` | enabled | cbs |  |
 | `cbs.mfm.busan` | enabled | cbs_regional |  |
-| `cbs.mfm.daegu` | unsupported | cbs_regional | 대구CBS 표준FM과 같은 station=6으로 ch=0(음악FM) 요청 시 빈 배열만 반환됨(실존하는 방송이지만 이 API의 어느 station 번호로도 응답을 못 찾음, station 1~4만 콘텐츠 있음) |
+| `cbs.mfm.daegu` | unsupported | cbs_regional | station 0~15 x ch=0/2 전체 조합을 직접 확인함 - ch=0은 station 0~3이 전부 같은 내용(station 파라미터 무시하고 기본값 반환), station 4만 실제로 다른 콘텐츠, station 5 이상은 전부 빈 배열; ch=2는 station 값과 무관하게 항상 응답 station:0의 전국 방송(기독음악)만 돌려줌 - 대구CBS 뮤직FM만의 응답을 주는 station 번호가 이 API에 존재하지 않음. daegu.cbs.co.kr/cbsdaegu.com 등 별도 지역 사이트 추정 URL도 접속 안 됨 |
 | `cbs.mfm.gwangju` | enabled | cbs_regional |  |
 | `cbs.mfm.main` | enabled | cbs |  |
 | `cbs.sfm.busan` | enabled | cbs_regional |  |
@@ -103,7 +103,7 @@
 | `kugak.main.daejeon` | enabled | independent |  |
 | `kugak.main.gwangju` | enabled | independent |  |
 | `kugak.main.main` | enabled | independent |  |
-| `mbc.bora.main` | unsupported | mbc | 보이는 라디오는 독립 편성 채널로 확인되지 않음 |
+| `mbc.bora.main` | unsupported | mbc | control.imbc.com/Schedule/Radio의 sType 파라미터에 BORA/VISIBLE 등 여러 값을 넣어봐도 전부 sType=ALLTHAT과 동일한 응답(올댓뮤직)만 돌아옴 - 이 API에 보이는 라디오만의 별도 sType이 없고, 기존 오디오 채널(FM4U/표준FM/올댓뮤직) 중 하나를 영상으로 겸용 송출하는 것으로 추정됨(독립 편성 채널 아님) |
 | `mbc.chm.main` | enabled | mbc |  |
 | `mbc.fm4u.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
 | `mbc.fm4u.busan` | unsupported | mbc_busan | 파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인) |
