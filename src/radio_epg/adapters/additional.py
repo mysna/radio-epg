@@ -891,6 +891,81 @@ def jibs_jeju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow
     }
 
 
+_BBS_DAEGU_CELL = re.compile(r"^(\d{1,2})\s+(.*)$", re.DOTALL)
+
+
+# BBS 대구불교방송은 날짜 파라미터 없이 고정 URL 하나가 한 주 전체를 표 하나로 보여준다.
+# 표는 시간(행, rowspan으로 여러 줄 묶임) x 월~금/토~일(열, 각각 2칸으로 더 쪼개질 수
+# 있음, colspan/rowspan 모두 섞여 있음) 구조다. "월~금"/"토~일" 두 칸으로 다시 쪼개지는
+# 건 거의 항상 같은 시각에 켜지는 두 프로그램이 아니라 표 폭을 맞추기 위한 colspan=2
+# 병합이고(실제로 관찰된 예외는 표 전체에서 금요일 대체편성 한 줄뿐), 그 한 줄도 첫
+# 번째 칸이 월~목 기본 편성이라 그대로 대표값으로 쓴다 - 금요일만의 대체편성 한 줄은
+# 놓치지만 나머지 정보 손실 없이 안전하게 읽을 수 있는 선에서의 절충이다.
+def bbs_daegu(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    tbody = soup.select_one("table.tbl_left tbody")
+    if tbody is None:
+        raise ValueError("no rows")
+
+    target_col = 2 if day.weekday() >= 5 else 0
+    hour: str | None = None
+    pending: dict[int, tuple[int, str]] = {}
+    entries: list[tuple[str, str]] = []
+
+    for row in tbody.find_all("tr", recursive=False):
+        data_cells = []
+        for cell in row.find_all(["th", "td"], recursive=False):
+            cell_text = cell.get_text(" ", strip=True)
+            if cell.name == "th":
+                if cell_text not in ("오전", "오후"):
+                    hour = cell_text
+                continue
+            data_cells.append(cell)
+        if hour is None:
+            continue
+
+        slots: list[str | None] = [None, None, None, None]
+        for col in range(4):
+            left, cell_text = pending.get(col, (0, ""))
+            if left > 0:
+                slots[col] = cell_text
+                pending[col] = (left - 1, cell_text)
+                if pending[col][0] == 0:
+                    del pending[col]
+
+        cell_iter = iter(data_cells)
+        col = 0
+        while col < 4:
+            if slots[col] is not None:
+                col += 1
+                continue
+            cell = next(cell_iter, None)
+            if cell is None:
+                break
+            raw_colspan = cell.get("colspan", "1")
+            raw_rowspan = cell.get("rowspan", "1")
+            colspan = int(raw_colspan) if isinstance(raw_colspan, str) and raw_colspan else 1
+            rowspan = int(raw_rowspan) if isinstance(raw_rowspan, str) and raw_rowspan else 1
+            cell_text = cell.get_text(" ", strip=True)
+            for offset in range(colspan):
+                if col + offset < 4:
+                    slots[col + offset] = cell_text
+                    if rowspan > 1:
+                        pending[col + offset] = (rowspan - 1, cell_text)
+            col += colspan
+
+        cell_text = slots[target_col]
+        match = _BBS_DAEGU_CELL.match(cell_text) if cell_text else None
+        if match:
+            entries.append((f"{hour}:{match.group(1)}", match.group(2)))
+
+    return {
+        channel: _rows(
+            channel, day, _normalize_wrapping_times(entries), confidence=_STATIC_TEMPLATE_CONFIDENCE
+        )
+    }
+
+
 # GGN(글로벌광주방송)는 요일 tab(day=1 월 ~ 7 일)만 있고 날짜별 편성은 아니다.
 # 표 구조가 MBC 지역국과 동일(첫 셀 시간, 둘째 셀 제목)해서 같은 파서를 그대로 쓴다.
 _GGN_CHANNEL = "ggn.main.main"

@@ -13,6 +13,7 @@ from radio_epg.adapters.additional import (
     _cpbc_regional,
     _febc,
     _wbs_regional,
+    bbs_daegu,
     busan_mbc_fm4u,
     busan_mbc_sfm,
     cbs_regional,
@@ -524,6 +525,20 @@ def test_jibs_jeju_parser_strips_badges_and_normalizes_midnight_wrap() -> None:
     assert starts == ["05:00", "16:00", "23:00", "25:00"]
     assert rows["sbs.powerfm.jeju"][1].title == "이정민의 All4U"
     assert all(row.confidence == pytest.approx(0.7) for row in rows["sbs.powerfm.jeju"])
+
+
+def test_bbs_daegu_parser_picks_weekday_or_weekend_column_and_normalizes_midnight_wrap() -> None:
+    text = (FIXTURES / "bbs-daegu.html").read_text()
+
+    weekday_rows = bbs_daegu(text, date(2026, 9, 14), "bbs.main.daegu")  # Monday
+    weekend_rows = bbs_daegu(text, date(2026, 9, 19), "bbs.main.daegu")  # Saturday
+
+    assert weekday_rows["bbs.main.daegu"][7].title == "BBS 뉴스 (TV)"
+    assert weekend_rows["bbs.main.daegu"][7].title == "대행스님의 행복한 삶을 위한 법문"
+    last = weekday_rows["bbs.main.daegu"][-1]
+    assert last.start == "25:45"
+    assert last.title == "혜주 스님의 생명을 위한 명상"
+    assert all(row.confidence == pytest.approx(0.7) for row in weekday_rows["bbs.main.daegu"])
 
 
 def test_befm_parser_picks_the_div_matching_the_requested_weekday() -> None:

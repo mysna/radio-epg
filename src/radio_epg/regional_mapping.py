@@ -220,6 +220,13 @@ async def _sbs_kbc(
     return additional.kbc_gwangju(text, day, item.channel_id)[item.channel_id]
 
 
+async def _bbs_daegu(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(item.source_url)).text
+    return additional.bbs_daegu(text, day, item.channel_id)[item.channel_id]
+
+
 _BUSAN_MBC_PDF_LINK = re.compile(r'viewer\.asp\?file=([^"\'<>\s]+)')
 
 
@@ -299,6 +306,7 @@ _PARSERS: dict[
     "sbs-cjb": _sbs_cjb,
     "sbs-jibs": _sbs_jibs,
     "sbs-kbc": _sbs_kbc,
+    "bbs-daegu": _bbs_daegu,
     "mbc-busan-sfm": _mbc_busan_sfm,
     "mbc-busan-fm4u": _mbc_busan_fm4u,
     "vision-json": _vision_json,
@@ -311,10 +319,10 @@ _PARSERS: dict[
 _INSECURE_SOURCE_IDS = {"mbc-pohang", "mbc-busan"}
 
 # wjmbc.co.kr는 PoliteHttpClient가 보내는 식별용 User-Agent("radio-epg/0.1 ...")를
-# 406으로, chmbc.co.kr는 같은 이유로 502를 돌려준다(둘 다 브라우저 User-Agent는
-# 통과). TLS는 정상이라 검증까지 끌 필요는 없고, 이 source_id들만 브라우저
-# User-Agent를 쓰는 별도 클라이언트로 뺀다.
-_BROWSER_UA_SOURCE_IDS = {"mbc-wonju", "mbc-chuncheon"}
+# 406으로, chmbc.co.kr는 같은 이유로 502를, dgbbs.co.kr는 403을 돌려준다(셋 다
+# 브라우저 User-Agent는 통과). TLS는 정상이라 검증까지 끌 필요는 없고, 이
+# source_id들만 브라우저 User-Agent를 쓰는 별도 클라이언트로 뺀다.
+_BROWSER_UA_SOURCE_IDS = {"mbc-wonju", "mbc-chuncheon", "bbs-daegu"}
 
 
 class ConfiguredRegionalAdapter:

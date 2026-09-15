@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from radio_epg.adapters.base import CollectionWindow
+from radio_epg.adapters.bbs_regional import BbsDaeguAdapter
 from radio_epg.adapters.cbs_regional import CbsRegionalAdapter
 from radio_epg.adapters.mbc_regional import (
     MbcBusanAdapter,
@@ -100,7 +101,7 @@ def test_mbc_chuncheon_is_a_separate_source_from_the_rest_of_regional_mbc() -> N
 
 
 def test_mbc_wonju_and_mbc_chuncheon_are_the_only_sources_using_a_browser_user_agent() -> None:
-    assert {"mbc-wonju", "mbc-chuncheon"} == _BROWSER_UA_SOURCE_IDS
+    assert {"mbc-wonju", "mbc-chuncheon", "bbs-daegu"} == _BROWSER_UA_SOURCE_IDS
 
 
 def test_mbc_wonju_is_a_separate_source_from_the_rest_of_regional_mbc() -> None:
@@ -403,6 +404,22 @@ def test_kbc_picks_the_slide_matching_the_requested_date() -> None:
     result = asyncio.run(adapter.collect(_window()))
 
     assert {row.channel_id for row in result.schedules} == {"sbs.powerfm.gwangju"}
+
+
+def test_bbs_daegu_is_its_own_broadcaster_source_not_the_shared_religious_bucket() -> None:
+    fixture = (FIXTURES / "bbs-daegu.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = BbsDaeguAdapter(
+        _source("bbs-daegu", "bbs_daegu", "https://www.dgbbs.co.kr/01_onair/?mcode=0401030000"),
+        client=Client(),
+    )
+    result = asyncio.run(adapter.collect(_window()))
+
+    assert {row.channel_id for row in result.schedules} == {"bbs.main.daegu"}
 
 
 def test_knn_collects_both_channels_from_the_shared_response() -> None:

@@ -7,10 +7,10 @@
 | Channel | Status | Owner | Reason |
 | --- | --- | --- | --- |
 | `arirang.main.main` | enabled | independent |  |
-| `bbs.main.busan` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
-| `bbs.main.daegu` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
-| `bbs.main.gwangju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
-| `bbs.main.jeju` | unsupported | religious | BBS 지역별 공식 편성 fixture 미검증 |
+| `bbs.main.busan` | unsupported | religious | busanbbs.co.kr 접속 시 dothome.co.kr의 404 안내 페이지로 강제 리다이렉트됨 - 도메인 자체가 더 이상 실제 사이트를 서빙하지 않는 것으로 보임 |
+| `bbs.main.daegu` | enabled | bbs_daegu |  |
+| `bbs.main.gwangju` | unsupported | religious | kjbbs.co.kr이 User-Agent/헤더와 무관하게 모든 요청에 406 Not Acceptable(nginx)만 돌려줌 - 클라우드 IP 대역 차단으로 추정 |
+| `bbs.main.jeju` | unsupported | religious | jejubbs.co.kr 접속 시 dothome.co.kr의 404 안내 페이지로 강제 리다이렉트됨 - 도메인 자체가 더 이상 실제 사이트를 서빙하지 않는 것으로 보임 |
 | `bbs.main.main` | enabled | religious |  |
 | `befm.main.main` | unsupported | independent | 파서는 fixture로 검증됐으나 개발 샌드박스에서는 정상 접속되는 반면 실제 production(GitHub Actions)에서는 도입 직후부터 연속 8회 모두 ConnectError로 실패(2026-09-12), wbsi.kr과 같은 GH Actions IP 대역 차단으로 추정 |
 | `cbs.joy4u.main` | enabled | cbs |  |

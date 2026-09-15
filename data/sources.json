@@ -189,6 +189,15 @@
     "enabled": true
   },
   {
+    "source_id": "bbs-daegu",
+    "name": "BBS 대구불교방송 편성표 (날짜 무관 고정 템플릿)",
+    "source_kind": "official",
+    "source_url": "https://www.dgbbs.co.kr/01_onair/?mcode=0401030000",
+    "priority": 100,
+    "adapter": "bbs_daegu",
+    "enabled": true
+  },
+  {
     "source_id": "ggn",
     "name": "GGN 글로벌광주방송 편성표 (요일 템플릿)",
     "source_kind": "official",
