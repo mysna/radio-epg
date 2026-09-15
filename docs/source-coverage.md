@@ -145,12 +145,12 @@
 | `sbs.lovefm.main` | enabled | sbs |  |
 | `sbs.powerfm.busan` | enabled | knn |  |
 | `sbs.powerfm.cheongju` | enabled | cjb |  |
-| `sbs.powerfm.chuncheon` | unsupported | g1 | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.chuncheon` | unsupported | g1 | g1tv.co.kr 자체는 접속되지만 FM 탭(/schedule/?mid=165_168_172)이 송출소 주파수/커버리지 표만 보여줄 뿐, 실제 프로그램 편성표를 아예 게시하지 않음 |
 | `sbs.powerfm.daegu` | enabled | tbc |  |
 | `sbs.powerfm.daejeon` | enabled | tjb |  |
-| `sbs.powerfm.gwangju` | unsupported | kbc | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.gwangju` | enabled | kbc |  |
 | `sbs.powerfm.jeju` | enabled | jibs |  |
-| `sbs.powerfm.jeonju` | unsupported | jtv | 지역 제휴사 공식 편성 endpoint와 fixture 미검증 |
+| `sbs.powerfm.jeonju` | unsupported | jtv | jtv.co.kr이 클라우드 환경에서 접속 자체가 막혀 있음(직접 접속 3회 모두 ConnectError: Connection reset by peer) |
 | `sbs.powerfm.main` | enabled | sbs |  |
 | `sbs.powerfm.ulsan` | enabled | ubc |  |
 | `tbn.main.busan` | enabled | tbn |  |

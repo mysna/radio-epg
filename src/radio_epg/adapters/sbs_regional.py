@@ -42,3 +42,9 @@ class JibsAdapter(ConfiguredRegionalAdapter):
     """JIBS(제주)."""
 
     family = "jibs"
+
+
+class KbcAdapter(ConfiguredRegionalAdapter):
+    """kbc(광주)."""
+
+    family = "kbc"

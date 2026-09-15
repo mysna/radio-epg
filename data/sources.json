@@ -180,6 +180,15 @@
     "enabled": true
   },
   {
+    "source_id": "kbc",
+    "name": "kbc(광주) 편성표",
+    "source_kind": "official",
+    "source_url": "https://www.ikbc.co.kr/schedule/fm",
+    "priority": 100,
+    "adapter": "kbc",
+    "enabled": true
+  },
+  {
     "source_id": "ggn",
     "name": "GGN 글로벌광주방송 편성표 (요일 템플릿)",
     "source_kind": "official",

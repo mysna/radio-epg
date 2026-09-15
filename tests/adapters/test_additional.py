@@ -20,6 +20,7 @@ from radio_epg.adapters.additional import (
     chuncheon_mbc,
     cjb_cheongju,
     jibs_jeju,
+    kbc_gwangju,
     knn_busan,
     mbc_regional_weekly,
     mbc_shared_cms,
@@ -427,6 +428,22 @@ def test_sbs_affiliate_tbc_parser_reads_the_date_specific_schedule_page() -> Non
 
     assert set(rows) == {"sbs.powerfm.daegu"}
     assert rows["sbs.powerfm.daegu"][0].title == "이인권의 펀펀투데이 1부"
+
+
+def test_kbc_gwangju_parser_picks_the_slide_matching_the_requested_date() -> None:
+    text = (FIXTURES / "sbs-affiliate-kbc-gwangju.html").read_text()
+
+    rows = kbc_gwangju(text, REGIONAL_DAY, "sbs.powerfm.gwangju")
+
+    assert set(rows) == {"sbs.powerfm.gwangju"}
+    assert rows["sbs.powerfm.gwangju"][0].title == "박영환의 시사 일번지 1부"
+
+
+def test_kbc_gwangju_parser_raises_no_rows_when_date_is_outside_the_strip() -> None:
+    text = (FIXTURES / "sbs-affiliate-kbc-gwangju.html").read_text()
+
+    with pytest.raises(ValueError, match="no rows"):
+        kbc_gwangju(text, date(2026, 1, 1), "sbs.powerfm.gwangju")
 
 
 def test_ubc_ulsan_parser_uses_explicit_start_and_end_times() -> None:

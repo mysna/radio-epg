@@ -16,7 +16,7 @@ from radio_epg.adapters.mbc_regional import (
     MbcVisionAdapter,
     MbcWonjuAdapter,
 )
-from radio_epg.adapters.sbs_regional import KnnAdapter, TbcAdapter
+from radio_epg.adapters.sbs_regional import KbcAdapter, KnnAdapter, TbcAdapter
 from radio_epg.config import SourceConfig
 from radio_epg.regional_mapping import _BROWSER_UA_SOURCE_IDS, _INSECURE_SOURCE_IDS
 
@@ -388,6 +388,21 @@ def test_tbc_is_its_own_broadcaster_source_not_a_shared_sbs_affiliate_bucket() -
     result = asyncio.run(adapter.collect(_window()))
 
     assert {row.channel_id for row in result.schedules} == {"sbs.powerfm.daegu"}
+
+
+def test_kbc_picks_the_slide_matching_the_requested_date() -> None:
+    fixture = (FIXTURES / "sbs-affiliate-kbc-gwangju.html").read_text()
+
+    class Client:
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    adapter = KbcAdapter(
+        _source("kbc", "kbc", "https://www.ikbc.co.kr/schedule/fm"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(_window()))
+
+    assert {row.channel_id for row in result.schedules} == {"sbs.powerfm.gwangju"}
 
 
 def test_knn_collects_both_channels_from_the_shared_response() -> None:

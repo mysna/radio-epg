@@ -60,6 +60,7 @@ def default_registry() -> AdapterRegistry:
     from radio_epg.adapters.sbs_regional import (
         CjbAdapter,
         JibsAdapter,
+        KbcAdapter,
         KnnAdapter,
         TbcAdapter,
         TjbAdapter,
@@ -91,6 +92,7 @@ def default_registry() -> AdapterRegistry:
     registry.register("ubc", UbcAdapter)
     registry.register("cjb", CjbAdapter)
     registry.register("jibs", JibsAdapter)
+    registry.register("kbc", KbcAdapter)
     registry.register("febc", FebcAdapter)
 
     registry.register("additional", AdditionalStationAdapter)

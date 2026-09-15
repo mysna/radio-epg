@@ -213,6 +213,13 @@ async def _sbs_jibs(
     return additional.jibs_jeju(text, day, item.channel_id)[item.channel_id]
 
 
+async def _sbs_kbc(
+    client: _Client, day: date, item: RegionalChannelMapping
+) -> tuple[ScheduleRow, ...]:
+    text = (await client.get(_format_url(item, day))).text
+    return additional.kbc_gwangju(text, day, item.channel_id)[item.channel_id]
+
+
 _BUSAN_MBC_PDF_LINK = re.compile(r'viewer\.asp\?file=([^"\'<>\s]+)')
 
 
@@ -291,6 +298,7 @@ _PARSERS: dict[
     "sbs-ubc": _sbs_ubc,
     "sbs-cjb": _sbs_cjb,
     "sbs-jibs": _sbs_jibs,
+    "sbs-kbc": _sbs_kbc,
     "mbc-busan-sfm": _mbc_busan_sfm,
     "mbc-busan-fm4u": _mbc_busan_fm4u,
     "vision-json": _vision_json,

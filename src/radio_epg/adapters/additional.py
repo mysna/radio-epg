@@ -743,6 +743,29 @@ def sbs_affiliate_tbc(text: str, day: date, channel: str) -> dict[str, tuple[Sch
     return _table(text, day, channel, selector="table.sch tr")
 
 
+# kbc(광주)는 한 응답에 그 주 7일치를 캐러셀 슬라이드(.slide.time_table)로 전부
+# 렌더링하고, 위쪽 날짜 스트립(.date, "MM.DD")의 순서가 슬라이드 순서와 같다.
+# 그래서 요청한 날짜가 그 스트립 어디에 있는지 찾아 같은 인덱스의 슬라이드를
+# 골라 읽는다 - 스트립에 없는 날짜(먼 과거/미래)를 요청하면 조용히 건너뛴다.
+def kbc_gwangju(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ...]]:
+    soup = BeautifulSoup(text, "html.parser")
+    dates = [node.get_text(strip=True) for node in soup.select(".date")]
+    target = day.strftime("%m.%d")
+    if target not in dates:
+        raise ValueError("no rows")
+    slides = soup.select(".slide.time_table")
+    if len(dates) != len(slides):
+        raise ValueError("no rows")
+    slide = slides[dates.index(target)]
+    entries: list[tuple[str, str]] = []
+    for node in slide.select(".article"):
+        time_node = node.select_one(".airtime")
+        title_node = node.select_one(".text_box.box1 .title")
+        if time_node and title_node:
+            entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+
+
 def _normalize_wrapping_times(
     entries: Iterable[tuple[str, str]],
 ) -> list[tuple[str, str, str | None]]:

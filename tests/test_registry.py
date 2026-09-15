@@ -101,6 +101,7 @@ def test_default_registry_builds_all_enabled_national_sources() -> None:
         "ubc",
         "cjb",
         "jibs",
+        "kbc",
         "ggn",
         "obs",
         "ifm",
