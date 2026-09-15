@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | `arirang.main.main` | enabled | independent |  |
 | `bbs.main.busan` | unsupported | religious | busanbbs.co.kr 접속 시 dothome.co.kr의 404 안내 페이지로 강제 리다이렉트됨 - 도메인 자체가 더 이상 실제 사이트를 서빙하지 않는 것으로 보임 |
-| `bbs.main.daegu` | enabled | bbs_daegu |  |
+| `bbs.main.daegu` | unsupported | bbs_daegu | 파서는 fixture로 검증됐고 개발 샌드박스에서는 정상 접속되지만, production(GitHub Actions)에서는 도입 직후 3회 연속(재시도 포함 시도 총 10회) 전부 ConnectTimeout으로 실패함(2026-09-15) - wbsi.kr/befm.or.kr과 같은 GH Actions IP 대역 차단으로 추정 |
 | `bbs.main.gwangju` | unsupported | religious | kjbbs.co.kr이 User-Agent/헤더와 무관하게 모든 요청에 406 Not Acceptable(nginx)만 돌려줌 - 클라우드 IP 대역 차단으로 추정 |
 | `bbs.main.jeju` | unsupported | religious | jejubbs.co.kr 접속 시 dothome.co.kr의 404 안내 페이지로 강제 리다이렉트됨 - 도메인 자체가 더 이상 실제 사이트를 서빙하지 않는 것으로 보임 |
 | `bbs.main.main` | enabled | religious |  |
