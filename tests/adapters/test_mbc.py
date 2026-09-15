@@ -81,7 +81,7 @@ def test_mbc_rejects_rows_beyond_the_next_day_broadcast_boundary() -> None:
         )
 
 
-def test_mbc_mapping_owns_three_central_channels_and_accounts_for_bora() -> None:
+def test_mbc_mapping_owns_all_three_central_channels() -> None:
     import json
 
     mapping = json.loads(MAPPING.read_text())
@@ -97,8 +97,5 @@ def test_mbc_mapping_owns_three_central_channels_and_accounts_for_bora() -> None
         "mbc.fm4u.main",
         "mbc.chm.main",
     }
-    assert {item["channel_id"] for item in mapping["unsupported"]} == {"mbc.bora.main"}
-    assert central == {
-        *(item["channel_id"] for item in mapping["channels"]),
-        *(item["channel_id"] for item in mapping["unsupported"]),
-    }
+    assert mapping["unsupported"] == []
+    assert central == {item["channel_id"] for item in mapping["channels"]}

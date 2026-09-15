@@ -4,8 +4,8 @@
 Python Collector가 공식 편성 소스를 수집·검증하고, Cloudflare Worker가 Turso(libSQL)에 저장한
 채널과 편성을 공개 API로 제공한다.
 
-현재 카탈로그의 168개 정규 채널과 200개 플레이어 별칭은 모두 소유 source가 정해져 있다.
-이 중 148개 채널은 fixture로 검증된 adapter가 활성화되어 있고, 20개 채널은 공식 계약을
+현재 카탈로그의 167개 정규 채널과 199개 플레이어 별칭은 모두 소유 source가 정해져 있다.
+이 중 148개 채널은 fixture로 검증된 adapter가 활성화되어 있고, 19개 채널은 공식 계약을
 확인할 때까지 이유와 검증일을 포함한 `unsupported` 상태로 남긴다. 상세 내역은
 [`docs/source-coverage.md`](docs/source-coverage.md)에서 확인한다.
 

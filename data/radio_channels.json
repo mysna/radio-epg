@@ -72,14 +72,6 @@
     "city": null
   },
   {
-    "id": "seoul-010-mbc-bora-main",
-    "regionId": "seoul",
-    "name": "MBC 보이는 라디오",
-    "stn": "mbc",
-    "ch": "bora",
-    "city": null
-  },
-  {
     "id": "seoul-011-sbs-lovefm-main",
     "regionId": "seoul",
     "name": "SBS 러브FM",

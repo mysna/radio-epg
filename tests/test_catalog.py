@@ -8,13 +8,13 @@ CATALOG_PATH = Path(__file__).parents[1] / "data" / "radio_channels.json"
 def test_catalog_contains_all_current_radio_aliases() -> None:
     catalog = load_catalog(CATALOG_PATH)
 
-    assert len(catalog.radio_aliases) == 200
+    assert len(catalog.radio_aliases) == 199
 
 
 def test_catalog_folds_duplicate_canonical_channels() -> None:
     catalog = load_catalog(CATALOG_PATH)
 
-    assert len(catalog.channels) == 168
+    assert len(catalog.channels) == 167
 
 
 def test_catalog_preserves_known_current_player_id() -> None:

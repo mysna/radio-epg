@@ -1,7 +1,7 @@
 # Radio EPG Source Coverage
 
-- Catalog: 168
-- Accounted: 168
+- Catalog: 167
+- Accounted: 167
 - Pending: 0
 
 | Channel | Status | Owner | Reason |
@@ -103,7 +103,6 @@
 | `kugak.main.daejeon` | enabled | independent |  |
 | `kugak.main.gwangju` | enabled | independent |  |
 | `kugak.main.main` | enabled | independent |  |
-| `mbc.bora.main` | unsupported | mbc | control.imbc.com/Schedule/Radio의 sType 파라미터에 BORA/VISIBLE 등 여러 값을 넣어봐도 전부 sType=ALLTHAT과 동일한 응답(올댓뮤직)만 돌아옴 - 이 API에 보이는 라디오만의 별도 sType이 없고, 기존 오디오 채널(FM4U/표준FM/올댓뮤직) 중 하나를 영상으로 겸용 송출하는 것으로 추정됨(독립 편성 채널 아님) |
 | `mbc.chm.main` | enabled | mbc |  |
 | `mbc.fm4u.andong` | unsupported | mbc_regional_vision | 편성표가 이미지로만 공개됨 - Cowork 판독 pipeline은 구현됐으나 andongmbc.co.kr이 클라우드 환경에서 503으로 접속 자체가 막혀 있어 첫 데이터를 못 채움(청주MBC로 파일럿 전환) |
 | `mbc.fm4u.busan` | unsupported | mbc_busan | 파서는 fixture로 검증됐으나 busanmbc.co.kr이 WAF로 GH Actions 요청을 차단(2026-09-13 18:46 정상, 19:46부터 3회 연속 EmptyScheduleError/WAF 차단 페이지 확인) |

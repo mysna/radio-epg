@@ -4,7 +4,5 @@
     {"channel_id":"mbc.fm4u.main","upstream_code":"fm4u","url":"https://control.imbc.com/Schedule/Radio?sDate={date_compact}&sType=FM4U&callback=scheduleCallback","parser":"jsonp","evidence_date":"2026-07-13"},
     {"channel_id":"mbc.chm.main","upstream_code":"chm","url":"https://control.imbc.com/Schedule/Radio?sDate={date_compact}&sType=ALLTHAT&callback=scheduleCallback","parser":"jsonp","evidence_date":"2026-07-13"}
   ],
-  "unsupported": [
-    {"channel_id":"mbc.bora.main","reason":"control.imbc.com/Schedule/Radio의 sType 파라미터에 BORA/VISIBLE 등 여러 값을 넣어봐도 전부 sType=ALLTHAT과 동일한 응답(올댓뮤직)만 돌아옴 - 이 API에 보이는 라디오만의 별도 sType이 없고, 기존 오디오 채널(FM4U/표준FM/올댓뮤직) 중 하나를 영상으로 겸용 송출하는 것으로 추정됨(독립 편성 채널 아님)","last_investigated":"2026-09-15"}
-  ]
+  "unsupported": []
 }
