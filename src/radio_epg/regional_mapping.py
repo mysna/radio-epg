@@ -195,8 +195,11 @@ async def _sbs_tjb(
 async def _sbs_ubc(
     client: _Client, day: date, item: RegionalChannelMapping
 ) -> tuple[ScheduleRow, ...]:
-    text = (await client.get(_format_url(item, day))).text
-    return additional.ubc_ulsan(text, day, item.channel_id)[item.channel_id]
+    # ubc.co.kr가 GH Actions 환경에서 간헐적으로 ConnectTimeout으로 끊긴다(2026-09-19
+    # 실행에서 처음 관측, 이 세션에서 같은 URL을 바로 재현하면 정상 200 응답이 온다 -
+    # busanmbc.co.kr/dgbbs.co.kr와 같은 호스팅 쪽 일시적 불안정으로 추정). 같은 재시도를 쓴다.
+    response = await _get_with_retry(client, _format_url(item, day))
+    return additional.ubc_ulsan(response.text, day, item.channel_id)[item.channel_id]
 
 
 async def _sbs_cjb(
