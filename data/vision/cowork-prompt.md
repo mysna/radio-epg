@@ -1,6 +1,6 @@
 # Cowork 판독 Routine 프롬프트
 
-`data/vision/*.json`을 채우는 주간 Cowork Routine(매주 일요일, 청주·울산·전주
+`data/vision/*.json`을 채우는 주간 Cowork Routine(매주 월요일, 청주·울산·전주
 MBC 대상)에 실제로 설정된 프롬프트 원문이다. Routine 설정 자체는 이 저장소
 밖(Claude Code Remote의 트리거)에 있어서 버전 관리가 안 되므로, 나중에
 프롬프트를 고치거나 다른 vision-assisted 채널로 넓힐 때 참고할 수 있도록 여기
@@ -8,7 +8,7 @@ MBC 대상)에 실제로 설정된 프롬프트 원문이다. Routine 설정 자
 
 ## 실행 주기
 
-매주 일요일 09:02 UTC(한국시간 월요일 18:02) 1회, 세션을 새로 만들어 실행한다.
+매주 월요일 01:30 KST(한국시간, 전날 일요일 16:30 UTC) 1회, 세션을 새로 만들어 실행한다.
 
 ## 프롬프트 원문
 
