@@ -600,7 +600,17 @@ def _gugak(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
                     else "kugak.main.main"
                 )
                 collected[channel].append((times[0], title, times[1]))
-    return {channel: _rows(channel, day, items) for channel, items in collected.items()}
+    # 명절 특집 등으로 정규 편성표 전체가 안내 문구 한 줄로 대체되면 세 채널 다
+    # 이 날은 아무 항목도 못 찾는다 - 그 채널·그날만 건너뛰고(_rows가 "no rows"로
+    # 거부), 다른 채널이나 다른 날짜까지 통째로 실패시키지 않는다.
+    result: dict[str, tuple[ScheduleRow, ...]] = {}
+    for channel, items in collected.items():
+        try:
+            result[channel] = _rows(channel, day, items)
+        except ValueError as error:
+            if "no rows" not in str(error):
+                raise
+    return result
 
 
 # BeFM(부산영어방송)은 요일별로 별도 div(mon/tue-thu/fri/sat/sun, 화·수·목은
@@ -1089,11 +1099,13 @@ class AdditionalStationAdapter:
                 await asyncio.sleep(0.25 * (2**attempt))
         elif source_id == "kfn":
             # radio.dema.mil.kr은 간헐적으로 연결이 끊기거나 타임아웃난다(약
-            # 30초 만에 ConnectTimeout으로 끝나는 패턴이 반복 관찰됨). 짧게
-            # 재시도한다.
+            # 30초짜리 ConnectTimeout이 반복 관찰됨 - 최근 6회 스케줄 실행 중
+            # 2회 실패, 2026-09-19/20). 3회+짧은 backoff(1~2초)로는 접속 장애가
+            # 지속되는 구간을 못 넘기는 경우가 많아 시도 횟수를 늘리고 각
+            # 시도 사이 대기도 늘렸다.
             import httpx
 
-            for attempt in range(3):
+            for attempt in range(5):
                 try:
                     response = await client.post(
                         "https://radio.dema.mil.kr/web/api/v1/media/radio/fmTimeTableListAjax.do",
@@ -1105,9 +1117,9 @@ class AdditionalStationAdapter:
                     )
                     break
                 except (httpx.ConnectError, httpx.ConnectTimeout):
-                    if attempt == 2:
+                    if attempt == 4:
                         raise
-                    await asyncio.sleep(1.0 * (2**attempt))
+                    await asyncio.sleep(5.0 * (attempt + 1))
         elif source_id == "gugak":
             response = await client.get(
                 endpoint, params={"sub_num": "786", "today": day.strftime("%Y%m%d")}

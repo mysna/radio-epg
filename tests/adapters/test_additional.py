@@ -90,6 +90,18 @@ def test_febc_parser_maps_the_shared_cms_response_to_the_requested_channel(
     assert rows[channel][0].title == "별처럼 빛나는 그대에게"
 
 
+def test_gugak_tolerates_a_holiday_special_that_empties_the_whole_table() -> None:
+    # 명절 특집으로 정규 편성표 전체가 안내 문구 한 줄로 바뀌면 세 채널 다
+    # 그날은 "no rows"로 조용히 건너뛰어야지, 소스 전체를 실패시키면 안 된다.
+    rows = parse_station_schedule(
+        "gugak",
+        (FIXTURES / "gugak-holiday.html").read_text(),
+        expected_date=date(2026, 9, 24),
+    )
+
+    assert rows == {}
+
+
 def test_parser_rejects_a_response_for_another_date() -> None:
     with pytest.raises(ValueError, match="date"):
         parse_station_schedule(
