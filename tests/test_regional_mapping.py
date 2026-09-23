@@ -391,7 +391,29 @@ def test_tbc_is_its_own_broadcaster_source_not_a_shared_sbs_affiliate_bucket() -
     assert {row.channel_id for row in result.schedules} == {"sbs.powerfm.daegu"}
 
 
-def test_kbc_picks_the_slide_matching_the_requested_date() -> None:
+def _kbc_mapping_path(tmp_path) -> Path:
+    # 실제 data/mappings/regional.json은 kbc를 ikbc.co.kr이 2026-09-20 주부터 평일
+    # 편성 콘텐츠를 게시하지 않아(일요일 슬라이드만 채워짐) status="unsupported"로
+    # 둔다 - 그래서 이 테스트는 parser/adapter 배선만 검증하는 자체 mapping 파일을 쓴다.
+    mapping = {
+        "schema_version": 1,
+        "channels": [
+            {
+                "channel_id": "sbs.powerfm.gwangju",
+                "family": "kbc",
+                "status": "enabled",
+                "source_url": "https://www.ikbc.co.kr/schedule/fm?date={date_compact}",
+                "parser": "sbs-kbc",
+                "last_investigated": "2026-09-15",
+            },
+        ],
+    }
+    path = tmp_path / "regional.json"
+    path.write_text(json.dumps(mapping), encoding="utf-8")
+    return path
+
+
+def test_kbc_picks_the_slide_matching_the_requested_date(tmp_path) -> None:
     fixture = (FIXTURES / "sbs-affiliate-kbc-gwangju.html").read_text()
 
     class Client:
@@ -399,7 +421,9 @@ def test_kbc_picks_the_slide_matching_the_requested_date() -> None:
             return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
 
     adapter = KbcAdapter(
-        _source("kbc", "kbc", "https://www.ikbc.co.kr/schedule/fm"), client=Client()
+        _source("kbc", "kbc", "https://www.ikbc.co.kr/schedule/fm"),
+        client=Client(),
+        mapping_path=_kbc_mapping_path(tmp_path),
     )
     result = asyncio.run(adapter.collect(_window()))
 
