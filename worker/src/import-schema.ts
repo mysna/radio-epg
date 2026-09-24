@@ -93,5 +93,17 @@ export const importBatchSchema = z
     }
   });
 
+/** 수집은 정상적으로 끝났지만 게시할 편성이 없던 실행을 메모와 함께 남기는 계약. */
+export const runNoteSchema = z
+  .object({
+    idempotency_key: nonEmpty.max(200),
+    source: sourceSchema,
+    started_at: timestamp,
+    finished_at: timestamp,
+    note: nonEmpty.max(200),
+  })
+  .strict();
+
 export type ImportBatchInput = z.infer<typeof importBatchSchema>;
+export type RunNoteInput = z.infer<typeof runNoteSchema>;
 export type ImportScheduleInput = z.infer<typeof scheduleSchema>;

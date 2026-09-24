@@ -41,6 +41,8 @@ export interface PublicSource {
   fetched_at: string;
   confidence: number;
   stale: boolean;
+  /** 실제로 수집한 방송일. 요청 날짜와 다르면 지난 같은 요일 편성을 재사용한 것이다. */
+  broadcast_date: string;
 }
 
 /** 공개 API가 반환하는 편성 이벤트. */

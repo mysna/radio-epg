@@ -147,11 +147,11 @@
 | `sbs.powerfm.chuncheon` | unsupported | g1 | g1tv.co.kr 자체는 접속되지만 FM 탭(/schedule/?mid=165_168_172)이 송출소 주파수/커버리지 표만 보여줄 뿐, 실제 프로그램 편성표를 아예 게시하지 않음 |
 | `sbs.powerfm.daegu` | enabled | tbc |  |
 | `sbs.powerfm.daejeon` | enabled | tjb |  |
-| `sbs.powerfm.gwangju` | unsupported | kbc | ikbc.co.kr/schedule/fm은 접속되고 파서/셀렉터도 그대로 맞으나, 2026-09-20 주부터(09-20~10-03까지 date 파라미터로 직접 확인) 일요일(09.20) 슬라이드만 채워져 있고 나머지 요일 슬라이드는 전부 <ol class="list"></ol>(빈 편성) - GH Actions에서도 09-20부터 6회 연속 EmptyScheduleError. IP 차단이 아니라 사이트가 평일 편성 콘텐츠를 게시하지 않는 것으로 판단(2026-09-23 재현) |
+| `sbs.powerfm.gwangju` | enabled | kbc |  |
 | `sbs.powerfm.jeju` | enabled | jibs |  |
 | `sbs.powerfm.jeonju` | unsupported | jtv | jtv.co.kr이 클라우드 환경에서 접속 자체가 막혀 있음(직접 접속 3회 모두 ConnectError: Connection reset by peer) |
 | `sbs.powerfm.main` | enabled | sbs |  |
-| `sbs.powerfm.ulsan` | unsupported | ubc | api/broadcast/schedule/(type=RADIO 및 TV 모두, 09-21~09-23 날짜로 확인)가 항상 {"source": "empty", "items": []}만 반환하고, schedule/radio/ 페이지도 요일 표 전체가 '편성 없음'으로 렌더링됨 - IP 차단이 아니라 UBC가 라디오 편성표 콘텐츠를 게시하지 않는 상태로 판단(2026-09-23 재현, GH Actions에서도 2026-09-20부터 매 실행 EmptyScheduleError) |
+| `sbs.powerfm.ulsan` | enabled | ubc |  |
 | `tbn.main.busan` | enabled | tbn |  |
 | `tbn.main.chungbuk` | enabled | tbn |  |
 | `tbn.main.chungnam` | enabled | tbn |  |

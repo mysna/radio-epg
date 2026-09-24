@@ -39,7 +39,7 @@ jobs:
         if: always()
         run: >-
           curl --fail-with-body --silent --show-error --request POST
-          "${EPG_API_BASE_URL%/}/v1/admin/retention?start_date=${EPG_COLLECTION_DATE}"
+          "${EPG_API_BASE_URL%/}/v1/admin/retention"
           --header "Authorization: Bearer ${EPG_INGEST_TOKEN}"
         env:
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}

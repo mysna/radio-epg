@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from radio_epg.models import ImportBatch, ScheduleCandidate
+from radio_epg.models import ImportBatch, RunNote, ScheduleCandidate
 
 _TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
 _TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=20.0, pool=5.0)
@@ -128,6 +128,49 @@ def _partition_batch(batch: ImportBatch) -> tuple[ImportBatch, ...]:
     )
 
 
+async def _post_json(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    headers: dict[str, str],
+    payload: dict[str, Any],
+    max_retries: int,
+    retry_base_delay: float,
+) -> dict[str, Any]:
+    """일시적 실패만 제한적으로 재시도하며 JSON 객체 응답을 받는다."""
+    for attempt in range(max_retries + 1):
+        try:
+            response = await client.post(url, headers=headers, json=payload)
+        except (httpx.TimeoutException, httpx.NetworkError) as error:
+            if attempt >= max_retries:
+                message = "ingestion request failed after transient network errors"
+                raise PublishError(message) from error
+            await asyncio.sleep(retry_base_delay * (2**attempt))
+            continue
+
+        if response.status_code in _TRANSIENT_STATUSES and attempt < max_retries:
+            await asyncio.sleep(retry_base_delay * (2**attempt))
+            continue
+        if response.is_error:
+            raise _publish_error(response)
+
+        try:
+            result = response.json()
+        except ValueError as error:
+            raise PublishError("ingestion response must be a JSON object") from error
+        if not isinstance(result, dict):
+            raise PublishError("ingestion response must be a JSON object")
+        return result
+    raise PublishError("ingestion request was not attempted")
+
+
+def _check_request_options(token: str, max_retries: int) -> None:
+    if max_retries < 0:
+        raise ValueError("max_retries must not be negative")
+    if not token:
+        raise ValueError("token must not be empty")
+
+
 async def publish_batch(
     batch: ImportBatch,
     *,
@@ -138,10 +181,7 @@ async def publish_batch(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> dict[str, Any]:
     """일시적 실패만 제한적으로 재시도하며 batch를 게시한다."""
-    if max_retries < 0:
-        raise ValueError("max_retries must not be negative")
-    if not token:
-        raise ValueError("token must not be empty")
+    _check_request_options(token, max_retries)
 
     url = f"{base_url.rstrip('/')}/v1/admin/import"
     headers = {"Authorization": f"Bearer {token}"}
@@ -150,31 +190,16 @@ async def publish_batch(
 
     async with httpx.AsyncClient(timeout=_TIMEOUT, transport=transport) as client:
         for part in batches:
-            payload = _payload(part)
-            for attempt in range(max_retries + 1):
-                try:
-                    response = await client.post(url, headers=headers, json=payload)
-                except (httpx.TimeoutException, httpx.NetworkError) as error:
-                    if attempt >= max_retries:
-                        message = "ingestion request failed after transient network errors"
-                        raise PublishError(message) from error
-                    await asyncio.sleep(retry_base_delay * (2**attempt))
-                    continue
-
-                if response.status_code in _TRANSIENT_STATUSES and attempt < max_retries:
-                    await asyncio.sleep(retry_base_delay * (2**attempt))
-                    continue
-                if response.is_error:
-                    raise _publish_error(response)
-
-                try:
-                    result = response.json()
-                except ValueError as error:
-                    raise PublishError("ingestion response must be a JSON object") from error
-                if not isinstance(result, dict):
-                    raise PublishError("ingestion response must be a JSON object")
-                results.append(result)
-                break
+            results.append(
+                await _post_json(
+                    client,
+                    url,
+                    headers=headers,
+                    payload=_payload(part),
+                    max_retries=max_retries,
+                    retry_base_delay=retry_base_delay,
+                )
+            )
 
     if len(results) == 1:
         return results[0]
@@ -184,3 +209,28 @@ async def publish_batch(
         else "applied"
     )
     return {"status": status, "part_count": len(results)}
+
+
+async def record_run_note(
+    note: RunNote,
+    *,
+    base_url: str,
+    token: str,
+    max_retries: int = 2,
+    retry_base_delay: float = 0.25,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> dict[str, Any]:
+    """편성 없이 끝난 실행을 메모와 함께 기록한다. 기존 편성은 건드리지 않는다."""
+    _check_request_options(token, max_retries)
+
+    url = f"{base_url.rstrip('/')}/v1/admin/runs"
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient(timeout=_TIMEOUT, transport=transport) as client:
+        return await _post_json(
+            client,
+            url,
+            headers=headers,
+            payload=note.model_dump(mode="json"),
+            max_retries=max_retries,
+            retry_base_delay=retry_base_delay,
+        )

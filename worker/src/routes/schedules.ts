@@ -45,9 +45,18 @@ schedules.get("/", async (context) => {
     }
 
     const events = await schedulesForDate(context.get("db"), channel.channel_id, date, new Date());
+    // 편성은 요일 슬롯이라 요청 날짜가 아닌 지난 같은 요일 편성일 수 있다.
+    // data_date는 슬롯 편성의 실제 방송일(여럿이면 가장 최근)이다.
+    const dataDate = events.reduce<string | null>(
+      (latest, event) =>
+        latest === null || event.source.broadcast_date > latest ? event.source.broadcast_date : latest,
+      null,
+    );
     return {
       channel_id: channel.channel_id,
       broadcast_date: date,
+      data_date: dataDate,
+      fallback: dataDate !== null && dataDate !== date,
       status: events.length > 0 ? "available" : "unavailable",
       stale: events.some((event) => event.source.stale),
       events,

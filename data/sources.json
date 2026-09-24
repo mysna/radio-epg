@@ -154,12 +154,12 @@
   },
   {
     "source_id": "ubc",
-    "name": "ubc(울산) 편성표 (2026-09-20부터 api/schedule가 모든 날짜에 빈 편성만 반환해 재비활성화)",
+    "name": "ubc(울산) 편성표",
     "source_kind": "official",
     "source_url": "https://www.ubc.co.kr/api/broadcast/schedule/",
     "priority": 100,
     "adapter": "ubc",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "cjb",
@@ -181,12 +181,12 @@
   },
   {
     "source_id": "kbc",
-    "name": "kbc(광주) 편성표 (2026-09-20 이후 주 평일 편성을 게시하지 않아 재비활성화)",
+    "name": "kbc(광주) 편성표",
     "source_kind": "official",
     "source_url": "https://www.ikbc.co.kr/schedule/fm",
     "priority": 100,
     "adapter": "kbc",
-    "enabled": false
+    "enabled": true
   },
   {
     "source_id": "bbs-daegu",

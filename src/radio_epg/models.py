@@ -143,3 +143,18 @@ class ImportBatch(_DomainModel):
     def serialize_collected_at_as_utc(self, value: datetime) -> datetime:
         """수집 완료 시각을 UTC로 직렬화한다."""
         return value.astimezone(UTC)
+
+
+class RunNote(_DomainModel):
+    """게시할 편성이 없던 정상 실행을 메모와 함께 Worker에 남기는 기록."""
+
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    source: SourceMetadata
+    started_at: AwareDatetime
+    finished_at: AwareDatetime
+    note: str = Field(min_length=1, max_length=200)
+
+    @field_serializer("started_at", "finished_at", when_used="json")
+    def serialize_run_times_as_utc(self, value: datetime) -> datetime:
+        """실행 시각을 UTC로 직렬화한다."""
+        return value.astimezone(UTC)

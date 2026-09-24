@@ -8,6 +8,7 @@ import {
   type ImportBatchInput,
   type ImportScheduleInput,
 } from "../import-schema";
+import { weekdayOfDate } from "../repositories/schedules";
 import type { AppEnv } from "../types";
 
 const MAX_IMPORT_BYTES = 1_000_000;
@@ -75,17 +76,16 @@ export async function buildImportStatements(
     genre: program.genre ?? null,
     homepage_url: program.homepage_url ?? null,
   }));
+  // 편성은 요일 슬롯 단위로 교체한다. 화요일 편성을 새로 받으면 이전 화요일
+  // 편성(날짜가 달라도)을 지우고 이번 배치로 채운다.
   const scopeKeys = new Set<string>();
-  const scopes: Array<{ source_id: string; channel_id: string; broadcast_date: string }> = [];
+  const scopes: Array<{ source_id: string; channel_id: string; weekday: number }> = [];
   for (const event of batch.schedules) {
-    const key = `${event.source_id}\u0000${event.channel_id}\u0000${event.broadcast_date}`;
+    const weekday = weekdayOfDate(event.broadcast_date);
+    const key = `${event.source_id}\u0000${event.channel_id}\u0000${weekday}`;
     if (!scopeKeys.has(key)) {
       scopeKeys.add(key);
-      scopes.push({
-        source_id: event.source_id,
-        channel_id: event.channel_id,
-        broadcast_date: event.broadcast_date,
-      });
+      scopes.push({ source_id: event.source_id, channel_id: event.channel_id, weekday });
     }
   }
   const events = await Promise.all(
@@ -219,7 +219,7 @@ export async function buildImportStatements(
            JOIN schedule_events AS scoped
              ON scoped.source_id = json_extract(scope.value, '$.source_id')
              AND scoped.channel_id = json_extract(scope.value, '$.channel_id')
-             AND scoped.broadcast_date = json_extract(scope.value, '$.broadcast_date')
+             AND scoped.weekday = json_extract(scope.value, '$.weekday')
            WHERE scoped.id NOT IN (SELECT value FROM json_each(?2))
          )`,
       )
@@ -269,7 +269,8 @@ export async function buildImportStatements(
            fetched_at = excluded.fetched_at,
            updated_at = CURRENT_TIMESTAMP
          WHERE
-           schedule_events.starts_at IS NOT excluded.starts_at
+           schedule_events.broadcast_date IS NOT excluded.broadcast_date
+           OR schedule_events.starts_at IS NOT excluded.starts_at
            OR schedule_events.ends_at IS NOT excluded.ends_at
            OR schedule_events.title IS NOT excluded.title
            OR schedule_events.subtitle IS NOT excluded.subtitle

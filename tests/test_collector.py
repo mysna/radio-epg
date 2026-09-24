@@ -8,7 +8,13 @@ from radio_epg.adapters.base import CollectionWindow
 from radio_epg.broadcast_time import KST
 from radio_epg.collector import Collector
 from radio_epg.config import SourceConfig
-from radio_epg.models import AdapterResult, ImportBatch, ScheduleCandidate, SourceMetadata
+from radio_epg.models import (
+    AdapterResult,
+    ImportBatch,
+    RunNote,
+    ScheduleCandidate,
+    SourceMetadata,
+)
 from radio_epg.publisher import PublishError
 
 
@@ -216,11 +222,60 @@ def test_empty_results_preserve_prior_data_and_summary_contains_counts_and_timin
     run = report.runs[0]
 
     assert publisher.batches == []
-    assert run.status == "failed"
-    assert run.error == "EmptyScheduleError"
+    assert run.status == "succeeded"
+    assert run.error is None
+    assert run.note == "편성표 없음"
     assert run.started_at == datetime(2026, 7, 13, 2, tzinfo=UTC)
     assert run.finished_at == datetime(2026, 7, 13, 2, 0, 3, tzinfo=UTC)
     assert run.duration_ms == 3000
     assert run.channel_count == 0
     assert run.program_count == 0
     assert run.event_count == 0
+
+
+class FakeNoteRecorder:
+    def __init__(self, error: Exception | None = None) -> None:
+        self.notes: list[RunNote] = []
+        self.error = error
+
+    async def __call__(self, note: RunNote) -> dict[str, str]:
+        if self.error is not None:
+            raise self.error
+        self.notes.append(note)
+        return {"status": "applied"}
+
+
+def test_empty_schedule_is_recorded_as_a_note_without_publishing() -> None:
+    publisher = FakePublisher()
+    recorder = FakeNoteRecorder()
+    collector = Collector(
+        (FakeAdapter("empty", _result("empty", schedules=())),),
+        publisher=publisher,
+        note_recorder=recorder,
+        today=lambda: date(2026, 7, 13),
+        now=lambda: datetime(2026, 7, 13, 2, tzinfo=UTC),
+    )
+
+    report = asyncio.run(collector.collect())
+
+    assert publisher.batches == []
+    assert report.runs[0].status == "succeeded"
+    assert [note.note for note in recorder.notes] == ["편성표 없음"]
+    note = recorder.notes[0]
+    assert note.source.source_id == "empty"
+    assert note.idempotency_key == "empty:2026-07-13T02:00:00+00:00:no-schedule"
+    assert note.model_dump(mode="json")["started_at"] == "2026-07-13T02:00:00Z"
+
+
+def test_note_recording_failure_is_reported_as_a_failed_run() -> None:
+    collector = Collector(
+        (FakeAdapter("empty", _result("empty", schedules=())),),
+        publisher=FakePublisher(),
+        note_recorder=FakeNoteRecorder(PublishError("ingestion request failed with HTTP 500")),
+        today=lambda: date(2026, 7, 13),
+    )
+
+    run = asyncio.run(collector.collect()).runs[0]
+
+    assert run.status == "failed"
+    assert run.error == "PublishError: ingestion request failed with HTTP 500"

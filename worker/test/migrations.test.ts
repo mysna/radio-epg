@@ -155,15 +155,27 @@ describe("schema migration", () => {
     ).rejects.toThrow();
   });
 
-  it("uses the channel and start-time index for schedule lookup", async () => {
+  it("uses the channel weekday-slot index for schedule lookup", async () => {
     const result = await db.prepare(
-      "EXPLAIN QUERY PLAN SELECT * FROM schedule_events WHERE channel_id = ? AND starts_at >= ? ORDER BY starts_at",
+      `EXPLAIN QUERY PLAN SELECT * FROM schedule_events
+       WHERE channel_id = ? AND weekday = ? AND start_offset >= ? AND start_offset < ?`,
     )
-      .bind("kbs.1radio.main", "2026-07-13T00:00:00Z")
+      .bind("kbs.1radio.main", 1, 0, 86400)
       .all<{ detail: string }>();
 
     expect(result.results.map(({ detail }) => detail).join(" ")).toContain(
-      "idx_schedule_events_channel_starts",
+      "idx_schedule_events_channel_slot (channel_id=? AND weekday=? AND start_offset>? AND start_offset<?)",
     );
+  });
+
+  it("derives weekday slot columns from the broadcast date", async () => {
+    const row = await db.prepare(
+      `SELECT CAST(strftime('%w', '2026-07-13') AS INTEGER) AS weekday,
+              CAST(round((julianday('2026-07-12T20:00:00Z') - julianday('2026-07-13')) * 86400) AS INTEGER)
+                + 32400 AS start_offset`,
+    ).first<{ weekday: number; start_offset: number }>();
+
+    // 2026-07-13은 월요일, 07-13 05:00 KST는 방송일 0시로부터 5시간.
+    expect(row).toEqual({ weekday: 1, start_offset: 18_000 });
   });
 });

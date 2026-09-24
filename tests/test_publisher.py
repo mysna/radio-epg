@@ -9,10 +9,11 @@ import pytest
 from radio_epg.models import (
     ImportBatch,
     ProgramCandidate,
+    RunNote,
     ScheduleCandidate,
     SourceMetadata,
 )
-from radio_epg.publisher import PublishError, publish_batch
+from radio_epg.publisher import PublishError, publish_batch, record_run_note
 
 TOKEN = "super-secret-ingest-token"
 
@@ -256,3 +257,37 @@ def test_publisher_wraps_invalid_success_responses() -> None:
                 transport=httpx.MockTransport(handler),
             )
         )
+
+
+def test_run_note_is_posted_to_the_runs_endpoint_with_utc_times() -> None:
+    observed: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed["url"] = str(request.url)
+        observed["authorization"] = request.headers["Authorization"]
+        observed["body"] = json.loads(request.read())
+        return httpx.Response(201, json={"status": "applied"})
+
+    note = RunNote(
+        idempotency_key="kbs:2026-07-13T01:00:00+00:00:no-schedule",
+        source=_batch().source,
+        started_at=datetime(2026, 7, 13, 10, tzinfo=UTC) + timedelta(hours=-9),
+        finished_at=datetime(2026, 7, 13, 1, 0, 5, tzinfo=UTC),
+        note="편성표 없음",
+    )
+    result = asyncio.run(
+        record_run_note(
+            note,
+            base_url="https://epg.example.test/",
+            token=TOKEN,
+            transport=httpx.MockTransport(handler),
+        )
+    )
+
+    body = cast(dict[str, Any], observed["body"])
+    assert result == {"status": "applied"}
+    assert observed["url"] == "https://epg.example.test/v1/admin/runs"
+    assert observed["authorization"] == f"Bearer {TOKEN}"
+    assert body["note"] == "편성표 없음"
+    assert body["started_at"] == "2026-07-13T01:00:00Z"
+    assert body["source"]["source_id"] == "kbs"

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createDatabase } from "../src/db";
 import app from "../src/index";
+import { currentAndNextForChannels } from "../src/repositories/schedules";
 import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const NOW = new Date("2026-07-13T03:30:00Z");
@@ -191,6 +192,41 @@ describe("public schedule API", () => {
     expect(body.events[0]).not.toHaveProperty("program_image_url");
   });
 
+  it("serves the latest same-weekday schedule shifted to the requested date", async () => {
+    // 2026-07-20은 07-13과 같은 월요일이다. 07-20 편성이 아직 없으므로 07-13 편성을 옮겨 준다.
+    const response = await request(`/v1/schedules?radio_id=${RADIO_ID}&date=2026-07-20`);
+    const body = (await response.json()) as {
+      broadcast_date: string;
+      data_date: string;
+      fallback: boolean;
+      events: Array<{ starts_at: string; ends_at: string; source: { broadcast_date: string } }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      broadcast_date: "2026-07-20",
+      data_date: "2026-07-13",
+      fallback: true,
+      status: "available",
+    });
+    expect(body.events.map(({ starts_at, ends_at }) => [starts_at, ends_at])).toEqual([
+      ["2026-07-20T03:00:00Z", "2026-07-20T04:00:00Z"],
+      ["2026-07-20T04:00:00Z", "2026-07-20T05:00:00Z"],
+    ]);
+    expect(body.events[0].source.broadcast_date).toBe("2026-07-13");
+  });
+
+  it("does not mix other weekdays into a date", async () => {
+    const response = await request(`/v1/schedules?radio_id=${RADIO_ID}&date=2026-07-14`);
+
+    await expect(response.json()).resolves.toMatchObject({
+      status: "unavailable",
+      data_date: null,
+      fallback: false,
+      events: [],
+    });
+  });
+
   it("rejects invalid calendar dates with a stable error", async () => {
     const response = await request(`/v1/schedules?radio_id=${RADIO_ID}&date=2026-02-30`);
 
@@ -248,8 +284,22 @@ describe("current schedule API", () => {
       radio_id: RADIO_ID,
       channel_id: "kbs.1radio.busan",
       status: "available",
-      current: { title: "KBS 뉴스" },
+      current: { title: "KBS 뉴스", source: { broadcast_date: "2026-07-13" } },
       next: { title: "다음 프로그램" },
+    });
+  });
+
+  it("reuses last week's same-weekday slot for current and next", async () => {
+    const weekLater = new Date(NOW.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const schedules = await currentAndNextForChannels(db, ["kbs.1radio.busan"], weekLater);
+
+    expect(schedules.get("kbs.1radio.busan")).toMatchObject({
+      current: {
+        title: "KBS 뉴스",
+        starts_at: "2026-07-20T03:00:00Z",
+        source: { broadcast_date: "2026-07-13" },
+      },
+      next: { title: "다음 프로그램", starts_at: "2026-07-20T04:00:00Z" },
     });
   });
 

@@ -5,68 +5,36 @@ import type { Database } from "./db";
 import { errorResponse } from "./errors";
 import type { AppEnv } from "./types";
 
-const KST_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
 export interface RetentionResult {
-  start_date: string;
-  end_date: string;
   deleted: number;
 }
 
-const CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function isCalendarDate(value: string): boolean {
-  if (!CALENDAR_DATE.test(value)) {
-    return false;
-  }
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
-}
-
-function koreanCalendarDate(now: Date): string {
-  const parts = new Map(
-    KST_DATE_FORMATTER.formatToParts(now).map((part) => [part.type, part.value]),
-  );
-  return `${parts.get("year")}-${parts.get("month")}-${parts.get("day")}`;
-}
-
-function nextCalendarDate(value: string): string {
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function previousCalendarDate(value: string): string {
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function isCurrentOrPreviousKoreanDate(value: string, now: Date): boolean {
-  const current = koreanCalendarDate(now);
-  return value === current || value === previousCalendarDate(current);
-}
-
-/** KST 오늘·내일 편성만 남기고 프로그램 메타데이터는 보존한다. */
-export async function deleteExpiredScheduleEvents(
-  database: Database,
-  now: Date = new Date(),
-  collectionStartDate?: string,
-): Promise<RetentionResult> {
-  const startDate = collectionStartDate ?? koreanCalendarDate(now);
-  const endDate = nextCalendarDate(startDate);
-  // OR 조건은 인덱스를 쓰지 못하므로 범위를 나눠 broadcast_date 인덱스를 태운다.
-  const [before, after] = await database.batch([
-    database.prepare("DELETE FROM schedule_events WHERE broadcast_date < ?").bind(startDate),
-    database.prepare("DELETE FROM schedule_events WHERE broadcast_date > ?").bind(endDate),
-  ]);
-  const deleted = before.meta.changes + after.meta.changes;
-  return { start_date: startDate, end_date: endDate, deleted };
+/**
+ * 요일 슬롯마다 가장 최근 방송일 편성만 남긴다. import가 같은 요일을 통째로
+ * 교체하므로 평소에는 지울 것이 없고, 교체가 중간에 끊긴 경우를 정리하는
+ * 안전장치다. 슬롯은 기간과 무관하게 새 편성이 올 때까지 유지한다.
+ */
+export async function deleteSupersededScheduleEvents(database: Database): Promise<RetentionResult> {
+  // (source_id, channel_id, weekday, broadcast_date) 인덱스만으로 슬롯별 최신 날짜를 구한다.
+  const result = await database
+    .prepare(
+      `DELETE FROM schedule_events
+       WHERE rowid IN (
+         SELECT stale.rowid
+         FROM (
+           SELECT source_id, channel_id, weekday, MAX(broadcast_date) AS latest_date
+           FROM schedule_events
+           GROUP BY source_id, channel_id, weekday
+         ) AS slot
+         JOIN schedule_events AS stale
+           ON stale.source_id = slot.source_id
+           AND stale.channel_id = slot.channel_id
+           AND stale.weekday = slot.weekday
+           AND stale.broadcast_date < slot.latest_date
+       )`,
+    )
+    .run();
+  return { deleted: result.meta.changes };
 }
 
 const retention = new Hono<AppEnv>();
@@ -81,25 +49,7 @@ retention.post("/", async (context) => {
   }
 
   try {
-    const now = new Date();
-    const collectionStartDate = context.req.query("start_date");
-    if (
-      collectionStartDate &&
-      (!isCalendarDate(collectionStartDate) ||
-        !isCurrentOrPreviousKoreanDate(collectionStartDate, now))
-    ) {
-      return errorResponse(
-        context,
-        400,
-        "invalid_start_date",
-        "start_date must be the current or previous KST date.",
-      );
-    }
-    const result = await deleteExpiredScheduleEvents(
-      context.get("db"),
-      now,
-      collectionStartDate,
-    );
+    const result = await deleteSupersededScheduleEvents(context.get("db"));
     return context.json({ status: "completed", ...result }, 200);
   } catch {
     return errorResponse(context, 500, "retention_failed", "Schedule retention could not run.");

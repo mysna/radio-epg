@@ -16,8 +16,8 @@ from radio_epg.collector import Collector
 from radio_epg.config import CollectorSettings, load_sources
 from radio_epg.coverage import build_coverage, render_coverage_markdown
 from radio_epg.fixture_validation import validate_fixtures
-from radio_epg.models import ImportBatch
-from radio_epg.publisher import publish_batch
+from radio_epg.models import ImportBatch, RunNote
+from radio_epg.publisher import publish_batch, record_run_note
 from radio_epg.registry import default_registry
 
 _SOURCES_PATH = Path(__file__).parents[2] / "data" / "sources.json"
@@ -160,7 +160,19 @@ async def _run_collection(source_id: str | None, start_date: date | None = None)
             token=settings.ingest_token,
         )
 
-    report = await Collector(adapters, publisher=publisher, start_date=start_date).collect()
+    async def note_recorder(note: RunNote) -> dict[str, object]:
+        return await record_run_note(
+            note,
+            base_url=settings.api_base_url,
+            token=settings.ingest_token,
+        )
+
+    report = await Collector(
+        adapters,
+        publisher=publisher,
+        note_recorder=note_recorder,
+        start_date=start_date,
+    ).collect()
     print(report.model_dump_json(indent=2))
     return 1 if any(run.status == "failed" for run in report.runs) else 0
 

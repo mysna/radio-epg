@@ -9,13 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from radio_epg.adapters.base import CollectionWindow, ScheduleAdapter
 from radio_epg.broadcast_time import KST
-from radio_epg.models import AdapterResult, ImportBatch
+from radio_epg.models import AdapterResult, ImportBatch, RunNote
 from radio_epg.publisher import PublishError
 from radio_epg.validation import (
     SchedulePolicy,
     ScheduleValidationError,
     validate_schedule,
 )
+
+NO_SCHEDULE_NOTE = "편성표 없음"
 
 
 class EmptyScheduleError(ValueError):
@@ -31,6 +33,14 @@ class BatchPublisher(Protocol):
 
     def __call__(self, batch: ImportBatch) -> Awaitable[dict[str, Any]]:
         """한 batch를 게시한다."""
+        ...
+
+
+class RunNoteRecorder(Protocol):
+    """편성 없이 끝난 실행을 메모로 남긴다."""
+
+    def __call__(self, note: RunNote) -> Awaitable[dict[str, Any]]:
+        """한 실행 메모를 기록한다."""
         ...
 
 
@@ -50,6 +60,7 @@ class ScrapeRunSummary(_ReportModel):
     program_count: int = Field(ge=0)
     event_count: int = Field(ge=0)
     error: str | None = None
+    note: str | None = None
 
 
 class CollectionReport(_ReportModel):
@@ -87,6 +98,17 @@ def _batch(result: AdapterResult, collected_at: datetime) -> ImportBatch:
     )
 
 
+def _run_note(result: AdapterResult, started_at: datetime, finished_at: datetime) -> RunNote:
+    started_utc = started_at.astimezone(UTC)
+    return RunNote(
+        idempotency_key=f"{result.source.source_id}:{started_utc.isoformat()}:no-schedule",
+        source=result.source,
+        started_at=started_at,
+        finished_at=finished_at,
+        note=NO_SCHEDULE_NOTE,
+    )
+
+
 def _counts(result: AdapterResult | None) -> tuple[int, int, int]:
     if result is None:
         return (0, 0, 0)
@@ -120,12 +142,14 @@ class Collector:
         adapters: Sequence[ScheduleAdapter],
         *,
         publisher: BatchPublisher,
+        note_recorder: RunNoteRecorder | None = None,
         start_date: date | None = None,
         today: Callable[[], date] = _korean_today,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._adapters = tuple(adapters)
         self._publisher = publisher
+        self._note_recorder = note_recorder
         self._start_date = start_date
         self._today = today
         self._now = now
@@ -140,11 +164,20 @@ class Collector:
             started_at = self._now()
             result: AdapterResult | None = None
             error: str | None = None
+            note: str | None = None
             status: Literal["succeeded", "failed"] = "failed"
             try:
                 result = await adapter.collect(window)
-                _validate_result(adapter, result)
-                await self._publisher(_batch(result, started_at))
+                try:
+                    _validate_result(adapter, result)
+                except EmptyScheduleError:
+                    # 방송사가 편성을 아직 올리지 않은 것은 수집 실패가 아니다. 기존
+                    # 요일 편성을 그대로 두고 메모만 남겨, 다음 날 다시 수집한다.
+                    note = NO_SCHEDULE_NOTE
+                    if self._note_recorder is not None:
+                        await self._note_recorder(_run_note(result, started_at, self._now()))
+                else:
+                    await self._publisher(_batch(result, started_at))
                 status = "succeeded"
             except Exception as caught:  # adapter별 실패 격리 경계
                 error = _collection_error(caught)
@@ -162,6 +195,7 @@ class Collector:
                     program_count=program_count,
                     event_count=event_count,
                     error=error,
+                    note=note,
                 )
             )
 

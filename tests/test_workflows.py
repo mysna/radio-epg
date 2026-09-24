@@ -91,7 +91,7 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
     retention = next(step for step in steps if step.get("name") == "Apply schedule retention")
     assert retention["if"] == "always()"
     assert retention["env"] == credentials
-    assert "/v1/admin/retention?start_date=${EPG_COLLECTION_DATE}" in retention["run"]
+    assert "/v1/admin/retention" in retention["run"]
     assert steps.index(ingestion) < steps.index(retention)
     diagnostics = next(step for step in steps if step.get("name") == "Upload sanitized diagnostics")
     assert diagnostics["if"] == "failure()"

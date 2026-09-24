@@ -28,7 +28,24 @@ GET /v1/schedules?radio_id=busan-039-kbs-1radio-busan&date=2026-07-13
 
 `date`는 실제 달력에 존재하는 `YYYY-MM-DD` 방송일이어야 한다. 응답 이벤트의
 `starts_at`/`ends_at`은 UTC RFC 3339 시각이고, `source`에는 원본 URL, 종류, 조회 시각,
-신뢰도와 `stale` 상태가 포함된다.
+신뢰도, `stale` 상태와 실제로 수집한 방송일 `broadcast_date`가 포함된다.
+
+편성은 날짜가 아니라 요일 슬롯(일~토)으로 저장한다. 요청한 날짜의 요일 슬롯에 있는
+가장 최근 편성을 요청 날짜로 옮겨 돌려주므로, 방송사가 그 날짜 편성을 아직 올리지
+않았으면 지난 같은 요일 편성이 나온다. 응답의 `data_date`는 슬롯 편성의 실제 방송일,
+`fallback`은 `data_date`가 요청 날짜와 다른지 여부다.
+
+```json
+{
+  "channel_id": "kbs.1radio.busan",
+  "broadcast_date": "2026-07-20",
+  "data_date": "2026-07-13",
+  "fallback": true,
+  "status": "available",
+  "stale": true,
+  "events": [{ "starts_at": "2026-07-20T03:00:00Z", "source": { "broadcast_date": "2026-07-13" } }]
+}
+```
 
 ## 현재 및 다음 프로그램
 
@@ -37,7 +54,9 @@ GET /v1/now?radio_ids=id1,id2
 ```
 
 한 번에 최대 100개 radio ID를 쉼표로 전달할 수 있다. 각 결과는 `current`, `next`와
-`available`, `unavailable`, 또는 `not_found` 상태를 포함한다. 등록되지 않은 radio ID가
+`available`, `unavailable`, 또는 `not_found` 상태를 포함한다. 날짜별 편성과 같이 KST
+어제·오늘·내일의 요일 슬롯을 해당 날짜로 옮겨 계산하며, 각 이벤트의
+`source.broadcast_date`로 실제 수집 방송일을 확인할 수 있다. 등록되지 않은 radio ID가
 있어도 묶음 요청은 실패하지 않으며, 요청 순서의 해당 결과를 `channel_id: null`,
 `status: "not_found"`, `current: null`, `next: null`로 반환한다. 응답은 현재 편성이
 끝나는 시각까지 캐시하며, 수명은 최소 30초에서 최대 5분으로 제한한다.
@@ -48,7 +67,9 @@ GET /v1/now?radio_ids=id1,id2
 GET /v1/coverage
 ```
 
-활성 소스별 이벤트 수, 마지막 조회 시각, stale 상태를 반환한다.
+활성 소스별 이벤트 수, 마지막 조회 시각, stale 상태를 반환한다. `no_schedule_since`는
+마지막으로 편성을 받은 뒤 "편성표 없음" 실행이 이어진 경우 그 첫 실행 시각이고, 아니면
+`null`이다. 값이 오래될수록 방송사가 편성 게시를 멈췄을 가능성이 크다.
 
 ## 수집 결과 ingestion
 
@@ -59,7 +80,8 @@ Content-Type: application/json
 ```
 
 Collector 전용 서버 간 API다. 요청은 1MB 이하의 검증된 batch여야 하며, 채널·프로그램과
-`source_id`/`channel_id`/`broadcast_date` 범위의 편성을 하나의 DB batch로 반영한다.
+`source_id`/`channel_id`/요일 슬롯 범위의 편성을 하나의 DB batch로 반영한다. 화요일
+편성을 받으면 그 채널의 이전 화요일 편성(날짜가 달라도)을 교체한다.
 동일한 `idempotency_key`와 동일한 payload를 다시 보내면 `200 already_applied`, 같은 키에
 다른 payload를 보내면 `409 idempotency_conflict`를 반환한다. 최초 적용은
 `201 applied`를 반환한다.
@@ -67,26 +89,33 @@ Collector 전용 서버 간 API다. 요청은 1MB 이하의 검증된 batch여�
 인증 실패는 `401 unauthorized`, schema 실패는 `400 invalid_import`, 크기 초과는
 `413 request_too_large`다. 인증 토큰은 Wrangler secret `INGEST_TOKEN`으로만 설정한다.
 
-## 편성 보존 기간 정리
+## 편성 없음 실행 기록
+
+```text
+POST /v1/admin/runs
+Authorization: Bearer <INGEST_TOKEN>
+Content-Type: application/json
+```
+
+Collector 전용이다. 방송사가 편성을 올리지 않아 게시할 편성이 없던 실행을
+`scrape_runs`에 성공(`event_count = 0`)과 메모(`note`, 예: `편성표 없음`)로 남긴다. 기존
+편성은 건드리지 않는다. 본문은 `idempotency_key`, `source`, `started_at`, `finished_at`,
+`note`이며, 최초 기록은 `201 applied`, 같은 키 재전송은 `200 already_applied`다.
+
+## 편성 슬롯 정리
 
 ```text
 POST /v1/admin/retention
 Authorization: Bearer <INGEST_TOKEN>
 ```
 
-요청 본문은 없다. 기본적으로 Worker가 계산한 KST 오늘과 내일의 `schedule_events`만 남기고
-날짜 범위 밖의 과거 및 먼 미래 편성을 삭제한다. 수집 workflow는 자정 교차에도 같은 날짜를
-사용하도록 `?start_date=YYYY-MM-DD`를 전달한다. 안전을 위해 이 값은 Worker 기준 KST 오늘
-또는 어제만 허용한다. 오늘 이미 끝난 이벤트와 프로그램, 채널, 별칭은 삭제하지 않는다.
-같은 날짜에 반복 호출해도 안전하다.
+요청 본문은 없다. 같은 source/channel/요일 슬롯에 더 최근 방송일 편성이 있으면 이전
+방송일 편성을 삭제한다. import가 요일 슬롯을 통째로 교체하므로 평소에는 지울 것이 없는
+안전장치이며, 슬롯은 기간과 무관하게 새 편성이 올 때까지 유지한다. 프로그램, 채널,
+별칭은 삭제하지 않는다. 반복 호출해도 안전하다.
 
 ```json
-{
-  "status": "completed",
-  "start_date": "2026-07-14",
-  "end_date": "2026-07-15",
-  "deleted": 42
-}
+{ "status": "completed", "deleted": 0 }
 ```
 
 인증 실패는 `401 unauthorized`, DB 정리 실패는 `500 retention_failed`다. 일일 수집

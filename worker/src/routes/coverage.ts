@@ -11,6 +11,7 @@ interface CoverageRow {
   enabled: number;
   event_count: number;
   last_fetched_at: string | null;
+  no_schedule_since: string | null;
 }
 
 const coverage = new Hono<AppEnv>();
@@ -32,7 +33,8 @@ coverage.get("/", async (context) =>
            sources.kind,
            sources.enabled,
            COALESCE(aggregate.event_count, 0) AS event_count,
-           aggregate.last_fetched_at
+           aggregate.last_fetched_at,
+           gap.no_schedule_since
          FROM sources
          LEFT JOIN (
            SELECT
@@ -42,6 +44,24 @@ coverage.get("/", async (context) =>
            FROM schedule_events
            GROUP BY source_id
          ) AS aggregate ON aggregate.source_id = sources.id
+         LEFT JOIN (
+           -- 마지막으로 편성을 받은 실행 이후 이어진 "편성표 없음" 실행의 시작 시각.
+           -- 오래될수록 방송사가 편성 게시를 멈췄을 가능성이 크다.
+           SELECT empty.source_id, MIN(empty.started_at) AS no_schedule_since
+           FROM scrape_runs AS empty
+           WHERE empty.status = 'succeeded'
+             AND empty.event_count = 0
+             AND empty.error_summary IS NOT NULL
+             AND empty.started_at > COALESCE(
+               (
+                 SELECT MAX(filled.started_at)
+                 FROM scrape_runs AS filled
+                 WHERE filled.source_id = empty.source_id AND filled.event_count > 0
+               ),
+               ''
+             )
+           GROUP BY empty.source_id
+         ) AS gap ON gap.source_id = sources.id
          ORDER BY sources.id`,
       ).all<CoverageRow>();
       const now = new Date();
@@ -56,6 +76,7 @@ coverage.get("/", async (context) =>
           status: row.event_count > 0 ? "available" : "unavailable",
           last_fetched_at: row.last_fetched_at,
           stale: row.last_fetched_at ? isStale(row.last_fetched_at, now) : true,
+          no_schedule_since: row.no_schedule_since,
         })),
       };
     },

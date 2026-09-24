@@ -284,6 +284,43 @@ describe("authenticated schedule ingestion", () => {
     expect(events.results.map(({ title }) => title)).toEqual(["KBS 저녁 뉴스"]);
   });
 
+  it("replaces last week's same-weekday slot but keeps other weekdays", async () => {
+    // 07-13(월)과 07-14(화)를 먼저 받고, 다음 주 07-20(월)을 받으면 월요일 슬롯만 교체된다.
+    const first = importBatch("slot");
+    first.schedules.push({
+      ...first.schedules[0],
+      source_event_id: "event-slot-tuesday",
+      broadcast_date: "2026-07-14",
+      starts_at: "2026-07-14T03:00:00Z",
+      ends_at: "2026-07-14T04:00:00Z",
+      title: "화요일 뉴스",
+    });
+    expect((await adminRequest(first)).status).toBe(201);
+
+    const nextMonday = importBatch("slot");
+    nextMonday.idempotency_key = "kbs-slot-next-monday";
+    nextMonday.schedules[0] = {
+      ...nextMonday.schedules[0],
+      source_event_id: "event-slot-next-monday",
+      broadcast_date: "2026-07-20",
+      starts_at: "2026-07-20T03:00:00Z",
+      ends_at: "2026-07-20T04:00:00Z",
+      title: "다음 주 월요일 뉴스",
+    };
+    const response = await adminRequest(nextMonday);
+    const events = await db.prepare(
+      "SELECT broadcast_date, title FROM schedule_events WHERE channel_id = ? ORDER BY broadcast_date",
+    )
+      .bind("kbs.1radio.slot")
+      .all<{ broadcast_date: string; title: string }>();
+
+    expect(response.status).toBe(201);
+    expect(events.results).toEqual([
+      { broadcast_date: "2026-07-14", title: "화요일 뉴스" },
+      { broadcast_date: "2026-07-20", title: "다음 주 월요일 뉴스" },
+    ]);
+  });
+
   it("does not erase valid events with an empty batch", async () => {
     const original = importBatch("empty");
     expect((await adminRequest(original)).status).toBe(201);
@@ -298,5 +335,62 @@ describe("authenticated schedule ingestion", () => {
 
     expect(response.status).toBe(400);
     expect(count?.count).toBe(1);
+  });
+});
+
+function runNote(idempotencyKey: string, startedAt: string) {
+  return {
+    idempotency_key: idempotencyKey,
+    source: { ...importBatch("gap").source, source_id: "gap", name: "Gap 편성표" },
+    started_at: startedAt,
+    finished_at: startedAt,
+    note: "편성표 없음",
+  };
+}
+
+async function runNoteRequest(body: unknown, token: string | null = TOKEN): Promise<Response> {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  if (token !== null) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return app.request(
+    "https://api.example.test/v1/admin/runs",
+    { method: "POST", headers, body: JSON.stringify(body) },
+    bindings,
+  );
+}
+
+describe("no-schedule run notes", () => {
+  it("requires the ingest token and a valid note", async () => {
+    expect((await runNoteRequest(runNote("gap-auth", "2026-07-14T01:00:00Z"), null)).status).toBe(401);
+    expect((await runNoteRequest({ note: "편성표 없음" })).status).toBe(400);
+  });
+
+  it("records an idempotent succeeded run without touching schedules", async () => {
+    const first = await runNoteRequest(runNote("gap-1", "2026-07-14T01:00:00Z"));
+    const again = await runNoteRequest(runNote("gap-1", "2026-07-14T01:00:00Z"));
+    const run = await db.prepare(
+      "SELECT status, event_count, error_summary FROM scrape_runs WHERE idempotency_key = ?",
+    )
+      .bind("gap-1")
+      .first();
+
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(200);
+    await expect(again.json()).resolves.toMatchObject({ status: "already_applied" });
+    expect(run).toEqual({ status: "succeeded", event_count: 0, error_summary: "편성표 없음" });
+  });
+
+  it("reports since when a source has had no schedule in coverage", async () => {
+    await runNoteRequest(runNote("gap-2", "2026-07-15T01:00:00Z"));
+    const response = await app.request("https://api.example.test/v1/coverage", {}, bindings);
+    const body = (await response.json()) as {
+      sources: Array<{ source_id: string; no_schedule_since: string | null }>;
+    };
+
+    expect(body.sources.find(({ source_id }) => source_id === "gap")?.no_schedule_since).toBe(
+      "2026-07-14T01:00:00Z",
+    );
+    expect(body.sources.find(({ source_id }) => source_id === "kbs")?.no_schedule_since).toBeNull();
   });
 });

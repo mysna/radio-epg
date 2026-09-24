@@ -1,15 +1,12 @@
 import { env } from "cloudflare:workers";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { createDatabase } from "../src/db";
 import app from "../src/index";
-import { deleteExpiredScheduleEvents } from "../src/retention";
+import { deleteSupersededScheduleEvents } from "../src/retention";
 import { applyMigrations, type MigrationFile } from "./helpers/migrations";
 
 const TOKEN = "test-ingest-token";
-const NOW = new Date("2026-07-13T15:30:00Z");
-const START_DATE = "2026-07-14";
-const END_DATE = "2026-07-15";
 const db = createDatabase({ url: "http://127.0.0.1:8094" });
 const testEnv = env as typeof env & { TEST_MIGRATIONS: MigrationFile[] };
 const bindings = {
@@ -17,30 +14,31 @@ const bindings = {
   INGEST_TOKEN: TOKEN,
 };
 
+// 2026-07-07과 2026-07-14는 같은 화요일 슬롯이다. 07-14가 최신이므로 07-07만 지운다.
 const retentionEvents = [
   {
-    id: "retention-yesterday",
-    broadcastDate: "2026-07-13",
-    startsAt: "2026-07-13T10:00:00Z",
-    endsAt: "2026-07-13T11:00:00Z",
+    id: "retention-last-tuesday",
+    broadcastDate: "2026-07-07",
+    startsAt: "2026-07-06T15:00:00Z",
+    endsAt: "2026-07-06T16:00:00Z",
   },
   {
-    id: "retention-today",
-    broadcastDate: START_DATE,
+    id: "retention-tuesday",
+    broadcastDate: "2026-07-14",
     startsAt: "2026-07-13T15:00:00Z",
-    endsAt: "2026-07-13T15:15:00Z",
+    endsAt: "2026-07-13T16:00:00Z",
   },
   {
-    id: "retention-tomorrow",
-    broadcastDate: END_DATE,
-    startsAt: "2026-07-14T15:00:00Z",
-    endsAt: "2026-07-14T16:00:00Z",
+    id: "retention-old-wednesday",
+    broadcastDate: "2026-06-10",
+    startsAt: "2026-06-09T15:00:00Z",
+    endsAt: "2026-06-09T16:00:00Z",
   },
   {
-    id: "retention-day-after-tomorrow",
-    broadcastDate: "2026-07-16",
-    startsAt: "2026-07-15T15:00:00Z",
-    endsAt: "2026-07-15T16:00:00Z",
+    id: "retention-monday",
+    broadcastDate: "2026-07-13",
+    startsAt: "2026-07-12T15:00:00Z",
+    endsAt: "2026-07-12T16:00:00Z",
   },
 ];
 
@@ -98,30 +96,24 @@ async function seedRetentionData(): Promise<void> {
 beforeAll(async () => {
   await applyMigrations(db, testEnv.TEST_MIGRATIONS);
   await seedRetentionData();
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(NOW);
 });
 
-afterAll(() => {
-  vi.useRealTimers();
-});
-
-describe("KST today-and-tomorrow schedule retention", () => {
-  it("uses a broadcast-date index for bounded cleanup", async () => {
+describe("weekday slot retention", () => {
+  it("finds superseded slot rows through the slot index", async () => {
     const plan = await db.prepare(
-      "EXPLAIN QUERY PLAN DELETE FROM schedule_events WHERE broadcast_date < ? OR broadcast_date > ?",
-    )
-      .bind(START_DATE, END_DATE)
-      .all<{ detail: string }>();
+      `EXPLAIN QUERY PLAN
+       SELECT source_id, channel_id, weekday, MAX(broadcast_date)
+       FROM schedule_events GROUP BY source_id, channel_id, weekday`,
+    ).all<{ detail: string }>();
 
     expect(plan.results.map(({ detail }) => detail).join(" ")).toContain(
-      "idx_schedule_events_broadcast_date",
+      "idx_schedule_events_source_slot",
     );
   });
 
-  it("keeps only today and tomorrow and is idempotent", async () => {
-    const first = await deleteExpiredScheduleEvents(db, NOW);
-    const second = await deleteExpiredScheduleEvents(db, NOW);
+  it("keeps only the latest date per weekday slot regardless of age and is idempotent", async () => {
+    const first = await deleteSupersededScheduleEvents(db);
+    const second = await deleteSupersededScheduleEvents(db);
     const events = await db.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
       id: string;
     }>();
@@ -129,11 +121,12 @@ describe("KST today-and-tomorrow schedule retention", () => {
       count: number;
     }>();
 
-    expect(first).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 2 });
-    expect(second).toEqual({ start_date: START_DATE, end_date: END_DATE, deleted: 0 });
+    expect(first).toEqual({ deleted: 1 });
+    expect(second).toEqual({ deleted: 0 });
     expect(events.results.map(({ id }) => id)).toEqual([
-      "retention-today",
-      "retention-tomorrow",
+      "retention-monday",
+      "retention-old-wednesday",
+      "retention-tuesday",
     ]);
     expect(programs?.count).toBe(1);
   });
@@ -152,76 +145,6 @@ describe("KST today-and-tomorrow schedule retention", () => {
 
     expect(unauthorized.status).toBe(401);
     expect(authorized.status).toBe(200);
-    await expect(authorized.json()).resolves.toMatchObject({
-      status: "completed",
-      start_date: START_DATE,
-      end_date: END_DATE,
-      deleted: 0,
-    });
-  });
-
-  it("can retain the collection run's date across a KST midnight boundary", async () => {
-    const invalid = await app.request(
-      "https://api.example.test/v1/admin/retention?start_date=2026-02-30",
-      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
-      bindings,
-    );
-    expect(invalid.status).toBe(400);
-    const stale = await app.request(
-      "https://api.example.test/v1/admin/retention?start_date=2025-01-01",
-      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
-      bindings,
-    );
-    expect(stale.status).toBe(400);
-
-    await db.prepare("DELETE FROM schedule_events").run();
-    await db.batch(
-      retentionEvents.map((event) =>
-        db
-          .prepare(
-            `INSERT INTO schedule_events (
-               id, event_key, channel_id, program_id, source_id, source_event_id,
-               broadcast_date, starts_at, ends_at, title, source_url, source_kind,
-               fetched_at, confidence
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .bind(
-            event.id,
-            event.id,
-            "retention.fm.main",
-            "retention.program",
-            "retention",
-            event.id,
-            event.broadcastDate,
-            event.startsAt,
-            event.endsAt,
-            event.id,
-            "https://source.example.test/",
-            "official",
-            "2026-07-13T00:00:00Z",
-            1,
-          ),
-      ),
-    );
-
-    const response = await app.request(
-      "https://api.example.test/v1/admin/retention?start_date=2026-07-13",
-      { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } },
-      bindings,
-    );
-    const events = await db.prepare("SELECT id FROM schedule_events ORDER BY id").all<{
-      id: string;
-    }>();
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      start_date: "2026-07-13",
-      end_date: "2026-07-14",
-      deleted: 2,
-    });
-    expect(events.results.map(({ id }) => id)).toEqual([
-      "retention-today",
-      "retention-yesterday",
-    ]);
+    await expect(authorized.json()).resolves.toEqual({ status: "completed", deleted: 0 });
   });
 });

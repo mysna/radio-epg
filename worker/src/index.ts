@@ -4,6 +4,7 @@ import { createDatabase } from "./db";
 import { errorResponse } from "./errors";
 import retention from "./retention";
 import adminImport from "./routes/admin-import";
+import adminRuns from "./routes/admin-runs";
 import channels from "./routes/channels";
 import coverage from "./routes/coverage";
 import nowRoute from "./routes/now";
@@ -67,6 +68,7 @@ app.route("/v1/schedules", schedules);
 app.route("/v1/now", nowRoute);
 app.route("/v1/coverage", coverage);
 app.route("/v1/admin/import", adminImport);
+app.route("/v1/admin/runs", adminRuns);
 app.route("/v1/admin/retention", retention);
 
 export default app;
