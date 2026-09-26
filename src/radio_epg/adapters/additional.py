@@ -1079,7 +1079,22 @@ class AdditionalStationAdapter:
         elif source_id == "tbs":
             response = await client.post(endpoint, data={"onDate": day.strftime("%Y%m%d")})
         elif source_id == "febc":
-            response = await client.get(endpoint, params={"searchDate": day.isoformat()})
+            # FEBC 지역 CMS(seoul.febc.net 등)가 2026-09-25 18:45 실행부터 GH
+            # Actions 환경에서 매 실행 ConnectTimeout(정확히 ~30초)으로 끊긴다(4/4
+            # 연속 확인, 2026-09-26). 이 세션에서 같은 URL을 직접 열어봐도 TLS
+            # handshake 중 연결이 끊겨(ConnectError, Connection reset by peer)
+            # GH Actions IP만 막힌 게 아니라 호스팅 쪽 불안정으로 보인다. kfn과
+            # 같은 재시도+backoff를 쓴다.
+            import httpx
+
+            for attempt in range(5):
+                try:
+                    response = await client.get(endpoint, params={"searchDate": day.isoformat()})
+                    break
+                except (httpx.ConnectError, httpx.ConnectTimeout):
+                    if attempt == 4:
+                        raise
+                    await asyncio.sleep(5.0 * (attempt + 1))
         elif source_id == "cpbc":
             response = await client.get(
                 url or f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"

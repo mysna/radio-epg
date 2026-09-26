@@ -160,6 +160,34 @@ def test_febc_collects_every_region_as_one_source() -> None:
     assert len(channel_ids) == 13
 
 
+def test_febc_survives_a_short_burst_of_connect_timeouts(monkeypatch) -> None:
+    fixture = (FIXTURES / "febc-seoul.html").read_text()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", skip_sleep)
+
+    class Client:
+        attempts = 0
+
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            if self.attempts <= 2:
+                raise httpx.ConnectTimeout("connect timed out", request=httpx.Request("GET", url))
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    client = Client()
+    adapter = AdditionalStationAdapter(
+        _source("febc", "https://seoul.febc.net/radio/schedule"), client=client
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    # 첫 region(seoul)이 2번 실패 후 성공하고, 나머지 12개 region은 한 번씩 성공한다.
+    assert len(result.schedules) > 0
+    assert client.attempts == 2 + 13
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "channel", "first_title"),
     [
