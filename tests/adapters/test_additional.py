@@ -587,6 +587,45 @@ def test_bbs_normalizes_times_that_wrap_past_midnight() -> None:
     assert rows["bbs.main.main"][-1].end == "30:00"
 
 
+def test_bbs_mobile_fragment_ends_the_last_program_at_its_listed_time() -> None:
+    # m.bbs.or.kr 모바일 조각(2026-09-28)은 주석 속 "HH:MM ~ HH:MM"으로 종료 시각을 준다.
+    text = (FIXTURES / "bbs-mobile.html").read_text()
+
+    rows = _bbs(text, date(2026, 9, 28))["bbs.main.main"]
+
+    assert len(rows) == 33
+    assert (rows[0].start, rows[0].end, rows[0].title) == ("04:00", "04:30", "새벽 명상")
+    # 01:45 시작 마지막 프로그램은 30:00(다음 날 06:00)이 아니라 02:00에 끝나야 한다.
+    assert (rows[-1].start, rows[-1].end) == ("25:45", "26:00")
+
+
+def test_bbs_request_falls_back_to_the_pc_fragment_when_mobile_is_unreachable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pc_fixture = (FIXTURES / "bbs.html").read_text()
+    requested: list[str] = []
+
+    async def no_sleep(_: float) -> None:
+        return None
+
+    class Client:
+        async def get(self, url: str, **_: object) -> httpx.Response:
+            requested.append(url)
+            if "m.bbs.or.kr" in url:
+                raise httpx.ConnectError("Connection reset by peer")
+            return httpx.Response(200, text=pc_fixture, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", no_sleep)
+    adapter = AdditionalStationAdapter(
+        _source("bbs", "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert requested.count("https://m.bbs.or.kr/M/sub/06_schedule/ajaxSch.html") == 3
+    assert "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html" in requested
+    assert result.schedules[0].title == "경전공부"
+
+
 def test_ggn_collects_the_weekday_matching_template() -> None:
     fixture = (FIXTURES / "ggn.html").read_text()
 

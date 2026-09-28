@@ -496,19 +496,56 @@ def _febc(text: str, day: date, channel: str) -> dict[str, tuple[ScheduleRow, ..
     return {channel: _rows(channel, day, items)}
 
 
-# 실제 편성표는 CODE(방송국)·SchGubun(TV/RADIO)·SchDate로 요청하는 AJAX 조각
-# (template/ajaxSchedule.html)으로 내려오고, 그 조각 자체에는 날짜 문자열이 없어
-# _require_date로 되짚어 검증할 수 없다. 날짜를 바꿔 요청하면 실제로 다른 편성이
-# 오는 것은 직접 확인했다.
+# 편성표는 SchDate로 요청하는 AJAX 조각으로 내려오고, 조각 자체에는 날짜 문자열이
+# 없어 _require_date로 되짚어 검증할 수 없다(날짜를 바꾸면 실제로 다른 편성이 오는
+# 것은 직접 확인했다). 두 가지 형식을 받는다.
+# - 모바일(m.bbs.or.kr .../ajaxSch.html): ul.list-type02 li. 주석 처리된
+#   <!--span class="time">HH:MM ~ HH:MM</span//-->에 종료 시각이 있어 하루의 마지막
+#   프로그램도 실제 시각에 끝난다(PC 조각은 시작 시각뿐이라 기본값 30:00으로 채워
+#   02:00~04:00 정파와 다음 날 새벽 편성까지 덮었다).
+# - PC(www.bbs.or.kr .../ajaxSchedule.html): .program .date-box. 모바일 접속이
+#   실패할 때의 대체 경로다.
+_BBS_TIME_RANGE = re.compile(r'class="time">\s*(\d{1,2}:\d{2})\s*~\s*(\d{1,2}:\d{2})')
+
+
 def _bbs(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
     soup = BeautifulSoup(text, "html.parser")
     entries: list[tuple[str, str]] = []
-    for node in soup.select(".program"):
-        time_node, title_node = node.select_one(".date-box p"), node.select_one(".date-box strong")
-        if time_node and title_node:
-            entries.append((time_node.get_text(strip=True), title_node.get_text(" ", strip=True)))
+    last_end: str | None = None
+    mobile_items = soup.select("ul.list-type02 li")
+    if mobile_items:
+        for item in mobile_items:
+            time_node, title_node = item.select_one(".time"), item.select_one(".txt")
+            if time_node and title_node:
+                title = title_node.get_text(" ", strip=True)
+                entries.append((time_node.get_text(strip=True), title))
+                # 범위는 주석 안에 있어 셀렉터로 못 잡으므로 항목 원문에서 읽는다.
+                matched = _BBS_TIME_RANGE.search(str(item))
+                last_end = matched.group(2) if matched else None
+    else:
+        for node in soup.select(".program"):
+            time_node = node.select_one(".date-box p")
+            title_node = node.select_one(".date-box strong")
+            if time_node and title_node:
+                title = title_node.get_text(" ", strip=True)
+                entries.append((time_node.get_text(strip=True), title))
+    items = _normalize_wrapping_times(entries)
+    if items and last_end is not None:
+        items[-1] = (*items[-1][:2], _end_after(items[-1][0], last_end))
     channel = "bbs.main.main"
-    return {channel: _rows(channel, day, _normalize_wrapping_times(entries))}
+    return {channel: _rows(channel, day, items)}
+
+
+def _end_after(start: str, end: str) -> str:
+    """정규화된 시작 시각(예: 25:45) 뒤에 오는 첫 end(HH:MM, 24시간 이내)를 같은 축으로 옮긴다."""
+    start_hour, start_minute = (int(part) for part in start.split(":"))
+    end_hour, end_minute = (int(part) for part in end.split(":"))
+    start_total = start_hour * 60 + start_minute
+    total = start_total - start_total % (24 * 60) + (end_hour * 60 + end_minute) % (24 * 60)
+    if total <= start_total:
+        total += 24 * 60
+    hour, minute = divmod(total, 60)
+    return f"{hour:02d}:{minute:02d}"
 
 
 def _cpbc(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -1085,10 +1122,26 @@ class AdditionalStationAdapter:
                 url or f"https://apis.cpbc.co.kr/radio-api/schedule/{day.strftime('%Y%m%d')}"
             )
         elif source_id == "bbs":
-            response = await client.get(
-                "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html",
-                params={"CODE": "WWW", "SchGubun": "RADIO", "SchDate": day.isoformat()},
-            )
+            # 모바일 조각이 종료 시각까지 주지만 m.bbs.or.kr은 연결이 간헐적으로
+            # 끊긴다(2026-09-28 직접 요청 8회 중 2회 Connection reset). 몇 번 재시도하고,
+            # 그래도 안 되면 같은 편성을 주는 PC 조각으로 대체한다.
+            import httpx
+
+            response = None
+            for attempt in range(3):
+                try:
+                    response = await client.get(
+                        "https://m.bbs.or.kr/M/sub/06_schedule/ajaxSch.html",
+                        params={"Gubun": "RADIO", "SchDate": day.isoformat()},
+                    )
+                    break
+                except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout):
+                    await asyncio.sleep(2.0 * (attempt + 1))
+            if response is None or response.is_error:
+                response = await client.get(
+                    "https://www.bbs.or.kr/HOME2/template/ajaxSchedule.html",
+                    params={"CODE": "WWW", "SchGubun": "RADIO", "SchDate": day.isoformat()},
+                )
         elif source_id == "wbs":
             for attempt in range(5):
                 response = await client.get(
