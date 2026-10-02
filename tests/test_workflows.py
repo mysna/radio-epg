@@ -76,6 +76,7 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
     runs = _runs(collect)
     joined = "\n".join(runs)
     assert joined.count('uv run radio-epg collect --all --start-date "$EPG_COLLECTION_DATE"') == 1
+    assert joined.count('uv run radio-epg collect --source "$SOURCE_ID"') == 1
     assert "EPG_COLLECTION_DATE=$(TZ=Asia/Seoul date +%F)" in joined
     assert "tesseract-ocr-kor" in joined
     assert "libcairo2" in joined
@@ -87,7 +88,11 @@ def test_collection_is_single_non_overlapping_daily_import() -> None:
         "EPG_INGEST_TOKEN": "${{ secrets.EPG_INGEST_TOKEN }}",
     }
     dump_dir = "${{ runner.temp }}/upstream-responses"
-    assert ingestion["env"] == {**credentials, "EPG_RESPONSE_DUMP_DIR": dump_dir}
+    assert ingestion["env"] == {
+        "SOURCE_ID": "${{ inputs.source }}",
+        **credentials,
+        "EPG_RESPONSE_DUMP_DIR": dump_dir,
+    }
     retention = next(step for step in steps if step.get("name") == "Apply schedule retention")
     assert retention["if"] == "always()"
     assert retention["env"] == credentials

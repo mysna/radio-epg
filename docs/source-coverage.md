@@ -38,19 +38,19 @@
 | `cpbc.main.main` | enabled | religious |  |
 | `ebs.bandi.main` | enabled | ebs |  |
 | `ebs.fm.main` | enabled | ebs |  |
-| `febc.main.busan` | enabled | febc |  |
-| `febc.main.changwon` | enabled | febc |  |
-| `febc.main.daegu` | enabled | febc |  |
-| `febc.main.daejeon` | enabled | febc |  |
-| `febc.main.gangwon` | enabled | febc |  |
-| `febc.main.gwangju` | enabled | febc |  |
-| `febc.main.jeju` | enabled | febc |  |
-| `febc.main.jeonbuk` | enabled | febc |  |
-| `febc.main.jeonnam` | enabled | febc |  |
-| `febc.main.main` | enabled | febc |  |
-| `febc.main.mokpo` | enabled | febc |  |
-| `febc.main.pohang` | enabled | febc |  |
-| `febc.main.ulsan` | enabled | febc |  |
+| `febc.main.busan` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.changwon` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.daegu` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.daejeon` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.gangwon` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.gwangju` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.jeju` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.jeonbuk` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.jeonnam` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.main` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.mokpo` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.pohang` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
+| `febc.main.ulsan` | unsupported | febc | 2026-10-02 기준 GH Actions에서 9/29~10/2 스케줄 실행 6회(+10/2 수동 febc 단독 재수집 1회)가 5회 재시도(약 200초)에도 매번 ConnectTimeout(TCP 연결 단계)으로 실패함. 사용자 브라우저에서는 13개 지역 주소 모두 정상 접속되고 이 세션의 httpx/curl은 Connection reset by peer라 직접 재현은 못 했으나, 연결 단계 타임아웃이라 GH Actions IP 대역 차단으로 판단. 코드로 우회 불가(Cloudflare Worker 프록시는 배포 보류). 파서 코드는 유지 |
 | `ggn.main.main` | enabled | independent |  |
 | `ifm.main.main` | enabled | independent |  |
 | `kbs.1fm.busan` | enabled | kbs |  |

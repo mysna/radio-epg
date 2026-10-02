@@ -249,7 +249,7 @@
     "source_url": "https://seoul.febc.net/radio/schedule",
     "priority": 100,
     "adapter": "additional",
-    "enabled": true
+    "enabled": false
   },
   {
     "source_id": "bbs",
