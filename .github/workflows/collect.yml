@@ -5,6 +5,11 @@ name: Collect schedules
     - cron: "17 16 * * *"
     - cron: "47 17 * * *"
   workflow_dispatch:
+    inputs:
+      source:
+        description: "특정 source ID만 수집한다(예: febc). 비우면 전체 활성 source"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -30,8 +35,14 @@ jobs:
       - name: Set collection date
         run: echo "EPG_COLLECTION_DATE=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_ENV"
       - name: Collect and import schedules
-        run: uv run radio-epg collect --all --start-date "$EPG_COLLECTION_DATE"
+        run: |
+          if [ -n "$SOURCE_ID" ]; then
+            uv run radio-epg collect --source "$SOURCE_ID" --start-date "$EPG_COLLECTION_DATE"
+          else
+            uv run radio-epg collect --all --start-date "$EPG_COLLECTION_DATE"
+          fi
         env:
+          SOURCE_ID: ${{ inputs.source }}
           EPG_API_BASE_URL: ${{ vars.EPG_API_BASE_URL }}
           EPG_INGEST_TOKEN: ${{ secrets.EPG_INGEST_TOKEN }}
           EPG_RESPONSE_DUMP_DIR: ${{ runner.temp }}/upstream-responses
