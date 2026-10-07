@@ -109,7 +109,7 @@
 | `mbc.fm4u.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.fm4u.cheongju` | enabled | mbc_regional_vision |  |
 | `mbc.fm4u.chuncheon` | enabled | mbc_chuncheon |  |
-| `mbc.fm4u.daegu` | enabled | regional_mbc |  |
+| `mbc.fm4u.daegu` | unsupported | regional_mbc | dgmbc.com의 /FMTimetable/*/{date}·/FM4UTimetable/{date} 경로가 404로 바뀌고(2026-10-07 httpx 재현, GH Actions 10/6 20:57·21:53 UTC 실행 2회 HTTP 404 Not Found로 mbc-regional 전체 실패), 새 게시판형 /FM4UTimetable·/FMTimetable 페이지는 '등록된 게시물이 없습니다'만 보여 편성표를 공개하지 않음 |
 | `mbc.fm4u.daejeon` | enabled | regional_mbc |  |
 | `mbc.fm4u.gangneung` | enabled | regional_mbc |  |
 | `mbc.fm4u.gwangju` | enabled | regional_mbc |  |
@@ -126,7 +126,7 @@
 | `mbc.sfm.changwon` | unsupported | regional_mbc | MBC경남(mbcgn.kr)이 클라우드 환경에서 503으로 접속 자체가 막혀 있음(andongmbc.co.kr과 동일 패턴) |
 | `mbc.sfm.cheongju` | enabled | mbc_regional_vision |  |
 | `mbc.sfm.chuncheon` | enabled | mbc_chuncheon |  |
-| `mbc.sfm.daegu` | enabled | regional_mbc |  |
+| `mbc.sfm.daegu` | unsupported | regional_mbc | dgmbc.com의 /FMTimetable/*/{date}·/FM4UTimetable/{date} 경로가 404로 바뀌고(2026-10-07 httpx 재현, GH Actions 10/6 20:57·21:53 UTC 실행 2회 HTTP 404 Not Found로 mbc-regional 전체 실패), 새 게시판형 /FM4UTimetable·/FMTimetable 페이지는 '등록된 게시물이 없습니다'만 보여 편성표를 공개하지 않음 |
 | `mbc.sfm.daejeon` | enabled | regional_mbc |  |
 | `mbc.sfm.gangneung` | enabled | regional_mbc |  |
 | `mbc.sfm.gwangju` | enabled | regional_mbc |  |

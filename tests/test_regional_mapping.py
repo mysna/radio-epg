@@ -68,8 +68,6 @@ def test_mbc_regional_collects_every_configured_station_as_one_source() -> None:
     assert channel_ids == {
         "mbc.sfm.gangneung",
         "mbc.fm4u.gangneung",
-        "mbc.sfm.daegu",
-        "mbc.fm4u.daegu",
         "mbc.sfm.jeju",
         "mbc.fm4u.jeju",
         "mbc.sfm.yeosu",
