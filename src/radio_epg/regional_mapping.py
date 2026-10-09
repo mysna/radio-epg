@@ -137,7 +137,7 @@ async def _mbc_chuncheon(
 async def _mbc_wonju(
     client: _Client, day: date, item: RegionalChannelMapping
 ) -> tuple[ScheduleRow, ...]:
-    text = (await client.get(item.source_url)).text
+    text = (await _get_with_retry(client, item.source_url)).text
     return additional.wonju_mbc(text, day, item.channel_id)[item.channel_id]
 
 
