@@ -322,7 +322,9 @@ _PARSERS: dict[
 # 실패한다(브라우저는 이미 아는 중간 인증서로 넘어가지만 httpx는 그렇지 않음).
 # 이 source_id들만 검증을 끄고 브라우저 User-Agent를 쓴다 - 같은 엔진을 쓰는
 # 다른 지역 방송사 소스는 영향받지 않는다.
-_INSECURE_SOURCE_IDS = {"mbc-pohang", "mbc-busan"}
+# mbc-wonju(wjmbc.co.kr)는 2026-10-11 기준 서버 인증서가 만료돼("certificate has
+# expired") 검증 시 항상 ConnectError가 난다. 공개 편성 정보라 같은 방식으로 처리한다.
+_INSECURE_SOURCE_IDS = {"mbc-pohang", "mbc-busan", "mbc-wonju"}
 
 # wjmbc.co.kr는 PoliteHttpClient가 보내는 식별용 User-Agent("radio-epg/0.1 ...")를
 # 406으로, chmbc.co.kr는 같은 이유로 502를, dgbbs.co.kr는 403을 돌려준다(셋 다

@@ -341,8 +341,8 @@ def test_mbc_andong_vision_tolerates_a_missing_or_stale_commit(tmp_path, monkeyp
     assert result.schedules == ()
 
 
-def test_mbc_pohang_and_mbc_busan_are_the_only_sources_with_tls_verification_disabled() -> None:
-    assert {"mbc-pohang", "mbc-busan"} == _INSECURE_SOURCE_IDS
+def test_only_known_sources_have_tls_verification_disabled() -> None:
+    assert {"mbc-pohang", "mbc-busan", "mbc-wonju"} == _INSECURE_SOURCE_IDS
 
 
 def test_cbs_regional_collects_every_configured_station_as_one_source() -> None:
