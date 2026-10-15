@@ -688,9 +688,14 @@ def cbs_regional(text: str, day: date, channel: str) -> dict[str, tuple[Schedule
     payload = json.loads(text)
     if payload.get("date") != int(day.strftime("%Y%m%d")):
         raise ValueError("official schedule date does not match requested date")
+    # 같은 시작 시각에 두 프로그램이 겹쳐 내려오는 날이 있다(대구 2026-10-17 12:05). 다음 행의
+    # 시작을 종료로 쓰므로 그대로 두면 길이 0 행이 생겨 실패한다 - 마지막 항목만 남긴다.
+    by_start: dict[int, dict] = {}
+    for entry in payload["ProgSchedule"]:
+        by_start[entry["start"]] = entry
     items = [
         (_hmm_to_time(entry["start"]), entry["pname"], _hmm_to_time(entry["end"]))
-        for entry in payload["ProgSchedule"]
+        for entry in by_start.values()
     ]
     return {channel: _rows(channel, day, items)}
 

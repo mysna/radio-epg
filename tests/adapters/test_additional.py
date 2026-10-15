@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import date
 from pathlib import Path
 
@@ -372,6 +373,24 @@ def test_cbs_regional_parser_reads_the_shared_appradio_api_response() -> None:
     assert set(rows) == {"cbs.sfm.busan"}
     assert rows["cbs.sfm.busan"][0].title == "최정원의 당신을 향한 노래 (재)"
     assert rows["cbs.sfm.busan"][0].start == "00:00"
+
+
+def test_cbs_regional_parser_collapses_entries_sharing_a_start_time() -> None:
+    entries = [
+        {"start": 1105, "end": 1200, "pname": "백원경의 랄랄라"},
+        {"start": 1205, "end": 1300, "pname": "유지수의 해피송"},
+        {"start": 1205, "end": 1300, "pname": "한낮의 은혜(주말)"},
+        {"start": 1300, "end": 1400, "pname": "생명의 말씀"},
+    ]
+    text = json.dumps({"date": int(REGIONAL_DAY.strftime("%Y%m%d")), "ProgSchedule": entries})
+
+    rows = cbs_regional(text, REGIONAL_DAY, "cbs.sfm.daegu")["cbs.sfm.daegu"]
+
+    assert [(row.start, row.end, row.title) for row in rows] == [
+        ("11:05", "12:05", "백원경의 랄랄라"),
+        ("12:05", "13:00", "한낮의 은혜(주말)"),
+        ("13:00", "14:00", "생명의 말씀"),
+    ]
 
 
 def test_cbs_mfm_gwangju_parser_reads_the_station_specific_response() -> None:
