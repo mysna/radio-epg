@@ -1,7 +1,7 @@
 {
-  "week_of": "2026-10-05",
-  "read_at": "2026-10-11T16:50:00Z",
-  "source_note": "https://www.jmbc.co.kr/schedule/fm4u (/uploads/schedule/fm4u_261005.jpg, 2026년 10월 1주차 주간편성표 10/5-10/11)",
+  "week_of": "2026-10-12",
+  "read_at": "2026-10-18T16:50:00Z",
+  "source_note": "https://www.jmbc.co.kr/schedule/fm4u (/uploads/schedule/fm4u_261012.jpg, 2026년 10월 2주차 주간편성표 10/12-10/18)",
   "days": {
     "monday": [
       {
@@ -38,7 +38,7 @@
       },
       {
         "start": "18:00",
-        "title": "장혜라의 식스센스"
+        "title": "장혜라의 식스센스 (녹음)"
       },
       {
         "start": "20:00",
@@ -368,7 +368,7 @@
       },
       {
         "start": "18:00",
-        "title": "장혜라의 식스센스"
+        "title": "장혜라의 식스센스 (녹음)"
       },
       {
         "start": "20:00",
@@ -434,11 +434,11 @@
       },
       {
         "start": "18:00",
-        "title": "블루레코드"
+        "title": "블루레코드 (녹음)"
       },
       {
         "start": "19:00",
-        "title": "이유 있는 클래식"
+        "title": "이유 있는 클래식 (녹음)"
       },
       {
         "start": "20:00",
