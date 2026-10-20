@@ -165,8 +165,8 @@
 | `tbn.main.jeonbuk` | enabled | tbn |  |
 | `tbn.main.main` | enabled | tbn |  |
 | `tbn.main.ulsan` | enabled | tbn |  |
-| `tbs.efm.main` | enabled | independent |  |
-| `tbs.fm.main` | enabled | independent |  |
+| `tbs.efm.main` | unsupported | independent | GH Actions에서 tbs.seoul.kr 접속이 ConnectError(약 0.6초 만에 실패)로 4회 연속 실패(2026-10-19 21:01, 21:44, 10-20 19:58, 20:52 UTC 스케줄 실행). 같은 날 이 세션의 httpx는 두 편성표 주소 모두 200 정상 응답을 받아 사이트 장애가 아닌 GH Actions IP 대역 차단으로 판단 |
+| `tbs.fm.main` | unsupported | independent | GH Actions에서 tbs.seoul.kr 접속이 ConnectError(약 0.6초 만에 실패)로 4회 연속 실패(2026-10-19 21:01, 21:44, 10-20 19:58, 20:52 UTC 스케줄 실행). 같은 날 이 세션의 httpx는 두 편성표 주소 모두 200 정상 응답을 받아 사이트 장애가 아닌 GH Actions IP 대역 차단으로 판단 |
 | `wbs.main.busan` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
 | `wbs.main.daegu` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |
 | `wbs.main.gwangju` | unsupported | religious | 파서는 fixture로 검증됐으나 wbsi.kr이 GitHub Actions IP 대역을 403으로 차단해 실제 수집 불가(2026-09-12 두 차례 연속 확인) |

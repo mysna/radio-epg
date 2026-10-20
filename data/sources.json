@@ -240,7 +240,7 @@
     "source_url": "https://tbs.seoul.kr/fm/schedule.do",
     "priority": 100,
     "adapter": "additional",
-    "enabled": true
+    "enabled": false
   },
   {
     "source_id": "febc",
