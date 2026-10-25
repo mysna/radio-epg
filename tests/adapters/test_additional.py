@@ -744,6 +744,21 @@ def test_kfn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
     assert client.attempts == 3
 
 
+def test_kfn_empty_result_list_yields_no_schedules_instead_of_failing() -> None:
+    class Client:
+        async def post(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(
+                200, json={"map": {"resultList": []}}, request=httpx.Request("POST", url)
+            )
+
+    adapter = AdditionalStationAdapter(
+        _source("kfn", "https://radio.dema.mil.kr/web/radio/timetable.do"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert not result.schedules
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "channel", "first_title"),
     [
