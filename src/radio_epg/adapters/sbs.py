@@ -65,6 +65,36 @@ def parse_sbs_schedule(
     return parsed
 
 
+def _minutes(value: str) -> int:
+    hour, minute = value.split(":")
+    return int(hour) * 60 + int(minute)
+
+
+def _span(row: ScheduleRow) -> tuple[int, int]:
+    start, end = _minutes(row.start), _minutes(row.end)
+    return start, end if end > start else end + 24 * 60
+
+
+def _drop_contained_duplicates(rows: list[ScheduleRow]) -> tuple[ScheduleRow, ...]:
+    """같은 프로그램이 더 긴 항목 안에 다시 실린 중복 행(예: 4:00-6:00 안의 5:00-6:00)을 버린다."""
+
+    def contained(row: ScheduleRow) -> bool:
+        start, end = _span(row)
+        for other in rows:
+            if other is row or other.title != row.title:
+                continue
+            other_start, other_end = _span(other)
+            if (
+                other_start <= start
+                and end <= other_end
+                and (other_start, other_end) != (start, end)
+            ):
+                return True
+        return False
+
+    return tuple(row for row in rows if not contained(row))
+
+
 def parse_sbs_current_schedule(
     payload: object, *, expected_date: date, today: date
 ) -> dict[str, tuple[ScheduleRow, ...]]:
@@ -111,7 +141,7 @@ def parse_sbs_current_schedule(
                     is_live=item.get("onair_flag") == "Y",
                 )
             )
-        parsed[channel] = tuple(rows)
+        parsed[channel] = _drop_contained_duplicates(rows)
     if not all(parsed.values()):
         raise SbsSchemaError("SBS current schedule is empty")
     return parsed

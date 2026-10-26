@@ -125,3 +125,24 @@ def test_sbs_normalization_scopes_reused_event_ids_by_broadcast_date() -> None:
         "power:2026-07-17:shared-vod:05:00",
         "power:2026-07-18:shared-vod:05:00",
     }
+
+
+def test_sbs_drops_row_nested_inside_same_program() -> None:
+    today = date(2026, 7, 13)
+    payload = {
+        "schedule": {
+            code: [
+                {"vod_id": "V1", "start_time": "5:00", "end_time": "6:00", "title": "OLDIES 20"},
+                {"vod_id": "V2", "start_time": "6:00", "end_time": "7:00", "title": "뉴스"},
+                {"vod_id": "V1", "start_time": "4:00", "end_time": "6:00", "title": "OLDIES 20"},
+            ]
+            for code in ("power", "love", "dmb")
+        }
+    }
+
+    rows = parse_sbs_current_schedule(payload, expected_date=today, today=today)
+
+    assert [(row.start, row.end) for row in rows["love"]] == [
+        ("06:00", "07:00"),
+        ("04:00", "06:00"),
+    ]
