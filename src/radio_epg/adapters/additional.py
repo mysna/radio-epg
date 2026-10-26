@@ -629,11 +629,14 @@ def _gugak(text: str, day: date) -> dict[str, tuple[ScheduleRow, ...]]:
                 title = link.get_text(" ", strip=True)
                 if not title:
                     continue
+                # 2026-10부터 지역 표시는 제목이 아니라 링크 앞 span.sch-tag(광주/대전)에 온다.
+                tags = link.parent.select(".sch-tag") if link.parent else []
+                label = " ".join([title, *(tag.get_text(strip=True) for tag in tags)])
                 channel = (
                     "kugak.main.gwangju"
-                    if "[광주]" in title
+                    if "[광주]" in label or "광주" in label.split()[1:]
                     else "kugak.main.daejeon"
-                    if "[대전]" in title
+                    if "[대전]" in label or "대전" in label.split()[1:]
                     else "kugak.main.main"
                 )
                 collected[channel].append((times[0], title, times[1]))

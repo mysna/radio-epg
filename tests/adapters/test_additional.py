@@ -103,6 +103,24 @@ def test_gugak_tolerates_a_holiday_special_that_empties_the_whole_table() -> Non
     assert rows == {}
 
 
+def test_gugak_routes_regional_titles_marked_by_a_tag_span() -> None:
+    # 2026-10: 지역 표시가 제목의 "[광주]"가 아니라 <span class="sch-tag">로 오면서
+    # 본방 채널에 같은 시각 항목이 겹쳐 ValueError가 났다.
+    rows = parse_station_schedule(
+        "gugak",
+        (FIXTURES / "gugak-unbracketed-regional.html").read_text(),
+        expected_date=date(2026, 10, 27),
+    )
+
+    assert [row.title for row in rows["kugak.main.gwangju"] if row.start == "09:00"] == ["남도마실"]
+    assert [row.title for row in rows["kugak.main.daejeon"] if row.start == "09:00"] == [
+        "꿈꾸는 청춘"
+    ]
+    assert [row.title for row in rows["kugak.main.main"] if row.start == "09:00"] == [
+        "송지원의 국악산책"
+    ]
+
+
 def test_parser_rejects_a_response_for_another_date() -> None:
     with pytest.raises(ValueError, match="date"):
         parse_station_schedule(
