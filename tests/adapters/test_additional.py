@@ -777,6 +777,23 @@ def test_kfn_empty_result_list_yields_no_schedules_instead_of_failing() -> None:
     assert not result.schedules
 
 
+def test_arirang_empty_schedule_yields_no_schedules_instead_of_failing() -> None:
+    class Client:
+        async def post(self, url: str, **_kwargs: object) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"responseBody": {"dsSchWeek": []}},
+                request=httpx.Request("POST", url),
+            )
+
+    adapter = AdditionalStationAdapter(
+        _source("arirang", "https://www.arirang.com/v1.0/open/external/proxy"), client=Client()
+    )
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert not result.schedules
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "channel", "first_title"),
     [

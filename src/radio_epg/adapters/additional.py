@@ -1304,8 +1304,11 @@ class AdditionalStationAdapter:
                     parsed = parse_station_schedule(self.source.source_id, text, expected_date=day)
                 except ValueError as error:
                     # 국방FM은 KST 새벽에 오늘·내일 편성이 모두 비어 올 때가 있다
-                    # (2026-10-24/25 실행). 실패가 아니라 "편성표 없음"으로 본다.
-                    if self.source.source_id != "kfn" or "no rows" not in str(error):
+                    # (2026-10-24/25 실행). 아리랑은 아직 안 올라온 다음 날 dsSchWeek가
+                    # 빈 배열이다(2026-11-07 실행). 실패가 아니라 "편성표 없음"으로 본다.
+                    if self.source.source_id not in {"kfn", "arirang"} or "no rows" not in str(
+                        error
+                    ):
                         raise
                     parsed = {}
                 for channel, rows in parsed.items():
