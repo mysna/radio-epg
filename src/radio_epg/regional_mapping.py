@@ -205,7 +205,10 @@ async def _sbs_ubc(
 async def _sbs_cjb(
     client: _Client, day: date, item: RegionalChannelMapping
 ) -> tuple[ScheduleRow, ...]:
-    text = (await client.get(_format_url(item, day))).text
+    # cjb.co.kr가 GH Actions 환경에서 ConnectTimeout으로 끊긴 적이 있다(2026-11-10 실행
+    # 42915297960에서 처음 관측, 그 앞뒤 실행은 정상이고 이 세션에서 같은 URL은 200 응답 -
+    # ubc.co.kr와 같은 일시적 불안정으로 추정). 같은 재시도를 쓴다.
+    text = (await _get_with_retry(client, _format_url(item, day))).text
     return additional.cjb_cheongju(text, day, item.channel_id)[item.channel_id]
 
 
