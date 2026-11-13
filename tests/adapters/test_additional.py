@@ -735,6 +735,35 @@ def test_ggn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
     assert client.attempts == 3
 
 
+def test_ifm_survives_a_short_burst_of_transport_errors(monkeypatch) -> None:
+    fixture = (FIXTURES / "ifm.html").read_text()
+
+    async def skip_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr("radio_epg.adapters.additional.asyncio.sleep", skip_sleep)
+
+    class Client:
+        attempts = 0
+
+        async def get(self, url: str, **_kwargs: object) -> httpx.Response:
+            self.attempts += 1
+            if self.attempts == 1:
+                raise httpx.RemoteProtocolError(
+                    "peer closed connection", request=httpx.Request("GET", url)
+                )
+            if self.attempts == 2:
+                raise httpx.ReadError("read failed", request=httpx.Request("GET", url))
+            return httpx.Response(200, text=fixture, request=httpx.Request("GET", url))
+
+    client = Client()
+    adapter = AdditionalStationAdapter(_source("ifm", "https://www.ifm.kr/schedule"), client=client)
+    result = asyncio.run(adapter.collect(CollectionWindow(DAY, DAY)))
+
+    assert result.schedules
+    assert client.attempts == 3
+
+
 def test_kfn_survives_a_short_burst_of_connect_errors(monkeypatch) -> None:
     fixture = (FIXTURES / "kfn.json").read_text()
 

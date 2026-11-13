@@ -1118,7 +1118,19 @@ class AdditionalStationAdapter:
                 },
             )
         elif source_id == "ifm":
-            response = await client.get(endpoint, params={"date": day.isoformat()})
+            # www.ifm.kr은 응답이 느리고(샌드박스에서 20~28초) GH Actions에서 가끔
+            # 응답 도중 연결이 끊긴다(RemoteProtocolError 2026-11-06·11-11, ReadError
+            # 2026-10-28 - 2주간 3회, 매번 다음 실행은 정상). 전송 오류만 재시도한다.
+            import httpx
+
+            for attempt in range(4):
+                try:
+                    response = await client.get(endpoint, params={"date": day.isoformat()})
+                    break
+                except httpx.TransportError:
+                    if attempt == 3:
+                        raise
+                    await asyncio.sleep(2.0 * (2**attempt))
         elif source_id == "ytn":
             response = await client.get(endpoint, params={"ymd": day.strftime("%Y%m%d")})
         elif source_id == "tbs":
